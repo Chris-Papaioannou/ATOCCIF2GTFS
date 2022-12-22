@@ -1,5 +1,4 @@
 ﻿using CsvHelper;
-using GeoCoordinatePortable;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -7,6 +6,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Text;
+using System.Diagnostics;
 
 namespace CIF2GTFS
 {
@@ -14,76 +14,44 @@ namespace CIF2GTFS
     {
         static void Main(string[] args)
         {           
-            Console.WriteLine("Loading NaPTAN stops.");
+            Console.WriteLine("Execute python process...");
+            Console.WriteLine("Loading ATT stops.");
             if (Directory.Exists("temp") == true)
             {
                 Directory.Delete("temp", true);
             }
             Directory.CreateDirectory("temp");
 
-            Console.WriteLine("Unzipping NaPTAN to a temporary folder.");
-            ZipFile.ExtractToDirectory(@"stops.zip", "temp");
-            List<NaptanStop> NaptanStops = new List<NaptanStop>();
-            using (TextReader textReader = File.OpenText("temp/Stops.csv"))
+            ExecProcess("split_WKTLOC.py");
+            List<attStop> attStops = new List<attStop>();
+            using (TextReader textReader = File.OpenText("temp/cif_tiplocs_loc.csv"))
             {
                 CsvReader csvReader = new CsvReader(textReader, CultureInfo.InvariantCulture);
                 csvReader.Configuration.Delimiter = ",";
-                NaptanStops = csvReader.GetRecords<NaptanStop>().ToList();
+                attStops = csvReader.GetRecords<attStop>().ToList();
             }
 
-            Console.WriteLine("Creating ATCOcode keyed dictionary of NaPTAN stops.");
-            Dictionary<string, NaptanStop> NaPTANStopsDictionary = new Dictionary<string, NaptanStop>();
-            foreach (NaptanStop naptanStop in NaptanStops)
+            Console.WriteLine("Creating GTFS_STOP_ID keyed dictionary of ATT stops.");
+            Dictionary<string, attStop> ATTStopsDictionary = new Dictionary<string, attStop>();
+            List<GTFSattStop> GTFSStopsList = new List<GTFSattStop>();
+            foreach (attStop attStop in attStops)
             {
-                NaPTANStopsDictionary.Add(naptanStop.ATCOCode, naptanStop);
-            }
+                ATTStopsDictionary.Add(attStop.Tiploc, attStop);
 
-            Console.WriteLine("Loading CIF stations and matching them to NaPTAN stops.");
-            List<CIFStation> CIFStations = new List<CIFStation>();
-            // .msn lines are fixed-width columns and look like this.
-            // "A    WHITTLESFORD PARKWAY          0WTLESFDWLF   WLF15484 62473 5                 "
-            // A reasonable approach would be to split at the correct position, then trim, then only store entries with all features
-            ZipFile.ExtractToDirectory(@"ttis389.zip", "temp");
-            List<string> StopsFileLines = new List<string>(File.ReadAllLines("temp/ttisf389.msn"));
-
-            foreach (string StopLine in StopsFileLines)
-            {
-                string firstSlot = StopLine.Substring(0, 5).Trim();
-                string secondSlot = StopLine.Substring(5, 30).TrimEnd();
-                string thirdSlot = StopLine.Substring(35, 1);
-                string fourthSlot = StopLine.Substring(36, 7).Trim();
-                string fifthSlot = StopLine.Substring(43, 3).Trim();
-                string sixthSlot = StopLine.Substring(49, 8).Trim();
-                // The seventh slot is okay to be empty
-                string seventhSlot = StopLine.Substring(57, 1).Trim();
-                string eighthSlot = StopLine.Substring(58, 5).Trim();
-                string ninthSlot = StopLine.Substring(65, 1).Trim();
-
-                if (firstSlot == "A" && secondSlot.StartsWith(" ") == false)
+                GTFSattStop gTFSattStop = new GTFSattStop()
                 {
-                    CIFStation Station = new CIFStation()
-                    {
-                        StationName = secondSlot,
-                        StationShortCode = fifthSlot,
-                        StationLongCode = fourthSlot
-                    };
+                    stop_id = attStop.Tiploc,
+                    stop_code = attStop.CRS,
+                    stop_name = attStop.Description,
+                    stop_lat = Math.Round(attStop.Lat,5),
+                    stop_lon = Math.Round(attStop.Lon,5)
+                };
 
-                    if (NaPTANStopsDictionary.ContainsKey("9100" + Station.StationLongCode))
-                    {
-                        Station.ATCOCode = NaPTANStopsDictionary["9100" + Station.StationLongCode].ATCOCode;
-                    }
-                    else
-                    {
-                        Console.WriteLine($"No ATCO code found for {Station.StationName} station.");
-                    }
-
-                    CIFStations.Add(Station);
-                }
+                GTFSStopsList.Add(gTFSattStop);
             }
-            Console.WriteLine($"Read {CIFStations.Count} stations of which {CIFStations.Where(x => x.ATCOCode != null).Count()} have a matched NaPTAN code.");
 
             Console.WriteLine("Reading the timetable file.");
-            List<string> TimetableFileLines = new List<string>(File.ReadAllLines("temp/ttisf389.mca"));
+            List<string> TimetableFileLines = new List<string>(File.ReadAllLines("May22.CIF"));
             Dictionary<string, List<StationStop>> StopTimesForJourneyIDDictionary = new Dictionary<string, List<StationStop>>();
             Dictionary<string, JourneyDetail> JourneyDetailsForJourneyIDDictionary = new Dictionary<string, JourneyDetail>();
 
@@ -163,13 +131,13 @@ namespace CIF2GTFS
                             StationLongCode = secondSlot
                         };
 
-                        if (NaPTANStopsDictionary.ContainsKey("9100" + stationStop.StationLongCode))
+                        if (ATTStopsDictionary.ContainsKey(stationStop.StationLongCode))
                         {
                             if (thirdSlot.Count() == 4 && fourthSlot.Count() == 4)
                             {
                                 stationStop.WorkingTimetableDepartureTime = stringToTimeSpan(thirdSlot);
                                 stationStop.PublicTimetableDepartureTime = stringToTimeSpan(fourthSlot);
-                                stationStop.NaPTANStop = NaPTANStopsDictionary["9100" + stationStop.StationLongCode];
+                                stationStop.ATTStop = ATTStopsDictionary[stationStop.StationLongCode];
 
                                 if (StopTimesForJourneyIDDictionary.ContainsKey(CurrentJourneyID))
                                 {
@@ -214,24 +182,6 @@ namespace CIF2GTFS
                     agency_timezone = "Europe/London" // Europe/London by default
                 };
                 AgencyList.Add(NewAgency);
-            }
-
-            
-            List<GTFSNaptanStop> GTFSStopsList = new List<GTFSNaptanStop>();
-            foreach(CIFStation cIFStation in CIFStations.Where(x => x.ATCOCode != null))
-            {
-                var NaPTANEntry = NaPTANStopsDictionary["9100" + cIFStation.StationLongCode];
-
-                GTFSNaptanStop gTFSNaptanStop = new GTFSNaptanStop()
-                {
-                    stop_id = cIFStation.ATCOCode,
-                    stop_name = cIFStation.StationName,
-                    stop_code = cIFStation.StationShortCode,
-                    stop_lat = Math.Round(NaPTANEntry.Latitude,5),
-                    stop_lon = Math.Round(NaPTANEntry.Longitude,5)
-                };
-
-                GTFSStopsList.Add(gTFSNaptanStop);
             }
 
             List<Route> RoutesList = new List<Route>();
@@ -285,7 +235,7 @@ namespace CIF2GTFS
                     StopTime stopTime = new StopTime()
                     {
                         trip_id = JourneyID + "_trip",
-                        stop_id = stationStop.NaPTANStop.ATCOCode,
+                        stop_id = stationStop.ATTStop.Tiploc,
                         stop_sequence = count
                     };
 
@@ -353,11 +303,14 @@ namespace CIF2GTFS
             calendarCSVwriter.Dispose();
 
             Console.WriteLine("Writing stop_times.txt");
-            TextWriter stopTimeTextWriter = File.CreateText(@"output/stop_times.txt");
+            TextWriter stopTimeTextWriter = File.CreateText(@"temp/stop_times_full.txt");
             CsvWriter stopTimeCSVwriter = new CsvWriter(stopTimeTextWriter, CultureInfo.InvariantCulture);
             stopTimeCSVwriter.WriteRecords(stopTimesList);
             stopTimeTextWriter.Dispose();
             stopTimeCSVwriter.Dispose();
+
+            Console.WriteLine("Dropping trip IDs with only one matched stop from stop_times.txt");
+            ExecProcess("drop_single_stop_trips.py");
 
             Console.WriteLine("Creating a GTFS .zip file.");
             if (File.Exists("output.zip"))
@@ -367,54 +320,46 @@ namespace CIF2GTFS
             ZipFile.CreateFromDirectory("output", "output.zip", CompressionLevel.Optimal, false, Encoding.UTF8);
 
             Console.WriteLine("You may wish to validate the GTFS output using a tool such as https://github.com/google/transitfeed/");
+            ExecProcess("import_GTFS.py");
+        }
 
-            /*
-            var OrderedStopTimesForJourneyDictionary = StopTimesForJourneyIDDictionary.OrderByDescending(x => x.Value.Count);
-            Console.WriteLine("Calculating average velocities for all journeys.");
-            List<JourneyVelocity> JourneyVelocities = new List<JourneyVelocity>();
-            foreach (var JourneyID in StopTimesForJourneyIDDictionary.Where(x => x.Value.Count > 1)) {
-                var FirstStop = JourneyID.Value.First();
-                var LastStop = JourneyID.Value.Last();
+        static void ExecProcess(string my_script)
+        {
+            // 1) Create Process Info
+            var psi = new ProcessStartInfo();
+            psi.FileName = @"C:\Program Files\PTV Vision\PTV Visum 2022\Exe\PythonModules\Scripts\python.exe";
 
-                GeoCoordinate GeoFirstStop = new GeoCoordinate(FirstStop.NaPTANStop.Latitude, FirstStop.NaPTANStop.Longitude);
-                GeoCoordinate GeoSecondStop = new GeoCoordinate(LastStop.NaPTANStop.Latitude, LastStop.NaPTANStop.Longitude);
-                var Distance = GeoFirstStop.GetDistanceTo(GeoSecondStop) / 1000;
-                var Time = LastStop.DepartureTime - FirstStop.DepartureTime;
+            // 2) Provide script and arguments
+            var script = my_script;
+            
+            var ver_path = @"C:\Users\c.papaioannou\PTV Group\TEAM PTV UK - Network Model Phase 3 - General\07 Model Files\01 Detailed Network\DetailedNetwork.ver";
 
-                // if a journey time is negative, add a day to it.
-                while (Time.TotalSeconds < 0)
-                {
-                    Time = Time.Add(new TimeSpan(24, 0, 0));
-                }
-                var Velocity = Math.Round(Distance / Time.TotalHours, 1);
+            psi.Arguments = $"\"{script}\" \"{ver_path}\"";
 
-                JourneyVelocity journeyVelocity = new JourneyVelocity()
-                {
-                    Velocity = Velocity,
-                    JourneyDetails = JourneyID
-                };
-                JourneyVelocities.Add(journeyVelocity);
+            // 3) Process configuration
+            psi.UseShellExecute = false;
+            psi.CreateNoWindow = true;
+            psi.RedirectStandardOutput = true;
+            psi.RedirectStandardError = true;
+
+            // 4) Execute process and get output
+            var errors = "";
+            var results = "";
+
+            using(var process = Process.Start(psi))
+            {
+                errors = process.StandardError.ReadToEnd();
+                results = process.StandardOutput.ReadToEnd();
             }
 
-            var orderedJourneyVelocities = JourneyVelocities.OrderByDescending(x => x.Velocity);
-            */
-        }
+            // 5) Display output
+            Console.WriteLine("ERRORS:");
+            Console.WriteLine(errors);
+            Console.WriteLine();
+            Console.WriteLine("Results:");
+            Console.WriteLine(results);
 
-        /*
-        static DateTime stringToDate(string input)
-        {
-            // input is expected to be YYMMDD
-            string Years = input.Substring(0, 2);
-            string Months = input.Substring(2, 2);
-            string Days = input.Substring(4, 2);
-            int YearsInt = int.Parse(Years);
-            int MonthsInt = int.Parse(Months);
-            int DaysInt = int.Parse(Days);
-
-            DateTime dateTime = new DateTime(YearsInt, MonthsInt, DaysInt);
-            return dateTime;
         }
-        */
 
         static TimeSpan stringToTimeSpan(string input)
         {
@@ -432,20 +377,6 @@ namespace CIF2GTFS
         }
     }
 
-    // Classes to hold the CIF input
-    // .tsi file looks unimportant
-    // .set file looks unimportant
-    // .msn looks like station names (lines starting with an A) and alternative names (lines starting with an L)
-    // .mca looks like the actual train services
-    // .flf file looks unimportant (additional links which our trip planner will sort out for us)
-    // .dat file looks unimportant (a list of the files)
-    // .alf file looks unimportant (additional links, but connection times may matter I suppose. Tough one)
-    // .ztr file looks unimportant (includes international services, including Northern Ireland, some connecting buses from Liverpool South Parkway to the airport, and links to heritage railways
-
-    // SO THE TWO MAIN FILES TO PARSE ARE .MCA AND .MSN
-    // DO WE ALSO NEED NAPTAN TO LOCATE THE STATIONS?
-
-
     public class JourneyDetail
     {
         public string JourneyID { get; set; }
@@ -456,32 +387,13 @@ namespace CIF2GTFS
         public Calendar OperationsCalendar { get; set; }
     }
 
-    public class JourneyVelocity
-    {
-        public KeyValuePair<string, List<StationStop>> JourneyDetails { get; set; }
-        public double Velocity { get; set; }
-    }
-
-    public class CIFStation
-    {
-        public string StationName { get; set; }
-        public string StationShortCode { get; set; }
-        public string StationLongCode { get; set; }
-        public string ATCOCode { get; set; }
-    }
-
-    public class CIFJourney
-    {
-        public string JourneyID { get; set; }
-        public List<StationStop> StationStops { get; set; }
-    }
     public class StationStop
     {
         public string StationLongCode { get; set; }
         public string StopType { get; set; } // Origin, Intermediate, or Terminus
         public TimeSpan WorkingTimetableDepartureTime {get; set;}
         public TimeSpan PublicTimetableDepartureTime { get; set; }
-        public NaptanStop NaPTANStop { get; set; }
+        public attStop ATTStop { get; set; }
     }
 
     // Classes to hold the GTFS output
@@ -498,14 +410,6 @@ namespace CIF2GTFS
         public int sunday { get; set; }
         public string start_date { get; set; }
         public string end_date { get; set; }
-    }
-
-    // A LIST OF THESE CALENDAR EXCEPTIONS CREATES THE GTFS  calendar_dates.txt file
-    public class CalendarException
-    {
-        public string service_id { get; set; }
-        public string date { get; set; }
-        public string exception_type { get; set; }
     }
 
     // A LIST OF THESE TRIPS CREATES THE GTFS trips.txt file.
@@ -534,14 +438,15 @@ namespace CIF2GTFS
         public string shape_dist_traveled { get; set; }
     }
 
-    //A LIST OF THESE NAPTANSTOPS CREATES THE GTFS stops.txt file
-    public class GTFSNaptanStop
+    //A LIST OF THESE ATTSTOPS CREATES THE GTFS stops.txt file
+    
+    public class GTFSattStop
     {
         public string stop_id { get; set; }
         public string stop_code { get; set; }
         public string stop_name { get; set; }
-        public double stop_lat { get; set; }
-        public double stop_lon { get; set; }
+        public double? stop_lat { get; set; }
+        public double? stop_lon { get; set; }
         public string stop_url { get; set; }
         //public string vehicle_type { get; set; }
     }
@@ -568,13 +473,14 @@ namespace CIF2GTFS
         public string agency_url { get; set; }
         public string agency_timezone { get; set; }
     }
-    public class NaptanStop
+    public class attStop
     {
-        public string ATCOCode { get; set; }
-        public string NaptanCode { get; set; }
-        public string CommonName { get; set; }
-        public double Latitude { get; set; }
-        public double Longitude { get; set; }
-        public string StopType { get; set; }
+        public string CRS { get; set; }
+        public string Tiploc { get; set; }
+        public string Description { get; set; }
+        public int Stannox { get; set; }
+        public double Lon { get; set; }
+        public double Lat { get; set; }
+        // public string StopType { get; set; }
     }
 }
