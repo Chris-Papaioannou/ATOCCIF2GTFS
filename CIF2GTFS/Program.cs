@@ -51,7 +51,7 @@ namespace CIF2GTFS
             }
 
             Console.WriteLine("Reading the timetable file.");
-            List<string> TimetableFileLines = new List<string>(File.ReadAllLines("May22.CIF"));
+            List<string> TimetableFileLines = new List<string>(File.ReadAllLines("input/May22.CIF"));
             Dictionary<string, List<StationStop>> StopTimesForJourneyIDDictionary = new Dictionary<string, List<StationStop>>();
             Dictionary<string, JourneyDetail> JourneyDetailsForJourneyIDDictionary = new Dictionary<string, JourneyDetail>();
 
@@ -303,7 +303,7 @@ namespace CIF2GTFS
             calendarCSVwriter.Dispose();
 
             Console.WriteLine("Writing stop_times.txt");
-            TextWriter stopTimeTextWriter = File.CreateText(@"temp/stop_times_full.txt");
+            TextWriter stopTimeTextWriter = File.CreateText("temp/stop_times_full.txt");
             CsvWriter stopTimeCSVwriter = new CsvWriter(stopTimeTextWriter, CultureInfo.InvariantCulture);
             stopTimeCSVwriter.WriteRecords(stopTimesList);
             stopTimeTextWriter.Dispose();
