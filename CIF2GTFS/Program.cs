@@ -45,7 +45,7 @@ namespace CIF2GTFS
                     stop_name = attStop.Description,
                     stop_lat = Math.Round(attStop.YCOORD,5),
                     stop_lon = Math.Round(attStop.XCOORD,5),
-                    location_type = 0
+                    location_type = 1
                 };
 
                 GTFSStopsList.Add(gTFSattStop);
@@ -239,7 +239,7 @@ namespace CIF2GTFS
                     StopTime stopTime = new StopTime()
                     {
                         trip_id = JourneyID + "_trip",
-                        stop_id = stationStop.ATTStop.Tiploc,
+                        stop_id = stationStop.ATTStop.Tiploc + "_" + stationStop.Platform,
                         stop_sequence = count
                     };
 
@@ -279,7 +279,7 @@ namespace CIF2GTFS
             agencyCSVwriter.Dispose();
 
             Console.WriteLine("Writing stops.txt");
-            TextWriter stopsTextWriter = File.CreateText(@"output/stops.txt");
+            TextWriter stopsTextWriter = File.CreateText(@"temp/stations.txt");
             CsvWriter stopsCSVwriter = new CsvWriter(stopsTextWriter, CultureInfo.InvariantCulture);
             stopsCSVwriter.WriteRecords(GTFSStopsList);
             stopsTextWriter.Dispose();
@@ -444,7 +444,6 @@ namespace CIF2GTFS
     }
 
     //A LIST OF THESE ATTSTOPS CREATES THE GTFS stops.txt file
-    
     public class GTFSattStop
     {
         public string stop_id { get; set; }
