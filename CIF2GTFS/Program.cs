@@ -22,7 +22,7 @@ namespace CIF2GTFS
             }
             Directory.CreateDirectory("temp");
 
-            ExecProcess("split_WKTLOC.py");
+            ExecProcess("merge_cif_stops.py");
             List<attStop> attStops = new List<attStop>();
             using (TextReader textReader = File.OpenText("temp/cif_tiplocs_loc.csv"))
             {
@@ -43,8 +43,9 @@ namespace CIF2GTFS
                     stop_id = attStop.Tiploc,
                     stop_code = attStop.CRS,
                     stop_name = attStop.Description,
-                    stop_lat = Math.Round(attStop.Lat,5),
-                    stop_lon = Math.Round(attStop.Lon,5)
+                    stop_lat = Math.Round(attStop.YCOORD,5),
+                    stop_lon = Math.Round(attStop.XCOORD,5),
+                    location_type = 0
                 };
 
                 GTFSStopsList.Add(gTFSattStop);
@@ -121,14 +122,17 @@ namespace CIF2GTFS
                     string secondSlot = TimetableLine.Substring(2, 7).Trim();
                     string thirdSlot = TimetableLine.Substring(10, 4).Trim();
                     string fourthSlot = TimetableLine.Substring(15, 4).Trim();
-                    string fifthSlot = TimetableLine.Substring(25, 8).Trim();
+                    string fifthSlot = TimetableLine.Substring(19, 3).Trim();
+                    string sixthSlot = TimetableLine.Substring(25, 8).Trim();
+                    string seventhSlot = TimetableLine.Substring(33, 3).Trim();
 
-                    if (fifthSlot != "00000000")
+                    if (sixthSlot != "00000000")
                     {
                         StationStop stationStop = new StationStop()
                         {
                             StopType = firstSlot,
-                            StationLongCode = secondSlot
+                            StationLongCode = secondSlot,
+                            Platform = fifthSlot + seventhSlot
                         };
 
                         if (ATTStopsDictionary.ContainsKey(stationStop.StationLongCode))
@@ -391,6 +395,7 @@ namespace CIF2GTFS
     {
         public string StationLongCode { get; set; }
         public string StopType { get; set; } // Origin, Intermediate, or Terminus
+        public string Platform { get; set; }
         public TimeSpan WorkingTimetableDepartureTime {get; set;}
         public TimeSpan PublicTimetableDepartureTime { get; set; }
         public attStop ATTStop { get; set; }
@@ -445,9 +450,10 @@ namespace CIF2GTFS
         public string stop_id { get; set; }
         public string stop_code { get; set; }
         public string stop_name { get; set; }
-        public double? stop_lat { get; set; }
-        public double? stop_lon { get; set; }
-        public string stop_url { get; set; }
+        public double stop_lat { get; set; }
+        public double stop_lon { get; set; }
+        public int location_type { get; set; }
+        public string parent_station { get; set; }
         //public string vehicle_type { get; set; }
     }
 
@@ -479,8 +485,7 @@ namespace CIF2GTFS
         public string Tiploc { get; set; }
         public string Description { get; set; }
         public int Stannox { get; set; }
-        public double Lon { get; set; }
-        public double Lat { get; set; }
-        // public string StopType { get; set; }
+        public double XCOORD { get; set; }
+        public double YCOORD { get; set; }
     }
 }
