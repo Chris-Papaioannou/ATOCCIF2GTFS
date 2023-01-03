@@ -131,9 +131,16 @@ namespace CIF2GTFS
                         StationStop stationStop = new StationStop()
                         {
                             StopType = firstSlot,
-                            StationLongCode = secondSlot,
-                            Platform = fifthSlot + seventhSlot
+                            StationLongCode = secondSlot
                         };
+                        if (TimetableLine.StartsWith("LI"))
+                        {
+                            stationStop.Platform = seventhSlot;
+                        }
+                        else
+                        {
+                            stationStop.Platform = fifthSlot;
+                        }
 
                         if (ATTStopsDictionary.ContainsKey(stationStop.StationLongCode))
                         {
