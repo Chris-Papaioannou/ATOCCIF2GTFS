@@ -230,10 +230,10 @@ def get_attr_report_fil(Tiploc_condit, df, platform, pNumer):
         df_fil = df[Tiploc_condit & (df['Platform'] == pNumer)]
     elif np.any(Tiploc_condit & (df['AltPlatform'] == platform)):
         df_fil = df[Tiploc_condit & (df['AltPlatform'] == platform)]
-    elif np.any(Tiploc_condit):
-        df_fil = df[Tiploc_condit]
-    else:
+    elif np.any(Tiploc_condit & (df['AltPlatform'] == pNumer)):
         df_fil = df[Tiploc_condit & (df['AltPlatform'] == pNumer)]
+    else:
+        df_fil = df[Tiploc_condit]
     if len(df_fil) > 0:
         for i in range(len(df_fil)):
             if i == 0:
@@ -254,7 +254,7 @@ def get_sp_No(s_No, pNumer, pAlpha):
     else:
         print(f'ERROR: Unexpected platform number {pNumer}, platform numbers 0 to 28 supported.')
     alphaIndex1 = ['', 'A', 'B', 'C', 'D', 'E', 'F', 'W', 'N', 'S']
-    alphaIndex2 = ['L' 'M', 'R', 'X']
+    alphaIndex2 = ['L', 'M', 'R', 'X']
     alphaIndex3 = ['BAY', 'DM', 'DPL', 'SGL', 'UM', 'UPL', 'URL']
     if max(len(alphaIndex1), len(alphaIndex2), len(alphaIndex3)) > 10:
         print('ERROR: Alpha indices should represent a number from 0 to 9.')
@@ -330,8 +330,11 @@ def get_platform_loc(platform, alt_platform, s_loc, CRSplatforms, crs, desc):
             platformLocation = CRSplatforms['Location'][my_index]
         except:
             platformLocation = s_loc
-            if platform not in ['DPL', 'UPL']:
+            if platform not in ['DM', 'DPL', 'UM', 'UPL']:
                 print(f'WARNING: {crs} - {desc}, Platform {platform} is not in OSM & no unknown platform available. Used OSM station node location instead.')
+            else:
+                pass
+                #N.B. DO something smart with the line filters for Up / Down platform? Maybe after speaking with NR?
     return platformLocation
 
 def main(skipped_rows = 0):

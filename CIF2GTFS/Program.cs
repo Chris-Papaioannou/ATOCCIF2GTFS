@@ -343,7 +343,7 @@ namespace CIF2GTFS
             // 2) Provide script and arguments
             var script = my_script;
             
-            var ver_path = @"C:\Users\c.papaioannou\PTV Group\TEAM PTV UK - Network Model Phase 3 - General\07 Model Files\01 Detailed Network\DetailedNetwork.ver";
+            var ver_path = @"C:\Users\PLACEHOLDER";
 
             psi.Arguments = $"\"{script}\" \"{ver_path}\"";
 
