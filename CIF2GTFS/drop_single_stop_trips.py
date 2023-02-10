@@ -254,8 +254,8 @@ def get_sp_No(s_No, pNumer, pAlpha):
     else:
         print(f'ERROR: Unexpected platform number {pNumer}, platform numbers 0 to 28 supported.')
     alphaIndex1 = ['', 'A', 'B', 'C', 'D', 'E', 'F', 'W', 'N', 'S']
-    alphaIndex2 = ['L', 'M', 'R', 'X']
-    alphaIndex3 = ['BAY', 'DM', 'DPL', 'SGL', 'UM', 'UPL', 'URL']
+    alphaIndex2 = ['L', 'M', 'R', 'X', 'DM', 'FL', 'TL', 'UM']
+    alphaIndex3 = ['BAY', 'DPL', 'SGL', 'UPL', 'URL']
     if max(len(alphaIndex1), len(alphaIndex2), len(alphaIndex3)) > 10:
         print('ERROR: Alpha indices should represent a number from 0 to 9.')
     if pAlpha in alphaIndex1:
@@ -270,39 +270,44 @@ def get_sp_No(s_No, pNumer, pAlpha):
 
 def create_stop_point(Visum, X, Y, s_No, bound, crs, desc, platform, pNumer, pAlpha):
     sp_No = get_sp_No(s_No, pNumer, pAlpha)
-    unsatis = True
-    alt = [0, 0, 0, 0]
-    MyMapMatcher = Visum.Net.CreateMapMatcher()
-    sp_Link = MyMapMatcher.GetNearestLink(X, Y, bound, True, True)
-    try:
-        is_dir = sp_Link.Link.AttValue('ReverseLink\\TypeNo') == 0
-    except:
-        print(f'WARNING: No filtered link within {bound}m for {crs} - {desc}, Platform {platform}.')
-        print('         Attribute Report Filter is probably incorrect. Trying again without filter active.')
-        Visum.Net.Links.GetFilteredSet('[TypeNo]=1').SetActive()
+    if platform == '':
+        sp = Visum.Net.AddStopPointOnNode(sp_No, s_No, s_No)
+        sp.SetAttValue('Code', f'{crs}_')
+        sp.SetAttValue('Name', 'Platform Unknown')
+    else:
+        unsatis = True
+        alt = [0, 0, 0, 0]
+        MyMapMatcher = Visum.Net.CreateMapMatcher()
         sp_Link = MyMapMatcher.GetNearestLink(X, Y, bound, True, True)
-        is_dir = sp_Link.Link.AttValue('ReverseLink\\TypeNo') == 0
-    try:
-        sp = Visum.Net.AddStopPointOnLink(sp_No, s_No, sp_Link.Link.AttValue('FromNodeNo'), sp_Link.Link.AttValue('ToNodeNo'), is_dir)
-    except:
-        sp_Node = Visum.Net.AddNode(sp_No, sp_Link.Link.GetXCoordAtRelPos(0.5), sp_Link.Link.GetYCoordAtRelPos(0.5))
-        sp_Link.Link.SplitViaNode(sp_Node)
-        sp_Link = MyMapMatcher.GetNearestLink(X, Y, bound, True, True)
-        sp = Visum.Net.AddStopPointOnLink(sp_No, s_No, sp_Link.Link.AttValue('FromNodeNo'), sp_Link.Link.AttValue('ToNodeNo'), is_dir)
-    while unsatis:
-        RelPos = interp1d([0, 0.5, 0.5, 1],[0 + alt[0], 0.5 - alt[1], 0.5 + alt[2], 1 - alt[3]])
-        NewRelPos = float(RelPos(sp_Link.RelPos))
-        shiftBool = [NewRelPos < 0.001, (NewRelPos > 0.499) & (NewRelPos <= 0.500), (NewRelPos >= 0.500) & (NewRelPos < 0.501), NewRelPos > 0.999]
-        if np.any(shiftBool):
-            alt = [altN + 0.001 if boolN else altN for altN, boolN in zip(alt, shiftBool)]
-        else:
-            try:
-                sp.SetAttValue('RelPos', NewRelPos)
-                unsatis = False
-            except:
-                alt = [altN + 0.001 for altN in alt]
-    sp.SetAttValue('Code', f'{crs}_{platform}')
-    sp.SetAttValue('Name', f'Platform {platform}')
+        try:
+            is_dir = sp_Link.Link.AttValue('ReverseLink\\TypeNo') == 0
+        except:
+            print(f'WARNING: No filtered link within {bound}m for {crs} - {desc}, Platform {platform}.')
+            print('         Attribute Report Filter is probably incorrect. Trying again without filter active.')
+            Visum.Net.Links.GetFilteredSet('[TypeNo]=1').SetActive()
+            sp_Link = MyMapMatcher.GetNearestLink(X, Y, bound, True, True)
+            is_dir = sp_Link.Link.AttValue('ReverseLink\\TypeNo') == 0
+        try:
+            sp = Visum.Net.AddStopPointOnLink(sp_No, s_No, sp_Link.Link.AttValue('FromNodeNo'), sp_Link.Link.AttValue('ToNodeNo'), is_dir)
+        except:
+            sp_Node = Visum.Net.AddNode(sp_No, sp_Link.Link.GetXCoordAtRelPos(0.5), sp_Link.Link.GetYCoordAtRelPos(0.5))
+            sp_Link.Link.SplitViaNode(sp_Node)
+            sp_Link = MyMapMatcher.GetNearestLink(X, Y, bound, True, True)
+            sp = Visum.Net.AddStopPointOnLink(sp_No, s_No, sp_Link.Link.AttValue('FromNodeNo'), sp_Link.Link.AttValue('ToNodeNo'), is_dir)
+        while unsatis:
+            RelPos = interp1d([0, 0.5, 0.5, 1],[0 + alt[0], 0.5 - alt[1], 0.5 + alt[2], 1 - alt[3]])
+            NewRelPos = float(RelPos(sp_Link.RelPos))
+            shiftBool = [NewRelPos < 0.001, (NewRelPos > 0.499) & (NewRelPos <= 0.500), (NewRelPos >= 0.500) & (NewRelPos < 0.501), NewRelPos > 0.999]
+            if np.any(shiftBool):
+                alt = [altN + 0.001 if boolN else altN for altN, boolN in zip(alt, shiftBool)]
+            else:
+                try:
+                    sp.SetAttValue('RelPos', NewRelPos)
+                    unsatis = False
+                except:
+                    alt = [altN + 0.001 for altN in alt]
+        sp.SetAttValue('Code', f'{crs}_{platform}')
+        sp.SetAttValue('Name', f'Platform {platform}')
 
 def get_platform_loc(platform, alt_platform, s_loc, CRSplatforms, crs, desc):
     if platform == '':
@@ -395,17 +400,35 @@ def main(skipped_rows = 0):
             s = Visum.Net.AddStop(myCRSno, sLoc.x, sLoc.y)
             s.SetAttValue('Code', myCRS)
             s.SetAttValue('Name', myDesc)
-            try:
-                sa_Node = MyMapMatcher.GetNearestNode(sLoc.x, sLoc.y, 250, False).Node
-            except:
-                sa_Link = MyMapMatcher.GetNearestLink(sLoc.x, sLoc.y, 250, False)
-                sa_Node = Visum.Net.AddNode(myCRSno, sa_Link.XPosOnLink, sa_Link.YPosOnLink)
-                sa_Link.Link.SplitViaNode(sa_Node)
+            sa_Node = Visum.Net.AddNode(myCRSno, sLoc.x, sLoc.y)
+            unsatis = True
+            fil_string = "[TYPENO]=1"
+            while unsatis:
+                Visum.Net.Links.SetPassive()
+                Visum.Net.Links.GetFilteredSet(fil_string).SetActive()
+                split_Link = MyMapMatcher.GetNearestLink(sLoc.x, sLoc.y, 250, True, True)
+                unsatis = split_Link.Success
+                if unsatis:
+                    try:
+                        split_TRID = split_Link.Link.AttValue("TRID")
+                        split_no = myCRSno*10000 + int(split_TRID)
+                        split_Node = Visum.Net.AddNode(split_no, split_Link.XPosOnLink, split_Link.YPosOnLink)
+                        split_Link.Link.SplitViaNode(split_Node)
+                        Visum.Net.AddLink(split_no, split_no, myCRSno, 2)
+                        fil_string += f"&[TRID]!=\"{split_TRID}\""
+                    except:
+                        print("Break me")
+            turn_fil_string = f"([VIANODENO]={str(myCRSno)}&[TYPENO]!=4)|([FROMNODENO]={str(myCRSno)}&[TYPENO]=4)|([TONODENO]={str(myCRSno)}&[TYPENO]=4)"
+            Visum.Net.Turns.FilteredBy(turn_fil_string).SetAllAttValues('TSYSSET', '')
+            #try:
+            #    sa_Node = MyMapMatcher.GetNearestNode(sLoc.x, sLoc.y, 250, False).Node
+            #except:
+            #    sa_Link = MyMapMatcher.GetNearestLink(sLoc.x, sLoc.y, 250, False)
+            #    sa_Node = Visum.Net.AddNode(myCRSno, sa_Link.XPosOnLink, sa_Link.YPosOnLink)
+            #    sa_Link.Link.SplitViaNode(sa_Node)
             sa = Visum.Net.AddStopArea(myCRSno, myCRSno, sa_Node, sLoc.x, sLoc.y)
             sa.SetAttValue('Code', myCRS)
             sa.SetAttValue('Name', myDesc)
-        else:
-            pass
         Visum.Net.Links.SetPassive()
         my_fil_string = get_attr_report_fil((attr_report_unique['Tiploc'] == tiploc), attr_report_unique, platform, pNumer)
         Visum.Net.Links.GetFilteredSet(my_fil_string).SetActive()
