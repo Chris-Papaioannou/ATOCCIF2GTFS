@@ -76,12 +76,14 @@ def get_OSM_node(crs, desc):
     #Check if API result is blank and rerun again with less stringent controls if necessary
     if len(myOSMnode.nodes) == 0:
         OSMnodeWarning = f'WARNING: {crs} - {desc}, No node with ref:crs ~ {crs} found in OSM. Searching for (railway = station) & (name ~ {desc}) instead.'
-        myOSMnode = overpass_query(f'node["railway"="station"]["name~"^{desc}$",i];out;')
+        myOSMnode = overpass_query(f'node["railway"="station"]["name"~"^{desc}$",i];out;')
         if len(myOSMnode.nodes) == 0:
-            OSMnodeWarning = f'ERROR: No node with (ref:crs ~ {crs}) OR ((railway = station) & (name ~ {desc})) found in OSM.'
+            myOSMnode = overpass_query(f'node["railway"="station"]["alt_name"~"^{desc}$",i];out;')
+            if len(myOSMnode.nodes) == 0:
+                OSMnodeWarning = f'ERROR: No node with (ref:crs ~ {crs}) OR ((railway = station) & (name / alt_name ~ {desc})) found in OSM.'
         else:
             if len(myOSMnode.nodes) > 1:
-                OSMnodeWarning = f'WARNING: {crs} - {desc}, There is > 1 node with (railway = station) & (name ~ {desc}) in OSM. The first instance is taken.'
+                OSMnodeWarning = f'WARNING: {crs} - {desc}, There is > 1 node with (railway = station) & (name / alt_name ~ {desc}) in OSM. The first instance is taken.'
     
     #Otherwise check if there was more than one OSM node returned in the first instance
     else:
@@ -97,7 +99,7 @@ def str_clean(myStr, desc):
     #Make string upper case, and if the platform name simply contains the station name, treat the same as blank or missing OSM tags
     myStr = myStr.upper()
     if myStr == desc:
-        return "REF ERROR"
+        return 'REF ERROR'
     
     #Replace & and : with ; (the most common char used for df line duplication) and tidy string
     else:
@@ -174,7 +176,7 @@ def process_platformWays(myPlatformWays, crs, desc, EastNorth):
                 try:
                     way.tags['ref'] = str_clean(way.tags['name'], desc)
                 except:
-                    way.tags['ref'] = "REF ERROR"
+                    way.tags['ref'] = 'REF ERROR'
         plt.annotate(' ' + way.tags['ref'], (way.bng.x, way.bng.y))
     
     #Return the now processed platform information and the figure
@@ -271,7 +273,10 @@ def get_sp_No(s_No, pNumer, pAlpha):
 def create_stop_point(Visum, X, Y, s_No, bound, crs, desc, platform, pNumer, pAlpha):
     sp_No = get_sp_No(s_No, pNumer, pAlpha)
     if platform == '':
-        sp = Visum.Net.AddStopPointOnNode(sp_No, s_No, s_No)
+        sa = Visum.Net.AddStopArea(sp_No, s_No, s_No, X, Y)
+        sa.SetAttValue('Code', f'{crs}_')
+        sa.SetAttValue('Name', 'Platform Unknown')
+        sp = Visum.Net.AddStopPointOnNode(sp_No, sp_No, s_No)
         sp.SetAttValue('Code', f'{crs}_')
         sp.SetAttValue('Name', 'Platform Unknown')
     else:
@@ -287,10 +292,18 @@ def create_stop_point(Visum, X, Y, s_No, bound, crs, desc, platform, pNumer, pAl
             Visum.Net.Links.GetFilteredSet('[TypeNo]=1').SetActive()
             sp_Link = MyMapMatcher.GetNearestLink(X, Y, bound, True, True)
             is_dir = sp_Link.Link.AttValue('ReverseLink\\TypeNo') == 0
+        if sp_Link.RelPos < 0.5:
+            sa_Node = sp_Link.Link.AttValue('FromNodeNo')
+        else:
+            sa_Node = sp_Link.Link.AttValue('ToNodeNo')
+        sa = Visum.Net.AddStopArea(sp_No, s_No, sa_Node, sp_Link.XPosOnLink, sp_Link.YPosOnLink)
+        sa.SetAttValue('Code', f'{crs}_')
+        sa.SetAttValue('Name', 'Platform Unknown')
         try:
             sp = Visum.Net.AddStopPointOnLink(sp_No, s_No, sp_Link.Link.AttValue('FromNodeNo'), sp_Link.Link.AttValue('ToNodeNo'), is_dir)
         except:
             sp_Node = Visum.Net.AddNode(sp_No, sp_Link.Link.GetXCoordAtRelPos(0.5), sp_Link.Link.GetYCoordAtRelPos(0.5))
+            Visum.Net.StopAreas.ItemByKey(sp_No).SetAttValue('NodeNo', sp_No)
             sp_Link.Link.SplitViaNode(sp_Node)
             sp_Link = MyMapMatcher.GetNearestLink(X, Y, bound, True, True)
             sp = Visum.Net.AddStopPointOnLink(sp_No, s_No, sp_Link.Link.AttValue('FromNodeNo'), sp_Link.Link.AttValue('ToNodeNo'), is_dir)
@@ -355,7 +368,14 @@ def main(skipped_rows = 0):
 
     #Drop unique trip IDs (i.e. single stop trips) and output to the final location, and get a unique list of stop IDs
     reduced_df = df[df.duplicated(subset = ['trip_id'], keep = False)]
-    reduced_df.to_csv(os.path.join(path, 'output\\stop_times.txt'), index = False)
+    reduced_df_IDfix = reduced_df.copy()
+    for i, stop_id in enumerate(reduced_df_IDfix['stop_id']):
+        crs, platform = stop_id.split('_')
+        pNumer = re.sub('[^0-9]', '', platform)
+        pAlpha = re.sub('[^A-Z]', '', platform)
+        s_No = 10000*(ord(crs[0]) - 55) + 100*(ord(crs[1]) - 55) + (ord(crs[2]) - 55)
+        reduced_df_IDfix.loc[i, 'stop_id'] = get_sp_No(s_No, pNumer, pAlpha)
+    reduced_df_IDfix.to_csv(os.path.join(path, 'output_GTFS\\stop_times.txt'), index = False)
     stop_ids = reduced_df['stop_id'].drop_duplicates().sort_values().values
 
     #Read attribute report file and get a unique list of ELR, Line, Structure Name, and Station Code combinations
@@ -363,10 +383,7 @@ def main(skipped_rows = 0):
     attr_report_unique = attr_report[['ELR', 'Line', 'Structure Name', 'Station_Code']].drop_duplicates()
     attr_report_unique.rename(columns = {'Station_Code': 'CRS'}, inplace = True)
 
-    #N.B. Using cif_tiplocs_loc for now instead of cif_tiplocs.
-    #     Intend to drop cif_tiplocs_loc and Stops.att in future as OSM node location more reliable, but requires more work in C#.
-    cif_tiplocs = pd.read_csv(os.path.join(path, 'temp\\cif_tiplocs_loc.csv'), low_memory = False)
-    attr_report_unique = pd.merge(attr_report_unique, cif_tiplocs, on = 'CRS')
+    cif_tiplocs = pd.read_csv(os.path.join(path, 'input\\cif_tiplocs.csv'), low_memory = False)
 
     #N.B. This is a bit of a mess but wouldn't bother changing things until a proper conversation about attribute report file with NR.
     structures = [structure.split() for structure in attr_report_unique['Structure Name'].tolist()]
@@ -387,54 +404,61 @@ def main(skipped_rows = 0):
     MyMapMatcher = Visum.Net.CreateMapMatcher()
     station_prev = ''
     for stop_id in stop_ids[skipped_rows:]:
-        tiploc, platform = stop_id.split('_')
+        crs, platform = stop_id.split('_')
         pNumer = re.sub('[^0-9]', '', platform)
         pAlpha = re.sub('[^A-Z]', '', platform)
-        if tiploc != station_prev:
-            station_prev = tiploc
-            myCRS = cif_tiplocs['CRS'][cif_tiplocs['Tiploc'].tolist().index(tiploc)]
-            myDesc = cif_tiplocs['Description'][cif_tiplocs['Tiploc'].tolist().index(tiploc)]
-            myCRSno = 10000*(ord(myCRS[0]) - 55) + 100*(ord(myCRS[1]) - 55) + (ord(myCRS[2]) - 55)
-            myCRSdata = get_OSM_platform_data(path, myCRS, myDesc, 250)
+        if crs != station_prev:
+            station_prev = crs
+            myDesc = cif_tiplocs['Description'][cif_tiplocs['CRS'].tolist().index(crs)]
+            myCRSno = 10000*(ord(crs[0]) - 55) + 100*(ord(crs[1]) - 55) + (ord(crs[2]) - 55)
+            myCRSdata = get_OSM_platform_data(path, crs, myDesc, 250)
             sLoc = myCRSdata['Location']
             s = Visum.Net.AddStop(myCRSno, sLoc.x, sLoc.y)
-            s.SetAttValue('Code', myCRS)
+            s.SetAttValue('Code', crs)
             s.SetAttValue('Name', myDesc)
-            sa_Node = Visum.Net.AddNode(myCRSno, sLoc.x, sLoc.y)
+            Visum.Net.AddNode(myCRSno, sLoc.x, sLoc.y)
             unsatis = True
-            fil_string = "[TYPENO]=1"
+            fil_string = '[TYPENO]=1'
+            nTRID = 0
             while unsatis:
                 Visum.Net.Links.SetPassive()
                 Visum.Net.Links.GetFilteredSet(fil_string).SetActive()
                 split_Link = MyMapMatcher.GetNearestLink(sLoc.x, sLoc.y, 250, True, True)
                 unsatis = split_Link.Success
                 if unsatis:
+                    split_TRID = split_Link.Link.AttValue('TRID')
+                    split_no = 100*myCRSno + 10*nTRID
+                    split_Node = Visum.Net.AddNode(split_no, split_Link.XPosOnLink, split_Link.YPosOnLink)
+                    split_Link.Link.SplitViaNode(split_Node)
+                    Visum.Net.Links.ItemByKey(split_Link.Link.AttValue('FROMNODENO'), split_no).SetNo(split_no + 1)
+                    Visum.Net.Links.ItemByKey(split_no, split_Link.Link.AttValue('TONODENO')).SetNo(split_no + 2)
                     try:
-                        split_TRID = split_Link.Link.AttValue("TRID")
-                        split_no = myCRSno*10000 + int(split_TRID)
-                        split_Node = Visum.Net.AddNode(split_no, split_Link.XPosOnLink, split_Link.YPosOnLink)
-                        split_Link.Link.SplitViaNode(split_Node)
                         Visum.Net.AddLink(split_no, split_no, myCRSno, 2)
-                        fil_string += f"&[TRID]!=\"{split_TRID}\""
                     except:
-                        print("Break me")
-            turn_fil_string = f"([VIANODENO]={str(myCRSno)}&[TYPENO]!=4)|([FROMNODENO]={str(myCRSno)}&[TYPENO]=4)|([TONODENO]={str(myCRSno)}&[TYPENO]=4)"
+                        print('break me')
+                    fil_string += f"&[TRID]!=\"{split_TRID}\""
+                    nTRID += 1
+
+            turn_fil_string = f'([VIANODENO]={str(myCRSno)}&[TYPENO]!=4)|([FROMNODENO]={str(myCRSno)}&[TYPENO]=4)|([TONODENO]={str(myCRSno)}&[TYPENO]=4)'
             Visum.Net.Turns.FilteredBy(turn_fil_string).SetAllAttValues('TSYSSET', '')
-            #try:
-            #    sa_Node = MyMapMatcher.GetNearestNode(sLoc.x, sLoc.y, 250, False).Node
-            #except:
-            #    sa_Link = MyMapMatcher.GetNearestLink(sLoc.x, sLoc.y, 250, False)
-            #    sa_Node = Visum.Net.AddNode(myCRSno, sa_Link.XPosOnLink, sa_Link.YPosOnLink)
-            #    sa_Link.Link.SplitViaNode(sa_Node)
-            sa = Visum.Net.AddStopArea(myCRSno, myCRSno, sa_Node, sLoc.x, sLoc.y)
-            sa.SetAttValue('Code', myCRS)
-            sa.SetAttValue('Name', myDesc)
         Visum.Net.Links.SetPassive()
-        my_fil_string = get_attr_report_fil((attr_report_unique['Tiploc'] == tiploc), attr_report_unique, platform, pNumer)
+        my_fil_string = get_attr_report_fil((attr_report_unique['CRS'] == crs), attr_report_unique, platform, pNumer)
         Visum.Net.Links.GetFilteredSet(my_fil_string).SetActive()
-        platformLocation = get_platform_loc(platform, pNumer, sLoc, myCRSdata['Platforms'], myCRS, myDesc)
-        create_stop_point(Visum, platformLocation.x, platformLocation.y, myCRSno, 250, myCRS, myDesc, platform, pNumer, pAlpha)
+        platformLocation = get_platform_loc(platform, pNumer, sLoc, myCRSdata['Platforms'], crs, myDesc)
+        create_stop_point(Visum, platformLocation.x, platformLocation.y, myCRSno, 250, crs, myDesc, platform, pNumer, pAlpha)
+    
+    DFcols_Visum = ['No', 'Code', 'Name', 'YCoord', 'XCoord']
+    DFcols_GTFS = ['stop_id', 'stop_code', 'stop_name', 'stop_lat', 'stop_lon']
+    DF_s = pd.DataFrame(Visum.Net.Stops.GetMultipleAttributes(DFcols_Visum), columns = DFcols_GTFS)
+    DF_s['location_type'] = 1
+    DF_sp = pd.DataFrame(Visum.Net.StopPoints.GetMultipleAttributes(DFcols_Visum + ['StopAreaNo']), columns = DFcols_GTFS + ['parent_station'])
+    DF_sp['location_type'] = 0
+    DF = pd.concat([DF_s, DF_sp], axis = 0)
+    DF['stop_id'] = pd.to_numeric(DF['stop_id'],errors='coerce').astype('Int64')
+    DF['parent_station'] = pd.to_numeric(DF['parent_station'],errors='coerce').astype('Int64')
+    DF.to_csv(os.path.join(path, 'output_GTFS\\stops.txt'), index = False)
+    Visum.IO.SaveVersion(os.path.join(path, 'output_Visum\\DetailedNetwork_Processed.ver'))
+    print('done')
 
 if __name__ == "__main__":
     main()
-    print('done')
