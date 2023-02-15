@@ -27,4 +27,4 @@ PROJCS["British_National_Grid_TOWGS",
 Visum = com.Dispatch('Visum.Visum.220')
 Visum.IO.ImportPuTProject(os.path.join(path, 'import_GTFS.puti'))
 Visum.Net.SetProjection(proj_string, False)
-Visum.IO.SaveVersion(os.path.join(path, 'output\\output.ver'))
+Visum.IO.SaveVersion(os.path.join(path, 'output_Visum\\import_GTFS.ver'))

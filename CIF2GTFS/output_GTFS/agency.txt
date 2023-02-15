@@ -1,0 +1,4 @@
+agency_id,agency_name,agency_url,agency_timezone
+IL,IL,https://www.google.com/search?q=IL%20rail%20operator%20code,Europe/London
+SE,SE,https://www.google.com/search?q=SE%20rail%20operator%20code,Europe/London
+LO,LO,https://www.google.com/search?q=LO%20rail%20operator%20code,Europe/London
