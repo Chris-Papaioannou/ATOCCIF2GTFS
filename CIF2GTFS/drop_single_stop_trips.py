@@ -43,7 +43,7 @@ def fix_dir_net(Visum, ver):
     Links1.GetFilteredSet('[TRCODE]>=10&[TRCODE]<=19').SetAllAttValues('TypeNo', 0)
 
     #Set TSys for open links
-    Visum.Net.Links.GetFilteredSet('[TypeNo]=1').SetAllAttValues('TSysSet', 'T')
+    Visum.Net.Links.GetFilteredSet('[TypeNo]=1').SetAllAttValues('TSysSet', '2')
 
 def overpass_query(overpassQLstring):
     
@@ -250,16 +250,21 @@ def get_attr_report_fil(Tiploc_condit, df, platform, pNumer):
 
 def get_sp_No(s_No, pNumer, pAlpha):
     if pNumer == '':
-        numerNo = 290
-    elif int(pNumer) < 29:
+        numerNo = 280
+    elif int(pNumer) < 28:
         numerNo = 10*int(pNumer)
     else:
-        print(f'ERROR: Unexpected platform number {pNumer}, platform numbers 0 to 28 supported.')
-    alphaIndex1 = ['', 'A', 'B', 'C', 'D', 'E', 'F', 'W', 'N', 'S']
-    alphaIndex2 = ['L', 'M', 'R', 'X', 'DM', 'FL', 'TL', 'UM']
-    alphaIndex3 = ['BAY', 'DPL', 'SGL', 'UPL', 'URL']
-    if max(len(alphaIndex1), len(alphaIndex2), len(alphaIndex3)) > 10:
-        print('ERROR: Alpha indices should represent a number from 0 to 9.')
+        print(f'ERROR: Unexpected platform number {pNumer}, platform numbers 0 to 27 supported.')
+    alphaIndex1 = ['', 'A', 'B', 'C', 'D', 'E', 'F', 'N', 'W', 'S']
+    alphaIndex2 = ['L', 'M', 'R', 'X', 'DF', 'DM', 'DW', 'UB', 'UF', 'UM']
+    alphaIndex3 = ['FL', 'TL',
+                    'PLACEHOLDER (2 OR 3 CHAR)', 'PLACEHOLDER (2 OR 3 CHAR)', 'PLACEHOLDER (2 OR 3 CHAR)', 'PLACEHOLDER (2 OR 3 CHAR)',
+                    'PLACEHOLDER (2 OR 3 CHAR)', 'PLACEHOLDER (2 OR 3 CHAR)', 'PLACEHOLDER (2 OR 3 CHAR)', 'PLACEHOLDER (2 OR 3 CHAR)',
+                    'BAY', 'DFL', 'DML', 'DPL', 'SGL', 'UFL', 'UML', 'UPL', 'URL', 'PLACEHOLDER (3 CHAR ONLY)']
+    if max(len(alphaIndex1), len(alphaIndex2)) > 10:
+        print('ERROR: AlphaIndex1 & AlphaIndex2 should represent a number from 0 to 9.')
+    if len(alphaIndex3) > 20:
+        print('ERROR: AlphaIndex3 should represent a number from 0 to 19.')
     if pAlpha in alphaIndex1:
         alphaNo = alphaIndex1.index(pAlpha)
     elif pAlpha in alphaIndex2:
@@ -267,7 +272,7 @@ def get_sp_No(s_No, pNumer, pAlpha):
     elif pAlpha in alphaIndex3:
         alphaNo = 600 + alphaIndex3.index(pAlpha)
     else:
-        print(f'ERROR: Unexpected pAlpha format. If expected in .cif file, add {pAlpha} to end of alphaIndex2 or alphaIndex3')
+        print(f'ERROR: Unexpected pAlpha format. If needed, replace one of the placeholder locations in alphaIndex.')
     return 1000*s_No + numerNo + alphaNo
 
 def create_stop_point(Visum, X, Y, s_No, bound, crs, desc, platform, pNumer, pAlpha):
@@ -276,7 +281,7 @@ def create_stop_point(Visum, X, Y, s_No, bound, crs, desc, platform, pNumer, pAl
         sa = Visum.Net.AddStopArea(sp_No, s_No, s_No, X, Y)
         sa.SetAttValue('Code', f'{crs}_')
         sa.SetAttValue('Name', 'Platform Unknown')
-        sp = Visum.Net.AddStopPointOnNode(sp_No, sp_No, s_No)
+        sp = Visum.Net.AddStopPointOnNode(sp_No, sa, s_No)
         sp.SetAttValue('Code', f'{crs}_')
         sp.SetAttValue('Name', 'Platform Unknown')
     else:
@@ -297,16 +302,16 @@ def create_stop_point(Visum, X, Y, s_No, bound, crs, desc, platform, pNumer, pAl
         else:
             sa_Node = sp_Link.Link.AttValue('ToNodeNo')
         sa = Visum.Net.AddStopArea(sp_No, s_No, sa_Node, sp_Link.XPosOnLink, sp_Link.YPosOnLink)
-        sa.SetAttValue('Code', f'{crs}_')
-        sa.SetAttValue('Name', 'Platform Unknown')
+        sa.SetAttValue('Code', f'{crs}_{platform}')
+        sa.SetAttValue('Name', f'Platform {platform}')
         try:
-            sp = Visum.Net.AddStopPointOnLink(sp_No, s_No, sp_Link.Link.AttValue('FromNodeNo'), sp_Link.Link.AttValue('ToNodeNo'), is_dir)
+            sp = Visum.Net.AddStopPointOnLink(sp_No, sa, sp_Link.Link.AttValue('FromNodeNo'), sp_Link.Link.AttValue('ToNodeNo'), is_dir)
         except:
             sp_Node = Visum.Net.AddNode(sp_No, sp_Link.Link.GetXCoordAtRelPos(0.5), sp_Link.Link.GetYCoordAtRelPos(0.5))
             Visum.Net.StopAreas.ItemByKey(sp_No).SetAttValue('NodeNo', sp_No)
             sp_Link.Link.SplitViaNode(sp_Node)
             sp_Link = MyMapMatcher.GetNearestLink(X, Y, bound, True, True)
-            sp = Visum.Net.AddStopPointOnLink(sp_No, s_No, sp_Link.Link.AttValue('FromNodeNo'), sp_Link.Link.AttValue('ToNodeNo'), is_dir)
+            sp = Visum.Net.AddStopPointOnLink(sp_No, sa, sp_Link.Link.AttValue('FromNodeNo'), sp_Link.Link.AttValue('ToNodeNo'), is_dir)
         while unsatis:
             RelPos = interp1d([0, 0.5, 0.5, 1],[0 + alt[0], 0.5 - alt[1], 0.5 + alt[2], 1 - alt[3]])
             NewRelPos = float(RelPos(sp_Link.RelPos))
@@ -419,19 +424,19 @@ def main(skipped_rows = 0):
             Visum.Net.AddNode(myCRSno, sLoc.x, sLoc.y)
             unsatis = True
             fil_string = '[TYPENO]=1'
-            nTRID = 0
-            while unsatis:
+            nTRID = 1
+            while unsatis & (nTRID <= 33):
                 Visum.Net.Links.SetPassive()
                 Visum.Net.Links.GetFilteredSet(fil_string).SetActive()
                 split_Link = MyMapMatcher.GetNearestLink(sLoc.x, sLoc.y, 250, True, True)
                 unsatis = split_Link.Success
                 if unsatis:
                     split_TRID = split_Link.Link.AttValue('TRID')
-                    split_no = 100*myCRSno + 10*nTRID
+                    split_no = 100*myCRSno + nTRID
                     split_Node = Visum.Net.AddNode(split_no, split_Link.XPosOnLink, split_Link.YPosOnLink)
                     split_Link.Link.SplitViaNode(split_Node)
-                    Visum.Net.Links.ItemByKey(split_Link.Link.AttValue('FROMNODENO'), split_no).SetNo(split_no + 1)
-                    Visum.Net.Links.ItemByKey(split_no, split_Link.Link.AttValue('TONODENO')).SetNo(split_no + 2)
+                    Visum.Net.Links.ItemByKey(split_Link.Link.AttValue('FROMNODENO'), split_no).SetNo(split_no + 33)
+                    Visum.Net.Links.ItemByKey(split_no, split_Link.Link.AttValue('TONODENO')).SetNo(split_no + 66)
                     try:
                         Visum.Net.AddLink(split_no, split_no, myCRSno, 2)
                     except:
@@ -440,7 +445,7 @@ def main(skipped_rows = 0):
                     nTRID += 1
 
             turn_fil_string = f'([VIANODENO]={str(myCRSno)}&[TYPENO]!=4)|([FROMNODENO]={str(myCRSno)}&[TYPENO]=4)|([TONODENO]={str(myCRSno)}&[TYPENO]=4)'
-            Visum.Net.Turns.FilteredBy(turn_fil_string).SetAllAttValues('TSYSSET', '')
+            Visum.Net.Turns.FilteredBy(turn_fil_string).SetAllAttValues('TSysSet', '')
         Visum.Net.Links.SetPassive()
         my_fil_string = get_attr_report_fil((attr_report_unique['CRS'] == crs), attr_report_unique, platform, pNumer)
         Visum.Net.Links.GetFilteredSet(my_fil_string).SetActive()
@@ -451,7 +456,7 @@ def main(skipped_rows = 0):
     DFcols_GTFS = ['stop_id', 'stop_code', 'stop_name', 'stop_lat', 'stop_lon']
     DF_s = pd.DataFrame(Visum.Net.Stops.GetMultipleAttributes(DFcols_Visum), columns = DFcols_GTFS)
     DF_s['location_type'] = 1
-    DF_sp = pd.DataFrame(Visum.Net.StopPoints.GetMultipleAttributes(DFcols_Visum + ['StopAreaNo']), columns = DFcols_GTFS + ['parent_station'])
+    DF_sp = pd.DataFrame(Visum.Net.StopPoints.GetMultipleAttributes(DFcols_Visum + ['StopArea\\StopNo']), columns = DFcols_GTFS + ['parent_station'])
     DF_sp['location_type'] = 0
     DF = pd.concat([DF_s, DF_sp], axis = 0)
     DF['stop_id'] = pd.to_numeric(DF['stop_id'],errors='coerce').astype('Int64')
@@ -461,4 +466,4 @@ def main(skipped_rows = 0):
     print('done')
 
 if __name__ == "__main__":
-    main()
+    main(3580)
