@@ -4,6 +4,7 @@ import overpy
 import re
 import time
 import pickle
+import wx
 import numpy as np
 import pandas as pd
 import geopandas as gpd
@@ -372,7 +373,7 @@ def main(skipped_rows = 0):
     print(report)
 
     #Drop unique trip IDs (i.e. single stop trips) and output to the final location, and get a unique list of stop IDs
-    reduced_df = df[df.duplicated(subset = ['trip_id'], keep = False)]
+    reduced_df = df[df.duplicated(subset = ['trip_id'], keep = False)].reset_index(drop = True)
     reduced_df_IDfix = reduced_df.copy()
     for i, stop_id in enumerate(reduced_df_IDfix['stop_id']):
         crs, platform = stop_id.split('_')
@@ -404,11 +405,32 @@ def main(skipped_rows = 0):
     attr_report_unique['AltPlatform'] = [re.sub('[^0-9]', '', platform) for platform in platforms]
 
     #The actual main process
-    Visum = com.Dispatch('Visum.Visum.220')
+    Visum = com.Dispatch('Visum.Visum.230')
     fix_dir_net(Visum, os.path.join(path, 'input\\DetailedNetwork.ver'))
     MyMapMatcher = Visum.Net.CreateMapMatcher()
     station_prev = ''
-    for stop_id in stop_ids[skipped_rows:]:
+
+    #Define Progress Bar
+    class ProgWin(wx.Frame): 
+
+        def __init__(self, parent, title): 
+            super(ProgWin, self).__init__(parent, title = title,size = (300, 200))  
+            self.InitUI() 
+                
+        def InitUI(self):    
+            self.count = 0 
+            pnl = wx.Panel(self)
+                
+            self.gauge = wx.Gauge(pnl, range = len(stop_ids[skipped_rows:]), size = (300, 25), style =  wx.GA_HORIZONTAL) 
+                
+            self.SetSize((300, 100)) 
+            self.Centre() 
+            self.Show(True)
+                        
+    ex = wx.App() 
+    prog = ProgWin(None, 'wx.Gauge')
+
+    for progNo, stop_id in enumerate(stop_ids[skipped_rows:]):
         crs, platform = stop_id.split('_')
         pNumer = re.sub('[^0-9]', '', platform)
         pAlpha = re.sub('[^A-Z]', '', platform)
@@ -451,6 +473,7 @@ def main(skipped_rows = 0):
         Visum.Net.Links.GetFilteredSet(my_fil_string).SetActive()
         platformLocation = get_platform_loc(platform, pNumer, sLoc, myCRSdata['Platforms'], crs, myDesc)
         create_stop_point(Visum, platformLocation.x, platformLocation.y, myCRSno, 250, crs, myDesc, platform, pNumer, pAlpha)
+        prog.gauge.SetValue(progNo)
     
     DFcols_Visum = ['No', 'Code', 'Name', 'YCoord', 'XCoord']
     DFcols_GTFS = ['stop_id', 'stop_code', 'stop_name', 'stop_lat', 'stop_lon']
@@ -466,4 +489,4 @@ def main(skipped_rows = 0):
     print('done')
 
 if __name__ == "__main__":
-    main(3580)
+    main()

@@ -323,7 +323,7 @@ namespace CIF2GTFS
             stopTimeCSVwriter.Dispose();
 
             Console.WriteLine("Dropping trip IDs with only one matched stop from stop_times.txt");
-            ExecProcess("drop_single_stop_trips.py");
+            //ExecProcess("drop_single_stop_trips.py");
 
             Console.WriteLine("Creating a GTFS .zip file.");
             if (File.Exists("output_GTFS.zip"))
@@ -341,7 +341,7 @@ namespace CIF2GTFS
 
             // 1) Create Process Info
             var psi = new ProcessStartInfo();
-            psi.FileName = @"C:\Program Files\PTV Vision\PTV Visum 2022\Exe\PythonModules\Scripts\python.exe";
+            psi.FileName = @"C:\Program Files\PTV Vision\PTV Visum 2023\Exe\Python\python.exe";
 
             // 2) Provide script and arguments
             var script = my_script;
