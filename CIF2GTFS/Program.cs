@@ -77,7 +77,8 @@ namespace CIF2GTFS
                     string DaysOfOperationString = TimetableLine.Substring(21, 7);
 
                     // Since a single timetable can have a single Journey ID that is valid at different non-overlapping times a unique Journey ID includes the Date strings and the character at position 79.
-                    CurrentJourneyID = CurrentJourneyID + StartDateString + EndDateString + TimetableLine.Substring(79, 1);
+                    // CP Note. I'm testing ignoring this line to see if doing so causes any unintended issues or not:
+                    // CurrentJourneyID = CurrentJourneyID + StartDateString + EndDateString + TimetableLine.Substring(79, 1);
                     CurrentCalendar = new Calendar()
                     {
                         start_date = "20" + StartDateString,
@@ -323,7 +324,7 @@ namespace CIF2GTFS
             stopTimeCSVwriter.Dispose();
 
             Console.WriteLine("Dropping trip IDs with only one matched stop from stop_times.txt");
-            //ExecProcess("drop_single_stop_trips.py");
+            ExecProcess("drop_single_stop_trips.py");
 
             Console.WriteLine("Creating a GTFS .zip file.");
             if (File.Exists("output_GTFS.zip"))
@@ -337,6 +338,8 @@ namespace CIF2GTFS
         }
 
         static void ExecProcess(string my_script)
+
+        // This allows you to use C# as a Shell to run a Python Process
         {
 
             // 1) Create Process Info
@@ -375,7 +378,7 @@ namespace CIF2GTFS
 
         static TimeSpan stringToTimeSpan(string input)
         {
-            // input is expected to be HHMM
+            // input is expected to be HHMMX where if X = "H" it represents a half-minute
             int hours = int.Parse(input.Substring(0, 2));
             int minutes = int.Parse(input.Substring(2, 2));
             if (input.EndsWith("H"))

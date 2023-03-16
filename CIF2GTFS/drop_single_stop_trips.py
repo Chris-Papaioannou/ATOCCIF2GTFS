@@ -227,6 +227,8 @@ def get_OSM_platform_data(path, crs, desc, bound):
     return OSMstation
 
 def get_attr_report_fil(Tiploc_condit, df, platform, pNumer):
+
+    #Nested ifs depending on how well the current platform matches anything in the attribute table
     if np.any(Tiploc_condit & (df['Platform'] == platform)):
         df_fil = df[Tiploc_condit & (df['Platform'] == platform)]
     elif np.any(Tiploc_condit & (df['Platform'] == pNumer)):
@@ -237,6 +239,8 @@ def get_attr_report_fil(Tiploc_condit, df, platform, pNumer):
         df_fil = df[Tiploc_condit & (df['AltPlatform'] == pNumer)]
     else:
         df_fil = df[Tiploc_condit]
+    
+    #If any rows in the attribute table match the above conditions, concatenate those links to the existing Visum link filter string, before looking for open links
     if len(df_fil) > 0:
         for i in range(len(df_fil)):
             if i == 0:
@@ -245,27 +249,39 @@ def get_attr_report_fil(Tiploc_condit, df, platform, pNumer):
                 fil_string += f"|([ELR]=\"{df_fil[f'ELR'].values[i]}\"&[TRID]=\"{df_fil['Line'].values[i]}\")"
         fil_string = f'[TypeNo]=1&({fil_string})'
         return fil_string
+    
+    #Otherwise, filter for open links only
     else:
         fil_string = '[TypeNo]=1'
         return fil_string
 
 def get_sp_No(s_No, pNumer, pAlpha):
+
+    #If pNumer is blank, apply a stop point modifier of 280 (N.B. Do not change the hard coded values unless you understand how this works)
     if pNumer == '':
         numerNo = 280
+
+    #Check that the platform number doesn't exceed the maximum value that can be used, and apply the Numerical stop point modifier if not
     elif int(pNumer) < 28:
         numerNo = 10*int(pNumer)
     else:
         print(f'ERROR: Unexpected platform number {pNumer}, platform numbers 0 to 27 supported.')
+
+    #Define the index lookups for CHAR based stop point modififier (Only replace placeholders, do not extend length)
     alphaIndex1 = ['', 'A', 'B', 'C', 'D', 'E', 'F', 'N', 'W', 'S']
     alphaIndex2 = ['L', 'M', 'R', 'X', 'DF', 'DM', 'DW', 'UB', 'UF', 'UM']
     alphaIndex3 = ['FL', 'TL',
                     'PLACEHOLDER (2 OR 3 CHAR)', 'PLACEHOLDER (2 OR 3 CHAR)', 'PLACEHOLDER (2 OR 3 CHAR)', 'PLACEHOLDER (2 OR 3 CHAR)',
                     'PLACEHOLDER (2 OR 3 CHAR)', 'PLACEHOLDER (2 OR 3 CHAR)', 'PLACEHOLDER (2 OR 3 CHAR)', 'PLACEHOLDER (2 OR 3 CHAR)',
                     'BAY', 'DFL', 'DML', 'DPL', 'SGL', 'UFL', 'UML', 'UPL', 'URL', 'PLACEHOLDER (3 CHAR ONLY)']
+    
+    #Check that the index lookups have not been extended too far (This could lead to non-unique platform IDs)
     if max(len(alphaIndex1), len(alphaIndex2)) > 10:
         print('ERROR: AlphaIndex1 & AlphaIndex2 should represent a number from 0 to 9.')
     if len(alphaIndex3) > 20:
         print('ERROR: AlphaIndex3 should represent a number from 0 to 19.')
+    
+    #Check if the CHAR modifier has been defined, and if so, apply it
     if pAlpha in alphaIndex1:
         alphaNo = alphaIndex1.index(pAlpha)
     elif pAlpha in alphaIndex2:
@@ -274,10 +290,16 @@ def get_sp_No(s_No, pNumer, pAlpha):
         alphaNo = 600 + alphaIndex3.index(pAlpha)
     else:
         print(f'ERROR: Unexpected pAlpha format. If needed, replace one of the placeholder locations in alphaIndex.')
+    
+    #Return the overall stop point number including modifier
     return 1000*s_No + numerNo + alphaNo
 
 def create_stop_point(Visum, X, Y, s_No, bound, crs, desc, platform, pNumer, pAlpha):
+    
+    #Get stop point number by modifying stop number depending on numerical and CHAR parts of platform name
     sp_No = get_sp_No(s_No, pNumer, pAlpha)
+    
+    #If platform is not defined, create a dummy stop point at the OSM node location
     if platform == '':
         sa = Visum.Net.AddStopArea(sp_No, s_No, s_No, X, Y)
         sa.SetAttValue('Code', f'{crs}_')
@@ -285,11 +307,21 @@ def create_stop_point(Visum, X, Y, s_No, bound, crs, desc, platform, pNumer, pAl
         sp = Visum.Net.AddStopPointOnNode(sp_No, sa, s_No)
         sp.SetAttValue('Code', f'{crs}_')
         sp.SetAttValue('Name', 'Platform Unknown')
+    
+    #Otherwise, attempt to match to the nearest link satisfying OSM and attribute file conditions, and avoiding any Visum conflicts
     else:
+        
+        #Define a boolean that will indicate that the stop point has not yet been successfully added
         unsatis = True
+
+        #Define an array for shifting linear interpolation to ensure that a stop point never has a RelPos witin 0.001 of the end of a link, the centrepoint of a link, or another stop point
         alt = [0, 0, 0, 0]
+
+        #Create a visum map match object and find the nearest active link to the stop point location
         MyMapMatcher = Visum.Net.CreateMapMatcher()
         sp_Link = MyMapMatcher.GetNearestLink(X, Y, bound, True, True)
+        
+        #If a match is found, determine whether the link should be directed or not. Otherwise match again without using attribute filter.
         try:
             is_dir = sp_Link.Link.AttValue('ReverseLink\\TypeNo') == 0
         except:
@@ -298,21 +330,31 @@ def create_stop_point(Visum, X, Y, s_No, bound, crs, desc, platform, pNumer, pAl
             Visum.Net.Links.GetFilteredSet('[TypeNo]=1').SetActive()
             sp_Link = MyMapMatcher.GetNearestLink(X, Y, bound, True, True)
             is_dir = sp_Link.Link.AttValue('ReverseLink\\TypeNo') == 0
+
+        #Define the access node depending on the Relative Position calculated
         if sp_Link.RelPos < 0.5:
             sa_Node = sp_Link.Link.AttValue('FromNodeNo')
         else:
             sa_Node = sp_Link.Link.AttValue('ToNodeNo')
+
+        #Add a new stop area for the platform and populate attributes
         sa = Visum.Net.AddStopArea(sp_No, s_No, sa_Node, sp_Link.XPosOnLink, sp_Link.YPosOnLink)
         sa.SetAttValue('Code', f'{crs}_{platform}')
         sa.SetAttValue('Name', f'Platform {platform}')
+        
+        #Attempt to add the stop point on the link, taking into account whether it should be directed or not
         try:
             sp = Visum.Net.AddStopPointOnLink(sp_No, sa, sp_Link.Link.AttValue('FromNodeNo'), sp_Link.Link.AttValue('ToNodeNo'), is_dir)
+        
+        #If this fails, the link is split at the midpoint before attempting again
         except:
             sp_Node = Visum.Net.AddNode(sp_No, sp_Link.Link.GetXCoordAtRelPos(0.5), sp_Link.Link.GetYCoordAtRelPos(0.5))
             Visum.Net.StopAreas.ItemByKey(sp_No).SetAttValue('NodeNo', sp_No)
             sp_Link.Link.SplitViaNode(sp_Node)
             sp_Link = MyMapMatcher.GetNearestLink(X, Y, bound, True, True)
             sp = Visum.Net.AddStopPointOnLink(sp_No, sa, sp_Link.Link.AttValue('FromNodeNo'), sp_Link.Link.AttValue('ToNodeNo'), is_dir)
+        
+        #While the stop point has not yet been added, the RelPos is shifted according to areas of potential conflict to ensure other stop points can be added to the same link
         while unsatis:
             RelPos = interp1d([0, 0.5, 0.5, 1],[0 + alt[0], 0.5 - alt[1], 0.5 + alt[2], 1 - alt[3]])
             NewRelPos = float(RelPos(sp_Link.RelPos))
@@ -325,15 +367,21 @@ def create_stop_point(Visum, X, Y, s_No, bound, crs, desc, platform, pNumer, pAl
                     unsatis = False
                 except:
                     alt = [altN + 0.001 for altN in alt]
+
+        #The attributes for the stop point are populated
         sp.SetAttValue('Code', f'{crs}_{platform}')
         sp.SetAttValue('Name', f'Platform {platform}')
 
 def get_platform_loc(platform, alt_platform, s_loc, CRSplatforms, crs, desc):
+    
+    #If platform is blank, or if no OSM platforms found, start with dummy node location initially
     if platform == '':
         platformLocation = s_loc
     elif len(CRSplatforms) == 0:
         platformLocation = s_loc
         print(f'WARNING: {crs} - {desc} has no OSM platforms within bound. Used OSM station node location for Platform {platform} instead.')
+    
+    #Otherwise, attempt to get a new platform location from OSM data, using various nested try, except statements
     else:
         try:
             try:
@@ -358,7 +406,9 @@ def get_platform_loc(platform, alt_platform, s_loc, CRSplatforms, crs, desc):
                 print(f'WARNING: {crs} - {desc}, Platform {platform} is not in OSM & no unknown platform available. Used OSM station node location instead.')
             else:
                 pass
-                #N.B. DO something smart with the line filters for Up / Down platform? Maybe after speaking with NR?
+                #N.B. CP Note - Possible future development? Do something smart with the line filters for Up / Down platform? Maybe after speaking with NR?
+    
+    #Return the platform location to be snapped to filtered links
     return platformLocation
 
 def main(skipped_rows = 0):
