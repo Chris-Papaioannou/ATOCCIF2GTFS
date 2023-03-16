@@ -77,7 +77,6 @@ namespace CIF2GTFS
                     string DaysOfOperationString = TimetableLine.Substring(21, 7);
 
                     // Since a single timetable can have a single Journey ID that is valid at different non-overlapping times a unique Journey ID includes the Date strings and the character at position 79.
-                    // CP Note. I'm testing ignoring this line to see if doing so causes any unintended issues or not:
                     // CurrentJourneyID = CurrentJourneyID + StartDateString + EndDateString + TimetableLine.Substring(79, 1);
                     CurrentCalendar = new Calendar()
                     {
@@ -378,7 +377,7 @@ namespace CIF2GTFS
 
         static TimeSpan stringToTimeSpan(string input)
         {
-            // input is expected to be HHMMX where if X = "H" it represents a half-minute
+            // input is expected to be HHMM
             int hours = int.Parse(input.Substring(0, 2));
             int minutes = int.Parse(input.Substring(2, 2));
             if (input.EndsWith("H"))
