@@ -222,7 +222,7 @@ def get_OSM_platform_data(path, crs, desc, bound):
     dfPlatforms = dfPlatforms.explode('Platform').reset_index(drop = True)
     dfPlatforms = dfPlatforms.join(dfPlatforms.pop('Platform').str.split(';', expand = True))
     dfPlatforms = dfPlatforms.melt(dfPlatforms.columns[:len(myCols)-1], dfPlatforms.columns[len(myCols)-1:])
-    dfPlatforms = dfPlatforms.rename(columns = {'value': 'Platform'}).drop('variable', 1).sort_values('Dist').reset_index(drop = True)
+    dfPlatforms = dfPlatforms.rename(columns = {'value': 'Platform'}).drop('variable', axis = 1).sort_values('Dist').reset_index(drop = True)
     OSMstation = {'Location': EastNorth, 'Platforms': dfPlatforms}
     return OSMstation
 

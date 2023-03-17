@@ -323,7 +323,7 @@ namespace CIF2GTFS
             stopTimeCSVwriter.Dispose();
 
             Console.WriteLine("Dropping trip IDs with only one matched stop from stop_times.txt");
-            ExecProcess("drop_single_stop_trips.py");
+            //ExecProcess("drop_single_stop_trips.py");
 
             Console.WriteLine("Creating a GTFS .zip file.");
             if (File.Exists("output_GTFS.zip"))
