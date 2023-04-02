@@ -24,7 +24,7 @@ namespace CIF2GTFS
 
             Console.WriteLine("Loading ATT stops");
             List<attStop> attStops = new List<attStop>();
-            using (TextReader textReader = File.OpenText("input/cif_tiplocs.csv"))
+            using (TextReader textReader = File.OpenText("input/BPLAN_TIPLOCS.csv"))
             {
                 CsvReader csvReader = new CsvReader(textReader, CultureInfo.InvariantCulture);
                 csvReader.Configuration.Delimiter = ",";
@@ -36,15 +36,15 @@ namespace CIF2GTFS
             List<GTFSattStop> GTFSStopsList = new List<GTFSattStop>();
             foreach (attStop attStop in attStops)
             {
-                if (attStop.CRS != "" & !ATTStopsDictionary.ContainsKey(attStop.Tiploc))
+                if (attStop.index != "" & !ATTStopsDictionary.ContainsKey(attStop.TIPLOC_x))
                 {
-                    ATTStopsDictionary.Add(attStop.Tiploc, attStop);
+                    ATTStopsDictionary.Add(attStop.TIPLOC_x, attStop);
 
                     GTFSattStop gTFSattStop = new GTFSattStop()
                     {
-                        stop_id = attStop.Tiploc,
-                        stop_code = attStop.CRS,
-                        stop_name = attStop.Description,
+                        stop_id = attStop.index,
+                        stop_code = attStop.TIPLOC_y,
+                        stop_name = attStop.LocationName_y,
                         location_type = 1
                     };
                     GTFSStopsList.Add(gTFSattStop);
@@ -250,7 +250,7 @@ namespace CIF2GTFS
                     StopTime stopTime = new StopTime()
                     {
                         trip_id = JourneyID + "_trip",
-                        stop_id = stationStop.ATTStop.CRS + "_" + stationStop.Platform,
+                        stop_id = stationStop.ATTStop.index + "_" + stationStop.Platform,
                         stop_sequence = count,
                         pickup_type = stationStop.pudoType,
                         drop_off_type = stationStop.pudoType
@@ -489,9 +489,19 @@ namespace CIF2GTFS
     }
     public class attStop
     {
-        public string CRS { get; set; }
-        public string Tiploc { get; set; }
-        public string Description { get; set; }
-        public int Stannox { get; set; }
+        public string TIPLOC_x { get; set; }
+        public string LocationName_x { get; set; }
+        public string StartDate { get; set; }
+        public string Easting { get; set; }
+        public string Northing { get; set; }
+        public string TimingPointType { get; set; }
+        public int ZoneResponsible { get; set; }
+        public int STANOX { get; set; }
+        public string OffNetwork { get; set; }
+        public int Quality { get; set; }
+        public string index { get; set; }
+        public string TIPLOC_y { get; set; }
+        public string LocationName_y { get; set; }
+
     }
 }
