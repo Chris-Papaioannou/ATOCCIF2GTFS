@@ -15,16 +15,13 @@ The tool is written in **C# .NET Core 3.1** and **Python 3.9.9**. It was develop
 ### Network
 
 Shapefile provided by [Network Rail](https://www.networkrail.co.uk/). Expected fields include:
+
 ['OBJECTID', 'ASSETID', 'L_LINK_ID', 'L_SYSTEM', 'L_VAL', 'L_QUALITY', 'ELR', 'TRID',
  'TRCODE', 'L_M_FROM', 'L_M_TO', 'VERSION_NU', 'VERSION_DA', 'SOURCE', 'EDIT_STATU',
  'IDENTIFIED', 'TRACK_STAT', 'LAST_EDITE', 'LAST_EDI_1', 'CHECKED_BY', 'CHECKED_DA',
  'VALIDATED_', 'VALIDATED1', 'EDIT_NOTES', 'PROIRITY_A', 'SHAPE_LENG', 'TRID_CAT']
 
-However, only **TRCODE** and **TRID** are used in the current implementation.
-
-An older branch of the tool used to also use **ELR** to apply more refined user-defined link filtering when snapping platform locations to the network.
-
-However, the tool has now transitioned to an [OpenStreetMap](https://www.openstreetmap.org/about) based approach using the [Overpass API](https://python-overpy.readthedocs.io/en/latest/).
+Only **TRCODE** and **TRID** are used in the current implementation. An older branch of the tool used to also use **ELR** to apply more refined user-defined link filtering when snapping platform locations to the network. However, the tool has now transitioned to an [OpenStreetMap](https://www.openstreetmap.org/about) based approach using the [Overpass API](https://python-overpy.readthedocs.io/en/latest/).
  
 ### BPLAN
 
