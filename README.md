@@ -1,8 +1,6 @@
-# ATOCCIF2GTFS
+# ATOCCIF2GTFS2VISUM
 
 The puropose of this tool is to convert a ATOC CIF format timetable (commonly used in Great Britain) to a platform-resolution GTFS format, and then import it into an automatically generated [PTV Visum](https://www.myptv.com/en/mobility-software/ptv-visum) network version file.
-
-Railway timetables for Great Britain are available from [The Rail Delivery Group](http://data.atoc.org/). You will need to create an account to download the data. The data is available for free, and I believe that it is licensed under [The Creative Commons Attribution 2.0 England and Wales license]( https://creativecommons.org/licenses/by/2.0/uk/legalcode). This permits sharing of the original timetable file and its derivative version (the GTFS version of that timetable) while recognising its origin, as above.
 
 ## Disclaimer
 
@@ -38,6 +36,10 @@ As the Eastings and Northings contained withing [BPLAN](https://wiki.openraildat
 
 It is anticipated that in the future, this program could be updated to use platform locations from the [RPL] subset of NaPTANs also. However, currently only light rail platforms from the [PLT] subset have significant coverage. Therefore the tool currently only uses the [OpenStreetMap](https://www.openstreetmap.org/about) based approach using the [Overpass API](https://python-overpy.readthedocs.io/en/latest/) described.
 
+### ATOC CIF
+
+The ATOC CIF tested is a national passenger rail file provided by [Network Rail](https://www.networkrail.co.uk/). If the user wishes to update the timetable, then railway timetables for Great Britain are available from [The Rail Delivery Group](http://data.atoc.org/). You will need to create an account to download the data, which is available for free, and licensed under [The Creative Commons Attribution 2.0 England and Wales license]( https://creativecommons.org/licenses/by/2.0/uk/legalcode). This permits sharing of the original timetable file and its derivative version (the GTFS version of that timetable) while recognising its origin, as above.
+
 ## Process
 
 ## Warnings
@@ -46,31 +48,27 @@ It is anticipated that in the future, this program could be updated to use platf
 
 ### Prio. = Low
 
+## Cached Data
+
+### OSM Platform Images
+
+### OSM Platform Pickles
+
+### BPLAN Pickle
+
+### BPLAN CSVs
+
+### Network Visum Version Files
+
+### Network Build Log Files
+
 ## Outputs
-
-### Cached Data
-
-#### 1. OSM Platform Images
-
-#### 2. OSM Platform Pickles
-
-#### 3. BPLAN Pickle
-
-#### 4. BPLAN CSVs
 
 ### Zipped GTFS Files
 
-### Visum Version Files
+### Output Visum Version Files
 
-#### 1. LOCs_Only.ver
-
-#### 2. LOCs_and_PLTs.ver
-
-#### 3. GTFS_Only.ver
-
-#### 4. LOCs_and_PLTs_with_GTFS.ver
-
-### Log Files
+### GTFS Import Log Files
 
 ## Guide to editing OpenStreetMap
 
