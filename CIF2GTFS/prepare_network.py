@@ -43,6 +43,7 @@ def fixDirectedNet(Visum):
     #Set TSys for open links
     Visum.Net.AddTSystem('2', 'PUT')
     Visum.Net.Links.GetFilteredSet('[TypeNo]=1').SetAllAttValues('TSysSet', '2')
+    Visum.Net.Turns.GetFilteredSet('[FromLink\\TSysSet]="2"&[ToLink\\TSysSet]="2"').SetAllAttValues('TSysSet', '2')
 
 def overpass_query(overpassQLstring):
     
@@ -63,35 +64,6 @@ def overpass_query(overpassQLstring):
     
     #Return the API query result
     return result
-
-def get_OSM_node(crs, desc):
-    
-    #This function will only be run if a pickle file is not already present, so warning message are also saved to pickle for future reference
-    OSMnodeWarning = ''
-    
-    #Look for nodes in OSM API with the correct 3 Letter string for tag ref:crs
-    myOSMnode = overpass_query(f'node["ref:crs"~"^{crs}$",i];out;')
-    
-    #Check if API result is blank and rerun again with less stringent controls if necessary
-    if len(myOSMnode.nodes) == 0:
-        OSMnodeWarning = f'WARNING: {crs} - {desc}, No node with ref:crs ~ {crs} found in OSM. Searching for (railway = station) & (name ~ {desc}) instead.'
-        myOSMnode = overpass_query(f'node["railway"="station"]["name"~"^{desc}$",i];out;')
-        if len(myOSMnode.nodes) == 0:
-            myOSMnode = overpass_query(f'node["railway"="station"]["alt_name"~"^{desc}$",i];out;')
-            if len(myOSMnode.nodes) == 0:
-                OSMnodeWarning = f'ERROR: No node with (ref:crs ~ {crs}) OR ((railway = station) & (name / alt_name ~ {desc})) found in OSM.'
-        else:
-            if len(myOSMnode.nodes) > 1:
-                OSMnodeWarning = f'WARNING: {crs} - {desc}, There is > 1 node with (railway = station) & (name / alt_name ~ {desc}) in OSM. The first instance is taken.'
-    
-    #Otherwise check if there was more than one OSM node returned in the first instance
-    else:
-        if len(myOSMnode.nodes) > 1:
-            OSMnodeWarning = f'WARNING: {crs} - {desc}, There is > 1 node with ref:crs ~ {crs} in OSM. The first instance is taken.'
-    
-    #Define coordinate of OSM node as a shapely Pont in BNG format and return alongside any warning
-    EastNorth = Point(WGS84toOSGB36(float(myOSMnode.nodes[0].lat), float(myOSMnode.nodes[0].lon)))
-    return EastNorth, OSMnodeWarning
 
 def str_clean(myStr, desc):
     
@@ -214,208 +186,66 @@ def get_OSM_platform_data(path, TIPLOC, desc, x, y, bound):
             pickle.dump([dfPlatforms], f)
     return dfPlatforms
 
-def get_attr_report_fil(Tiploc_condit, df, platform, pNumer):
+def addStopPoint(Visum, i, row, bound, LOCsUnique):
+    
+    myLOC = LOCsUnique.loc[row['index_TIPLOC']]
 
-    #Nested ifs depending on how well the current platform matches anything in the attribute table
-    if np.any(Tiploc_condit & (df['Platform'] == platform)):
-        df_fil = df[Tiploc_condit & (df['Platform'] == platform)]
-    elif np.any(Tiploc_condit & (df['Platform'] == pNumer)):
-        df_fil = df[Tiploc_condit & (df['Platform'] == pNumer)]
-    elif np.any(Tiploc_condit & (df['AltPlatform'] == platform)):
-        df_fil = df[Tiploc_condit & (df['AltPlatform'] == platform)]
-    elif np.any(Tiploc_condit & (df['AltPlatform'] == pNumer)):
-        df_fil = df[Tiploc_condit & (df['AltPlatform'] == pNumer)]
+    #Define a boolean that will indicate that the stop point has not yet been successfully added
+    unsatis = True
+
+    #Define an array for shifting linear interpolation to ensure that a stop point never has a RelPos witin 0.001 of the end of a link, the centrepoint of a link, or another stop point
+    alt = [0, 0, 0, 0]
+
+    #Create a visum map match object and find the nearest active link to the stop point location
+    MyMapMatcher = Visum.Net.CreateMapMatcher()
+    sp_Link = MyMapMatcher.GetNearestLink(row['Easting'], row['Northing'], bound, True, True)
+    
+    #If a match is found, determine whether the link should be directed or not. Otherwise match again without using attribute filter.
+    try:
+        is_dir = sp_Link.Link.AttValue('ReverseLink\\TypeNo') == 0
+    except:
+        print(f"ERROR: No link within {bound}m for {row['index_TIPLOC']}: {myLOC['TIPLOC']}: {myLOC['LocationName']} - Platform {row['PlatformID']}.")
+
+    #Define the access node depending on the Relative Position calculated
+    if sp_Link.RelPos < 0.5:
+        sa_Node = sp_Link.Link.AttValue('FromNodeNo')
     else:
-        df_fil = df[Tiploc_condit]
-    
-    #If any rows in the attribute table match the above conditions, concatenate those links to the existing Visum link filter string, before looking for open links
-    if len(df_fil) > 0:
-        for i in range(len(df_fil)):
-            if i == 0:
-                fil_string = f"([ELR]=\"{df_fil[f'ELR'].values[i]}\"&[TRID]=\"{df_fil['Line'].values[i]}\")"
-            else:
-                fil_string += f"|([ELR]=\"{df_fil[f'ELR'].values[i]}\"&[TRID]=\"{df_fil['Line'].values[i]}\")"
-        fil_string = f'[TypeNo]=1&({fil_string})'
-        return fil_string
-    
-    #Otherwise, filter for open links only
-    else:
-        fil_string = '[TypeNo]=1'
-        return fil_string
+        sa_Node = sp_Link.Link.AttValue('ToNodeNo')
 
-def get_sp_No(s_No, pNumer, pAlpha):
-
-    #If pNumer is blank, apply a stop point modifier of 280 (N.B. Do not change the hard coded values unless you understand how this works)
-    if pNumer == '':
-        numerNo = 280
-
-    #Check that the platform number doesn't exceed the maximum value that can be used, and apply the Numerical stop point modifier if not
-    elif int(pNumer) < 28:
-        numerNo = 10*int(pNumer)
-    else:
-        print(f'ERROR: Unexpected platform number {pNumer}, platform numbers 0 to 27 supported.')
-
-    #Define the index lookups for CHAR based stop point modififier (Only replace placeholders, do not extend length)
-    alphaIndex1 = ['', 'A', 'B', 'C', 'D', 'E', 'F', 'N', 'W', 'S']
-    alphaIndex2 = ['L', 'M', 'R', 'X', 'DF', 'DM', 'DW', 'UB', 'UF', 'UM']
-    alphaIndex3 = ['FL', 'TL',
-                    'PLACEHOLDER (2 OR 3 CHAR)', 'PLACEHOLDER (2 OR 3 CHAR)', 'PLACEHOLDER (2 OR 3 CHAR)', 'PLACEHOLDER (2 OR 3 CHAR)',
-                    'PLACEHOLDER (2 OR 3 CHAR)', 'PLACEHOLDER (2 OR 3 CHAR)', 'PLACEHOLDER (2 OR 3 CHAR)', 'PLACEHOLDER (2 OR 3 CHAR)',
-                    'BAY', 'DFL', 'DML', 'DPL', 'SGL', 'UFL', 'UML', 'UPL', 'URL', 'PLACEHOLDER (3 CHAR ONLY)']
+    #Add a new stop area for the platform and populate attributes
+    sa = Visum.Net.AddStopArea(i, row['index_TIPLOC'], sa_Node, sp_Link.XPosOnLink, sp_Link.YPosOnLink)
+    sa.SetAttValue('Code', f"{myLOC['TIPLOC']}_{row['PlatformID']}")
+    sa.SetAttValue('Name', f"Platform {row['PlatformID']}")
     
-    #Check that the index lookups have not been extended too far (This could lead to non-unique platform IDs)
-    if max(len(alphaIndex1), len(alphaIndex2)) > 10:
-        print('ERROR: AlphaIndex1 & AlphaIndex2 should represent a number from 0 to 9.')
-    if len(alphaIndex3) > 20:
-        print('ERROR: AlphaIndex3 should represent a number from 0 to 19.')
+    #Attempt to add the stop point on the link, taking into account whether it should be directed or not
+    try:
+        sp = Visum.Net.AddStopPointOnLink(i, sa, sp_Link.Link.AttValue('FromNodeNo'), sp_Link.Link.AttValue('ToNodeNo'), is_dir)
     
-    #Check if the CHAR modifier has been defined, and if so, apply it
-    if pAlpha in alphaIndex1:
-        alphaNo = alphaIndex1.index(pAlpha)
-    elif pAlpha in alphaIndex2:
-        alphaNo = 300 + alphaIndex2.index(pAlpha)
-    elif pAlpha in alphaIndex3:
-        alphaNo = 600 + alphaIndex3.index(pAlpha)
-    else:
-        print(f'ERROR: Unexpected pAlpha format. If needed, replace one of the placeholder locations in alphaIndex.')
+    #If this fails, the link is split at the midpoint before attempting again
+    except:
+        sp_Node = Visum.Net.AddNode(i, sp_Link.Link.GetXCoordAtRelPos(0.5), sp_Link.Link.GetYCoordAtRelPos(0.5))
+        Visum.Net.StopAreas.ItemByKey(i).SetAttValue('NodeNo', i)
+        sp_Link.Link.SplitViaNode(sp_Node)
+        sp_Link = MyMapMatcher.GetNearestLink(row['Easting'], row['Northing'], bound, True, True)
+        sp = Visum.Net.AddStopPointOnLink(i, sa, sp_Link.Link.AttValue('FromNodeNo'), sp_Link.Link.AttValue('ToNodeNo'), is_dir)
     
-    #Return the overall stop point number including modifier
-    return 1000*s_No + numerNo + alphaNo
-
-def create_stop_point(Visum, X, Y, s_No, bound, crs, desc, platform, pNumer, pAlpha):
-    
-    #Get stop point number by modifying stop number depending on numerical and CHAR parts of platform name
-    sp_No = get_sp_No(s_No, pNumer, pAlpha)
-    
-    #If platform is not defined, create a dummy stop point at the OSM node location
-    if platform == '':
-        sa = Visum.Net.AddStopArea(sp_No, s_No, s_No, X, Y)
-        sa.SetAttValue('Code', f'{crs}_')
-        sa.SetAttValue('Name', 'Platform Unknown')
-        sp = Visum.Net.AddStopPointOnNode(sp_No, sa, s_No)
-        sp.SetAttValue('Code', f'{crs}_')
-        sp.SetAttValue('Name', 'Platform Unknown')
-    
-    #Otherwise, attempt to match to the nearest link satisfying OSM and attribute file conditions, and avoiding any Visum conflicts
-    else:
-        
-        #Define a boolean that will indicate that the stop point has not yet been successfully added
-        unsatis = True
-
-        #Define an array for shifting linear interpolation to ensure that a stop point never has a RelPos witin 0.001 of the end of a link, the centrepoint of a link, or another stop point
-        alt = [0, 0, 0, 0]
-
-        #Create a visum map match object and find the nearest active link to the stop point location
-        MyMapMatcher = Visum.Net.CreateMapMatcher()
-        sp_Link = MyMapMatcher.GetNearestLink(X, Y, bound, True, True)
-        
-        #If a match is found, determine whether the link should be directed or not. Otherwise match again without using attribute filter.
-        try:
-            is_dir = sp_Link.Link.AttValue('ReverseLink\\TypeNo') == 0
-        except:
-            print(f'WARNING: No filtered link within {bound}m for {crs} - {desc}, Platform {platform}.')
-            print('         Attribute Report Filter is probably incorrect. Trying again without filter active.')
-            Visum.Net.Links.GetFilteredSet('[TypeNo]=1').SetActive()
-            sp_Link = MyMapMatcher.GetNearestLink(X, Y, bound, True, True)
-            is_dir = sp_Link.Link.AttValue('ReverseLink\\TypeNo') == 0
-
-        #Define the access node depending on the Relative Position calculated
-        if sp_Link.RelPos < 0.5:
-            sa_Node = sp_Link.Link.AttValue('FromNodeNo')
+    #While the stop point has not yet been added, the RelPos is shifted according to areas of potential conflict to ensure other stop points can be added to the same link
+    while unsatis:
+        RelPos = interp1d([0, 0.5, 0.5, 1],[0 + alt[0], 0.5 - alt[1], 0.5 + alt[2], 1 - alt[3]])
+        NewRelPos = float(RelPos(sp_Link.RelPos))
+        shiftBool = [NewRelPos < 0.001, (NewRelPos > 0.499) & (NewRelPos <= 0.500), (NewRelPos >= 0.500) & (NewRelPos < 0.501), NewRelPos > 0.999]
+        if np.any(shiftBool):
+            alt = [altN + 0.001 if boolN else altN for altN, boolN in zip(alt, shiftBool)]
         else:
-            sa_Node = sp_Link.Link.AttValue('ToNodeNo')
-
-        #Add a new stop area for the platform and populate attributes
-        sa = Visum.Net.AddStopArea(sp_No, s_No, sa_Node, sp_Link.XPosOnLink, sp_Link.YPosOnLink)
-        sa.SetAttValue('Code', f'{crs}_{platform}')
-        sa.SetAttValue('Name', f'Platform {platform}')
-        
-        #Attempt to add the stop point on the link, taking into account whether it should be directed or not
-        try:
-            sp = Visum.Net.AddStopPointOnLink(sp_No, sa, sp_Link.Link.AttValue('FromNodeNo'), sp_Link.Link.AttValue('ToNodeNo'), is_dir)
-        
-        #If this fails, the link is split at the midpoint before attempting again
-        except:
-            sp_Node = Visum.Net.AddNode(sp_No, sp_Link.Link.GetXCoordAtRelPos(0.5), sp_Link.Link.GetYCoordAtRelPos(0.5))
-            Visum.Net.StopAreas.ItemByKey(sp_No).SetAttValue('NodeNo', sp_No)
-            sp_Link.Link.SplitViaNode(sp_Node)
-            sp_Link = MyMapMatcher.GetNearestLink(X, Y, bound, True, True)
-            sp = Visum.Net.AddStopPointOnLink(sp_No, sa, sp_Link.Link.AttValue('FromNodeNo'), sp_Link.Link.AttValue('ToNodeNo'), is_dir)
-        
-        #While the stop point has not yet been added, the RelPos is shifted according to areas of potential conflict to ensure other stop points can be added to the same link
-        while unsatis:
-            RelPos = interp1d([0, 0.5, 0.5, 1],[0 + alt[0], 0.5 - alt[1], 0.5 + alt[2], 1 - alt[3]])
-            NewRelPos = float(RelPos(sp_Link.RelPos))
-            shiftBool = [NewRelPos < 0.001, (NewRelPos > 0.499) & (NewRelPos <= 0.500), (NewRelPos >= 0.500) & (NewRelPos < 0.501), NewRelPos > 0.999]
-            if np.any(shiftBool):
-                alt = [altN + 0.001 if boolN else altN for altN, boolN in zip(alt, shiftBool)]
-            else:
-                try:
-                    sp.SetAttValue('RelPos', NewRelPos)
-                    unsatis = False
-                except:
-                    alt = [altN + 0.001 for altN in alt]
-
-        #The attributes for the stop point are populated
-        sp.SetAttValue('Code', f'{crs}_{platform}')
-        sp.SetAttValue('Name', f'Platform {platform}')
-
-def get_platform_loc(platform, alt_platform, s_loc, CRSplatforms, crs, desc):
-    
-    #If platform is blank, or if no OSM platforms found, start with dummy node location initially
-    if platform == '':
-        platformLocation = s_loc
-    elif len(CRSplatforms) == 0:
-        platformLocation = s_loc
-        print(f'WARNING: {crs} - {desc} has no OSM platforms within bound. Used OSM station node location for Platform {platform} instead.')
-    
-    #Otherwise, attempt to get a new platform location from OSM data, using various nested try, except statements
-    else:
-        try:
             try:
-                my_index = CRSplatforms['Platform'].tolist().index(platform)
+                sp.SetAttValue('RelPos', NewRelPos)
+                unsatis = False
             except:
-                alt_platform
-                try:
-                    my_index = CRSplatforms['Platform'].tolist().index(alt_platform)
-                    print(f'WARNING: {crs} - {desc}, Platform {platform} is not in OSM. Matched to {alt_platform} instead.')
-                except:
-                    try:
-                        my_index = [re.sub('[^0-9]', '', ref) for ref in CRSplatforms['Platform'].tolist()].index(alt_platform)
-                        alt_platform_2 = CRSplatforms['Platform'][my_index]
-                        print(f'WARNING: {crs} - {desc}, Platform {platform} is not in OSM. Matched to {alt_platform_2} instead.')
-                    except:
-                        my_index = CRSplatforms['Platform'].tolist().index('REF ERROR')
-                        print(f'WARNING: {crs} - {desc}, Platform {platform} is not in OSM. Matched to nearest unknown platform.')
-            platformLocation = CRSplatforms['Location'][my_index]
-        except:
-            platformLocation = s_loc
-            if platform not in ['DM', 'DPL', 'UM', 'UPL']:
-                print(f'WARNING: {crs} - {desc}, Platform {platform} is not in OSM & no unknown platform available. Used OSM station node location instead.')
-            else:
-                pass
-                #N.B. CP Note - Possible future development? Do something smart with the line filters for Up / Down platform? Maybe after speaking with NR?
-    
-    #Return the platform location to be snapped to filtered links
-    return platformLocation
+                alt = [altN + 0.001 for altN in alt]
 
-def getStopNos(Tiploc):
-    for i, aTiploc in Tiploc.iterrows():
-        groupCoords = Tiploc[(Tiploc['EASTING'] == aTiploc['EASTING'])&(Tiploc['NORTHING'] == aTiploc['NORTHING'])]
-        uCRS = list(filter(lambda aCRS: aCRS != '', groupCoords['CRS'].unique()))
-        if len(uCRS) == 0:
-            try:
-                Tiploc.loc[i, 'ID'] = 100000 + min(list(filter(lambda aStannox: aStannox != 0, groupCoords['Stannox'].unique())))
-            except ValueError:
-                Tiploc.loc[i, 'ID'] = 0
-        elif len(uCRS) == 1:
-            Tiploc.loc[i, 'CRS'] = uCRS[0]
-            Tiploc.loc[i, 'ID'] = 10000*(ord(uCRS[0][0]) - 45) + 100*(ord(uCRS[0][1]) - 45) + (ord(uCRS[0][2]) - 45)
-        elif aTiploc['CRS'] == '':
-            groupCoords2 = groupCoords[groupCoords['CRS'] == '']
-            Tiploc.loc[i, 'ID'] = 100000 + min(list(filter(lambda aStannox: aStannox != 0, groupCoords2['Stannox'].unique())))
-        else:
-            Tiploc.loc[i, 'ID'] = 10000*(ord(aTiploc['CRS'][0]) - 45) + 100*(ord(aTiploc['CRS'][1]) - 45) + (ord(aTiploc['CRS'][2]) - 45)
+    #The attributes for the stop point are populated
+    sp.SetAttValue('Code', f"{myLOC['TIPLOC']}_{row['PlatformID']}")
+    sp.SetAttValue('Name', f"Platform {row['PlatformID']}")
 
 def getCommonPrefix(x):
     xList = [str(anX) for anX in x.tolist()]
@@ -425,6 +255,7 @@ def getCommonPrefix(x):
         return f'{os.path.commonprefix(xList)}*'
 
 def processBPLAN(path):
+
     NaPTANstops = pd.read_csv(os.path.join(path, 'input\\Stops.csv'), index_col = 'ATCOCode', low_memory = False)
     NaPTANstops = NaPTANstops[NaPTANstops['StopType'] == 'RLY']
 
@@ -491,7 +322,7 @@ def processBPLAN(path):
                                           'OffNetwork': np.mean,
                                           'Quality': np.min}).reset_index().reset_index()
 
-    LOCsUnique['index'] += 10000
+    LOCsUnique['index'] += 100000
     LOCsUnique.set_index(['index'], inplace = True)
     
     LOCs = LOCs.reset_index().merge(LOCsUnique.reset_index()[['Easting', 'Northing', 'index', 'TIPLOC', 'LocationName']], 'left', ['Easting', 'Northing']).set_index('TIPLOC_x')
@@ -508,7 +339,8 @@ def processBPLAN(path):
     LOCs.to_csv(os.path.join(path, 'input\\BPLAN_LOC.csv'))
     
     PLTs = PLTs[~PLTs['index_TIPLOC'].isna()]
-    PLTs['index_PlatformID'] = [sorted(PLTs['PlatformID'].str.upper().unique()).index(PlatformID) + 1 for PlatformID in PLTs['PlatformID'].str.upper()]
+    PLTs['PlatformID'] = PLTs['PlatformID'].str.upper()
+    PLTs['index_PlatformID'] = [sorted(PLTs['PlatformID'].unique()).index(PlatformID) + 1 for PlatformID in PLTs['PlatformID']]
     PLTs['index'] = 1000*PLTs['index_TIPLOC']
     PLTs['TIPLOC_PlatformID'] = PLTs['TIPLOC'] + '_' +  PLTs['PlatformID']
     PLTs.set_index(['TIPLOC_PlatformID'], inplace = True)
@@ -521,7 +353,7 @@ def processBPLAN(path):
     
     for col in ['Easting', 'Northing', 'Quality']:
         PLTs[col] = 0
-    
+
     for i, row in PLTs.iterrows():
         myPlatformNum = re.sub('[^0-9]', '', row['PlatformID'])
         myLOC = LOCs.loc[row['TIPLOC']]
@@ -561,22 +393,23 @@ def processBPLAN(path):
 
     return LOCsUnique, PLTsUnique
 
-
-
-def main():
-
-    path = os.path.dirname(__file__)
-
-    myPickle = os.path.join(path, 'input\\BPLAN.p')
+def progressBar(myRange):
+    class ProgWin(wx.Frame):
+        def __init__(self, parent, title): 
+            super(ProgWin, self).__init__(parent, title = title,size = (300, 200))  
+            self.InitUI()
+        def InitUI(self):    
+            self.count = 0 
+            pnl = wx.Panel(self)
+            self.gauge = wx.Gauge(pnl, range = myRange, size = (300, 25), style =  wx.GA_HORIZONTAL)
+            self.SetSize((300, 100)) 
+            self.Centre() 
+            self.Show(True)
     
-    if os.path.exists(myPickle):
-        with open(myPickle, 'rb') as f:
-            LOCsUnique, PLTsUnique = pickle.load(f)
-    else:
-        LOCsUnique, PLTsUnique = processBPLAN(path)
-        with open(myPickle, 'wb') as f:
-            pickle.dump([LOCsUnique, PLTsUnique], f)
+    prog = ProgWin(None, 'wx.Gauge')
+    return prog
 
+def getVisumLOCs(LOCsUnique, myVer, myShp):
     Visum = com.Dispatch('Visum.Visum.230')
     projString = """
                         PROJCS[
@@ -601,37 +434,26 @@ def main():
                         ]
                     """
     Visum.Net.SetProjection(projString, False)
+    Visum.Net.SetAttValue('LeftHandTraffic', 1)
     ImportShapeFilePara = Visum.IO.CreateImportShapeFilePara()
     ImportShapeFilePara.CreateUserDefinedAttributes = True
     ImportShapeFilePara.ObjectType = 0
     ImportShapeFilePara.SetAttValue('Directed', True)
-    Visum.IO.ImportShapefile(os.path.join(path, 'Shp\\NR_Full_Network.shp'), ImportShapeFilePara)
+    Visum.IO.ImportShapefile(myShp, ImportShapeFilePara)
     fixDirectedNet(Visum)
     MyMapMatcher = Visum.Net.CreateMapMatcher()
-    class ProgWin(wx.Frame):
-        def __init__(self, parent, title): 
-            super(ProgWin, self).__init__(parent, title = title,size = (300, 200))  
-            self.InitUI()
-        def InitUI(self):    
-            self.count = 0 
-            pnl = wx.Panel(self)
-            self.gauge = wx.Gauge(pnl, range = len(LOCsUnique), size = (300, 25), style =  wx.GA_HORIZONTAL)
-            self.SetSize((300, 100)) 
-            self.Centre() 
-            self.Show(True)
-    ex = wx.App()
-    prog = ProgWin(None, 'wx.Gauge')
     LinkType = Visum.Net.AddLinkType(2)
     LinkType.SetAttValue('TSysSet', '2')
     for uda, dtype in [['OffNetwork', 2], ['Quality', 1], ['STANOX', 5], ['StartDate', 5], ['TimingPointType', 5], ['ZoneResponsible', 5]]:
         Visum.Net.Stops.AddUserDefinedAttribute(uda, uda, uda, dtype)
     Visum.Graphic.StopDrawing = True
+    ex = wx.App()
+    prog = progressBar(LOCsUnique.index.max() - 100000)
     for i, row in LOCsUnique.iterrows():
-        iMod = 100000 + i
-        Node = Visum.Net.AddNode(iMod, row['Easting'], row['Northing'])
+        Node = Visum.Net.AddNode(i, row['Easting'], row['Northing'])
         Node.SetAttValue('Code', row['TIPLOC'])
         Node.SetAttValue('Name', row['LocationName'])
-        Stop = Visum.Net.AddStop(iMod, row['Easting'], row['Northing'])
+        Stop = Visum.Net.AddStop(i, row['Easting'], row['Northing'])
         Stop.SetAttValue('Code', row['TIPLOC'])
         Stop.SetAttValue('Name', row['LocationName'])
         Stop.SetAttValue('Quality', row['Quality'])
@@ -639,38 +461,105 @@ def main():
         Stop.SetAttValue('StartDate', str(row['StartDate']))
         Stop.SetAttValue('TimingPointType', row['TimingPointType'])
         Stop.SetAttValue('ZoneResponsible', row['ZoneResponsible'])
+        StopArea = Visum.Net.AddStopArea(1000*i, i, i, row['Easting'], row['Northing'])
+        StopArea.SetAttValue('Code', row['TIPLOC'])
+        StopArea.SetAttValue('Name', 'Platform Unknown')
+        StopPoint = Visum.Net.AddStopPointOnNode(1000*i, StopArea, i)
+        StopPoint.SetAttValue('Code', row['TIPLOC'])
+        StopPoint.SetAttValue('Name', 'Platform Unknown')
         unsatis = True
         fil_string = '[TYPENO]=1'
         nTRID = 1
-        while unsatis & (nTRID <= 33):
+        while unsatis & (nTRID <= 3):
             Visum.Net.Links.SetPassive()
             Visum.Net.Links.GetFilteredSet(fil_string).SetActive()
             split_Link = MyMapMatcher.GetNearestLink(row['Easting'], row['Northing'], 250, True, True)
             unsatis = split_Link.Success
             if unsatis:
                 split_TRID = split_Link.Link.AttValue('TRID')
-                split_no = 100*iMod + nTRID
+                split_no = 10*i + nTRID
                 if split_Link.RelPos == 0:
                     try:
-                        Visum.Net.AddLink(split_no, split_Link.Link.AttValue('FromNodeNo'), iMod, 2)
+                        Visum.Net.AddLink(split_no, split_Link.Link.AttValue('FromNodeNo'), i, 2)
                     except:
                         pass
                 elif split_Link.RelPos == 1:
                     try:
-                        Visum.Net.AddLink(split_no, split_Link.Link.AttValue('ToNodeNo'), iMod, 2)
+                        Visum.Net.AddLink(split_no, split_Link.Link.AttValue('ToNodeNo'), i, 2)
                     except:
                         pass
                 else:
                     split_Node = Visum.Net.AddNode(split_no, split_Link.XPosOnLink, split_Link.YPosOnLink)
                     split_Link.Link.SplitViaNode(split_Node)
-                    Visum.Net.Links.ItemByKey(split_Link.Link.AttValue('FromNodeNo'), split_no).SetNo(split_no + 33)
-                    Visum.Net.Links.ItemByKey(split_no, split_Link.Link.AttValue('ToNodeNo')).SetNo(split_no + 66)
-                    Visum.Net.AddLink(split_no, split_no, iMod, 2)
+                    Visum.Net.Links.ItemByKey(split_Link.Link.AttValue('FromNodeNo'), split_no).SetNo(split_no + 3)
+                    Visum.Net.Links.ItemByKey(split_no, split_Link.Link.AttValue('ToNodeNo')).SetNo(split_no + 6)
+                    Visum.Net.AddLink(split_no, split_no, i, 2)
                 fil_string += f"&[TRID]!=\"{split_TRID}\""
                 nTRID += 1
-        prog.gauge.SetValue(i)
+        prog.gauge.SetValue(i - 100000)
     Visum.Graphic.StopDrawing = False
-    print('done')
+    Visum.Net.Turns.GetFilteredSet('[FromLink\\TypeNo]=2&[ToLink\\TypeNo]=2&[FromLink\\No]!=[ToLink\\No]').SetAllAttValues('TSysSet', '')
+    Visum.IO.SaveVersion(myVer)
+
+
+def getVisumPLTs(PLTsUnique, myPLTsVer, myLOCsVer, LOCsUnique, output):
+    Visum = com.Dispatch('Visum.Visum.230')
+    Visum.IO.LoadVersion(myLOCsVer)
+    Visum.Net.Links.GetFilteredSet('[TypeNo]=1').SetActive()
+    Visum.Graphic.StopDrawing = True
+    ex = wx.App()
+    prog = progressBar(PLTsUnique.index.max() - 100000000)
+    for i, row in PLTsUnique.iterrows():
+        addStopPoint(Visum, i, row, 250, LOCsUnique)
+        prog.gauge.SetValue(i - 100000000)
+    Visum.Graphic.StopDrawing = False
+    Visum.Net.Links.SetMultipleAttributes(['Length'], Visum.Net.Links.GetMultipleAttributes(['LengthPoly']))
+    DFcols_Visum = ['No', 'Code', 'Name', 'YCoord', 'XCoord']
+    DFcols_GTFS = ['stop_id', 'stop_code', 'stop_name', 'stop_lat', 'stop_lon']
+    DF_s = pd.DataFrame(Visum.Net.Stops.GetMultipleAttributes(DFcols_Visum), columns = DFcols_GTFS)
+    DF_s['location_type'] = 1
+    DF_sp = pd.DataFrame(Visum.Net.StopPoints.GetMultipleAttributes(DFcols_Visum + ['StopArea\\StopNo']), columns = DFcols_GTFS + ['parent_station'])
+    DF_sp['location_type'] = 0
+    DF_full = pd.concat([DF_s, DF_sp], axis = 0)
+    DF_full['stop_id'] = pd.to_numeric(DF_full['stop_id'],errors='coerce').astype('Int64')
+    DF_full['parent_station'] = pd.to_numeric(DF_full['parent_station'], errors = 'coerce').astype('Int64')
+    DF_full.to_csv(output, index = False)
+    Visum.IO.SaveVersion(myPLTsVer)
+
+def main():
+
+    path = os.path.dirname(__file__)
+
+    myPickle = os.path.join(path, 'input\\BPLAN.p')
+    
+    if os.path.exists(myPickle):
+        print('Read old already processed BPLAN pickle results from cache')
+        with open(myPickle, 'rb') as f:
+            LOCsUnique, PLTsUnique = pickle.load(f)
+    else:
+        print('Reprocessed BPLAN to obtain new pickle results and saved to cache')
+        LOCsUnique, PLTsUnique = processBPLAN(path)
+        with open(myPickle, 'wb') as f:
+            pickle.dump([LOCsUnique, PLTsUnique], f)
+    
+    myShp = os.path.join(path, 'Shp\\NR_Full_Network.shp')
+    myLOCsVer = os.path.join(path, 'output_Visum\\LOCs_Only.ver')
+    myPLTsVer = os.path.join(path, 'output_Visum\\LOCs_and_PLTs.ver')
+    output = os.path.join(path, 'output_GTFS\\stops.txt')
+
+    if os.path.exists(myLOCsVer):
+        print('Read old processed BPLAN LOCs Version file from cache')
+    else:
+        print('Reprocessed BPLAN to obtain new LOCs Version file and saved to cache')
+        getVisumLOCs(LOCsUnique, myLOCsVer, myShp)
+
+    if os.path.exists(myPLTsVer):
+        print('Read old processed BPLAN PLTs Version file from cache')
+    else:
+        print('Reprocessed BPLAN to obtain new PLTs Version file and saved to cache')
+        getVisumPLTs(PLTsUnique, myPLTsVer, myLOCsVer, LOCsUnique, output)
+
+    print('Done')
 
 if __name__ == "__main__":
     main()

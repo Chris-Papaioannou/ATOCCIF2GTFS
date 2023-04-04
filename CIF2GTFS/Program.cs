@@ -21,38 +21,70 @@ namespace CIF2GTFS
                 Directory.Delete("temp", true);
             }
             Directory.CreateDirectory("temp");
-
-            Console.WriteLine("Loading ATT stops");
-            List<attStop> attStops = new List<attStop>();
-            using (TextReader textReader = File.OpenText("input/BPLAN_TIPLOCS.csv"))
+            
+            Console.WriteLine("Preparing Visum network...");
+            ExecProcess("prepare_network.py");
+            
+            Console.WriteLine("Loading BPLAN PLTs...");
+            List<BPLAN_PLT> PLTs = new List<BPLAN_PLT>();
+            using (TextReader textReader = File.OpenText("input/BPLAN_PLT.csv"))
             {
                 CsvReader csvReader = new CsvReader(textReader, CultureInfo.InvariantCulture);
                 csvReader.Configuration.Delimiter = ",";
-                attStops = csvReader.GetRecords<attStop>().ToList();
+                PLTs = csvReader.GetRecords<BPLAN_PLT>().ToList();
             }
 
-            Console.WriteLine("Creating GTFS_STOP_ID keyed dictionary of ATT stops.");
-            Dictionary<string, attStop> ATTStopsDictionary = new Dictionary<string, attStop>();
-            List<GTFSattStop> GTFSStopsList = new List<GTFSattStop>();
-            foreach (attStop attStop in attStops)
+            Console.WriteLine("Loading GTFS_STOP_ID keyed dictionary of BPLAN PLTs...");
+            Dictionary<string, BPLAN_PLT> PLTsDictionary = new Dictionary<string, BPLAN_PLT>();
+            List<GTFSattStop> GTFS_PLTsList = new List<GTFSattStop>();
+            foreach (BPLAN_PLT BPLAN_PLT in PLTs)
             {
-                if (attStop.index != "" & !ATTStopsDictionary.ContainsKey(attStop.TIPLOC_x))
+                if (!PLTsDictionary.ContainsKey(BPLAN_PLT.TIPLOC_PlatformID))
                 {
-                    ATTStopsDictionary.Add(attStop.TIPLOC_x, attStop);
+                    PLTsDictionary.Add(BPLAN_PLT.TIPLOC_PlatformID, BPLAN_PLT);
 
                     GTFSattStop gTFSattStop = new GTFSattStop()
                     {
-                        stop_id = attStop.index,
-                        stop_code = attStop.TIPLOC_y,
-                        stop_name = attStop.LocationName_y,
+                        stop_id = BPLAN_PLT.index,
+                        stop_code = BPLAN_PLT.PlatformID,
+                        stop_name = "Platform " + BPLAN_PLT.PlatformID,
                         location_type = 1
                     };
-                    GTFSStopsList.Add(gTFSattStop);
+                    GTFS_PLTsList.Add(gTFSattStop);
                 }
             }
 
-            Console.WriteLine("Reading the timetable file.");
-            List<string> TimetableFileLines = new List<string>(File.ReadAllLines("input/May22.CIF"));
+            Console.WriteLine("Loading BPLAN LOCs...");
+            List<BPLAN_LOC> LOCs = new List<BPLAN_LOC>();
+            using (TextReader textReader = File.OpenText("input/BPLAN_LOC.csv"))
+            {
+                CsvReader csvReader = new CsvReader(textReader, CultureInfo.InvariantCulture);
+                csvReader.Configuration.Delimiter = ",";
+                LOCs = csvReader.GetRecords<BPLAN_LOC>().ToList();
+            }
+
+            Console.WriteLine("Loading GTFS_STOP_ID keyed dictionary of BPLAN LOCs...");
+            Dictionary<string, BPLAN_LOC> LOCsDictionary = new Dictionary<string, BPLAN_LOC>();
+            List<GTFSattStop> GTFS_LOCsList = new List<GTFSattStop>();
+            foreach (BPLAN_LOC BPLAN_LOC in LOCs)
+            {
+                if (!LOCsDictionary.ContainsKey(BPLAN_LOC.TIPLOC_x))
+                {
+                    LOCsDictionary.Add(BPLAN_LOC.TIPLOC_x, BPLAN_LOC);
+
+                    GTFSattStop gTFSattStop = new GTFSattStop()
+                    {
+                        stop_id = BPLAN_LOC.index,
+                        stop_code = BPLAN_LOC.TIPLOC_y,
+                        stop_name = BPLAN_LOC.LocationName_y,
+                        location_type = 1
+                    };
+                    GTFS_LOCsList.Add(gTFSattStop);
+                }
+            }
+
+            Console.WriteLine("Reading the timetable file...");
+            List<string> TimetableFileLines = new List<string>(File.ReadAllLines("input/Winter19_Weekday.CIF"));
             Dictionary<string, List<StationStop>> StopTimesForJourneyIDDictionary = new Dictionary<string, List<StationStop>>();
             Dictionary<string, JourneyDetail> JourneyDetailsForJourneyIDDictionary = new Dictionary<string, JourneyDetail>();
             string CurrentJourneyID = "";
@@ -61,21 +93,15 @@ namespace CIF2GTFS
             string CurrentTrainClass = "";
             string CurrentTrainMaxSpeed = "";
             Calendar CurrentCalendar = null;
+            List<string> PrioList = new List<string>();
             foreach (string TimetableLine in TimetableFileLines)
             {
-
                 if (TimetableLine.StartsWith("BS"))
                 {
-                    
-                    // THIS IS ALMOST CERTAINLY NOT THE CURRENT JOURNEY ID. BUT IT'S OKAY DURING DEVELOPMENT.
-                    //CurrentJourneyID = TimetableLine;
-
-                    // Example line is "BSNY244881905191912080000001 POO2D67    111821020 EMU333 100      S            P"
                     CurrentJourneyID = TimetableLine.Substring(2, 7);
                     string StartDateString = TimetableLine.Substring(9, 6);
                     string EndDateString = TimetableLine.Substring(15, 6);
                     string DaysOfOperationString = TimetableLine.Substring(21, 7);
-
                     // Since a single timetable can have a single Journey ID that is valid at different non-overlapping times a unique Journey ID includes the Date strings and the character at position 79.
                     // CurrentJourneyID = CurrentJourneyID + StartDateString + EndDateString + TimetableLine.Substring(79, 1);
                     CurrentCalendar = new Calendar()
@@ -95,7 +121,6 @@ namespace CIF2GTFS
                     CurrentTrainClass = TimetableLine.Substring(53, 3);
                     CurrentTrainMaxSpeed = TimetableLine.Substring(57, 3);
                 }
-
                 if (TimetableLine.StartsWith("BX"))
                 {
                     CurrentOperatorCode = TimetableLine.Substring(11, 2);
@@ -110,7 +135,6 @@ namespace CIF2GTFS
                     };
                     JourneyDetailsForJourneyIDDictionary.Add(CurrentJourneyID, journeyDetail);
                 }
-
                 if (TimetableLine.StartsWith("LO") || TimetableLine.StartsWith("LI") || TimetableLine.StartsWith("LT"))
                 {
                     string thirdSlot = TimetableLine.Substring(10, 4).Trim();
@@ -118,9 +142,8 @@ namespace CIF2GTFS
                     StationStop stationStop = new StationStop()
                     {
                         RecordIdentity = TimetableLine.Substring(0, 2).Trim(),
-                        Location = TimetableLine.Substring(2, 8).Trim()
+                        Location = TimetableLine.Substring(2, 7).Trim()
                     };
-
                     if (TimetableLine.StartsWith("LI"))
                     {
                         string SAT = TimetableLine.Substring(10, 5).Trim();
@@ -150,11 +173,9 @@ namespace CIF2GTFS
                         stationStop.Platform = TimetableLine.Substring(19, 3).Trim();
                         stationStop.Line = TimetableLine.Substring(22, 3).Trim();
                     }
-
-                    if (ATTStopsDictionary.ContainsKey(stationStop.Location))
+                    if (PLTsDictionary.ContainsKey(stationStop.Location + "_" + stationStop.Platform))
                     {
-                        stationStop.ATTStop = ATTStopsDictionary[stationStop.Location];
-
+                        stationStop.PLT = PLTsDictionary[stationStop.Location + "_" + stationStop.Platform];
                         if (StopTimesForJourneyIDDictionary.ContainsKey(CurrentJourneyID))
                         {
                             List<StationStop> UpdatedStationStops = StopTimesForJourneyIDDictionary[CurrentJourneyID];
@@ -167,24 +188,46 @@ namespace CIF2GTFS
                             StopTimesForJourneyIDDictionary.Add(CurrentJourneyID, new List<StationStop>() { stationStop });
                         }
                     }
-
+                    else if (LOCsDictionary.ContainsKey(stationStop.Location))
+                    {
+                        stationStop.LOC = LOCsDictionary[stationStop.Location];
+                        if (stationStop.Platform != "")
+                        {
+                            string myWarning = "WARNING (Prio. = Low): " + stationStop.Location + " Platform " + stationStop.Platform + " not found in OSM. Assigned as Platform Unknown instead.";
+                            if (!PrioList.Contains(myWarning))
+                            {
+                                PrioList.Add(myWarning);
+                                Console.WriteLine(myWarning);
+                            }
+                        }
+                        if (StopTimesForJourneyIDDictionary.ContainsKey(CurrentJourneyID))
+                        {
+                            List<StationStop> UpdatedStationStops = StopTimesForJourneyIDDictionary[CurrentJourneyID];
+                            UpdatedStationStops.Add(stationStop);
+                            StopTimesForJourneyIDDictionary.Remove(CurrentJourneyID);
+                            StopTimesForJourneyIDDictionary.Add(CurrentJourneyID, UpdatedStationStops);
+                        }
+                        else
+                        {
+                            StopTimesForJourneyIDDictionary.Add(CurrentJourneyID, new List<StationStop>() { stationStop });
+                        }
+                    }
+                    else
+                    {
+                        string myWarning = "WARNING (Prio. = High): " + stationStop.Location + " skipped as not found in filtered BPLAN.";
+                        if (!PrioList.Contains(myWarning))
+                        {
+                            PrioList.Add(myWarning);
+                            Console.WriteLine(myWarning);
+                        }
+                    }
                 }
-
             }
-            
             Console.WriteLine($"Read {StopTimesForJourneyIDDictionary.Keys.Count} journeys.");
-
             Console.WriteLine("Creating GTFS output.");
-
-            // We have two dictionaries that let us create all our GTFS output.
-            // StopTimesForJourneyIDDictionary
-            // JourneyDetailsForJourneyIDDictionary
-            // CIFStations
             List<string> Agencies = JourneyDetailsForJourneyIDDictionary.Values.Select(x => x.OperatorCode).Distinct().ToList();
-
             // AgencyList will hold the GTFS agency.txt file contents
             List<Agency> AgencyList = new List<Agency>();
-
             // Get all unique agencies from our output
             foreach (string agency in Agencies)
             {
@@ -197,7 +240,6 @@ namespace CIF2GTFS
                 };
                 AgencyList.Add(NewAgency);
             }
-
             List<Route> RoutesList = new List<Route>();
             foreach (string journeyID in JourneyDetailsForJourneyIDDictionary.Keys)
             {
@@ -211,7 +253,6 @@ namespace CIF2GTFS
                 };
                 RoutesList.Add(route);
             }
-
             List<Trip> tripList = new List<Trip>();
             foreach (JourneyDetail journeyDetail in JourneyDetailsForJourneyIDDictionary.Values)
             {
@@ -223,7 +264,6 @@ namespace CIF2GTFS
                 };
                 tripList.Add(trip);
             }
-
             // This export line is more complicated than it might at first seem sensible to be because of an understandable quirk in the GTFS format.
             // Stop times are only given as a time of day, and not a datetime. This causes problems when a service runs over midnight.
             // To fix this we express stop times on a service that started the previous day with times such as 24:12 instead of 00:12 and 25:20 instead of 01:20.
@@ -242,15 +282,23 @@ namespace CIF2GTFS
                     {
                         JourneyStartedYesterdayFlagA = true;
                     }
-
                     if (stationStop.ScheduledDepartureTime < PreviousStopDepartureTime)
                     {
                         JourneyStartedYesterdayFlagD = true;
                     }
+                    int myStop = 0;
+                    if (stationStop.PLT != null)
+                    {
+                        myStop = stationStop.PLT.index;
+                    }
+                    else
+                    {
+                        myStop = 1000*stationStop.LOC.index;
+                    }
                     StopTime stopTime = new StopTime()
                     {
                         trip_id = JourneyID + "_trip",
-                        stop_id = stationStop.ATTStop.index + "_" + stationStop.Platform,
+                        stop_id = myStop,
                         stop_sequence = count,
                         pickup_type = stationStop.pudoType,
                         drop_off_type = stationStop.pudoType
@@ -279,14 +327,13 @@ namespace CIF2GTFS
                 }
             }
             List<Calendar> calendarList = JourneyDetailsForJourneyIDDictionary.Values.Select(x => x.OperationsCalendar).ToList();
-
             // write GTFS txts.
             // agency.txt, calendar.txt, calendar_dates.txt, routes.txt, stop_times.txt, stops.txt, trips.txt
             if (Directory.Exists("output_GTFS") == false)
             {
                 Directory.CreateDirectory("output_GTFS");
             }
-            
+
             Console.WriteLine("Writing agency.txt");
             TextWriter agencyTextWriter = File.CreateText(@"output_GTFS/agency.txt");
             CsvWriter agencyCSVwriter = new CsvWriter(agencyTextWriter, CultureInfo.InvariantCulture);
@@ -323,17 +370,19 @@ namespace CIF2GTFS
             stopTimeCSVwriter.Dispose();
 
             Console.WriteLine("Dropping trip IDs with only one matched stop from stop_times.txt");
-            //ExecProcess("drop_single_stop_trips.py");
+            ExecProcess("drop_single_stop_trips.py");
 
-            Console.WriteLine("Creating a GTFS .zip file.");
+            Console.WriteLine("Creating a GTFS .zip file");
             if (File.Exists("output_GTFS.zip"))
             {
                 File.Delete("output_GTFS.zip");
             }
             ZipFile.CreateFromDirectory("output_GTFS", "output_GTFS.zip", CompressionLevel.Optimal, false, Encoding.UTF8);
 
-            Console.WriteLine("You may wish to validate the GTFS output using a tool such as https://github.com/google/transitfeed/");
+            Console.WriteLine("Importing GTFS to Visum...");
             ExecProcess("import_GTFS.py");
+
+            Console.WriteLine("Done");
         }
 
         static void ExecProcess(string my_script)
@@ -412,7 +461,8 @@ namespace CIF2GTFS
         public int pudoType { get; set; }
         public string Platform { get; set; }
         public string Line { get; set; }
-        public attStop ATTStop { get; set; }
+        public BPLAN_LOC LOC { get; set; }
+        public BPLAN_PLT PLT { get; set; }
     }
 
     // Classes to hold the GTFS output
@@ -449,7 +499,7 @@ namespace CIF2GTFS
         public string trip_id { get; set; }
         public string arrival_time { get; set; }
         public string departure_time { get; set; }
-        public string stop_id { get; set; }
+        public int stop_id { get; set; }
         public int stop_sequence { get; set; }
         public int pickup_type { get; set; }
         public int drop_off_type { get; set; }
@@ -458,11 +508,11 @@ namespace CIF2GTFS
     //A LIST OF THESE ATTSTOPS CREATES THE GTFS stops.txt file
     public class GTFSattStop
     {
-        public string stop_id { get; set; }
+        public int stop_id { get; set; }
         public string stop_code { get; set; }
         public string stop_name { get; set; }
         public int location_type { get; set; }
-        public string parent_station { get; set; }
+        public int parent_station { get; set; }
     }
 
     // A LIST OF THESE ROUTES CREATES THE GTFS routes.txt file.
@@ -487,7 +537,7 @@ namespace CIF2GTFS
         public string agency_url { get; set; }
         public string agency_timezone { get; set; }
     }
-    public class attStop
+    public class BPLAN_LOC
     {
         public string TIPLOC_x { get; set; }
         public string LocationName_x { get; set; }
@@ -499,9 +549,24 @@ namespace CIF2GTFS
         public int STANOX { get; set; }
         public string OffNetwork { get; set; }
         public int Quality { get; set; }
-        public string index { get; set; }
+        public int index { get; set; }
         public string TIPLOC_y { get; set; }
         public string LocationName_y { get; set; }
-
+    }
+    public class BPLAN_PLT
+    {
+        public string TIPLOC_PlatformID { get; set; }
+        public string TIPLOC { get; set; }
+        public string PlatformID { get; set; }
+        public string StartDate { get; set; }
+        public int PlatformLength { get; set; }
+        public string PassengerDOO { get; set; }
+        public string NonPassengerDOO { get; set; }
+        public int index_TIPLOC { get; set; }
+        public int index_PlatformID { get; set; }
+        public int index { get; set; }
+        public string Easting { get; set; }
+        public string Northing { get; set; }
+        public int Quality { get; set; }
     }
 }
