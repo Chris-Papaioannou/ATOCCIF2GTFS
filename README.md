@@ -20,7 +20,7 @@ Shapefile provided by [Network Rail](https://www.networkrail.co.uk/). Expected f
  'IDENTIFIED', 'TRACK_STAT', 'LAST_EDITE', 'LAST_EDI_1', 'CHECKED_BY', 'CHECKED_DA',
  'VALIDATED_', 'VALIDATED1', 'EDIT_NOTES', 'PROIRITY_A', 'SHAPE_LENG', 'TRID_CAT']
 
-However, only [TRCODE] and [TRID] are used in the current implementation.
+However, only [TRCODE]() and [TRID]() are used in the current implementation.
 
 An older branch of the tool used to also use [ELR] to apply more refined user-defined link filtering when snapping platform locations to the network.
 
