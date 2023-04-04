@@ -1,14 +1,24 @@
 # ATOCCIF2GTFS2VISUM
 
-The puropose of this tool is to convert an **ATOC CIF** format timetable (commonly used in Great Britain) to a platform-resolution **GTFS** format, and then import it into an automatically generated [PTV Visum](https://www.myptv.com/en/mobility-software/ptv-visum) network version file.
+The puropose of this tool is to convert an [ATOC CIF](https://wiki.openraildata.com/index.php?title=CIF_Schedule_Records) format timetable (commonly used in Great Britain) to a platform-resolution [GTFS](https://gtfs.org/schedule/reference/) format, and then import it into an automatically generated [PTV Visum](https://www.myptv.com/en/mobility-software/ptv-visum) network version file.
 
 ## Disclaimer
 
-ATOC CIF is a complicated format and the conversions in this tool are not perfect.
+[ATOC CIF](https://wiki.openraildata.com/index.php?title=CIF_Schedule_Records) is a complicated format and the conversions in this tool are not perfect.
 
 ## Usage
 
-The tool is written in **C# .NET Core 3.1** and **Python 3.9.9**. It was developed and tested in Visual Studio Code February 2023 (version 1.76.1) for Windows. There are ways to open the solution and compile the project on Mac and Linux, either using Visual Studio or the [.NET Core Runtime or SDK](https://dotnet.microsoft.com/download) but I have not tested them.
+The tool is written in **C#** & **Python**. It was developed and tested in **Visual Studio Code February 2023 (version 1.76.1)**. There are ways to open the solution and compile the project on Mac and Linux, using Visual Studio, .NET Core Runtime, or SDK. However, they have not been tested.
+
+### C# Setup
+
+This has been tested using [.NET SDK 7.0.101 for Windows x64](https://dotnet.microsoft.com/en-us/download/dotnet/7.0). However, any .NET implementation 3.0 through 7.X should work. If you are using Visual Studio Code, you should download and install the [C# for Visual Studio Code (powered by OmniSharp)](https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.csharp) extension to enable syntax advice, colour formatting, and debugging for C#.
+
+### Python Setup
+
+This has been tested using the **Python 3.9.9** installation included with **PTV Visum 2023**. However, any implementation of Python 3.9 should work. The user should ensure that their default python installation location for python terminals when debugging .py files directly is the same as the one called by the C# function **ExecProcess** to make sure behaviour is the same. The user will need to **pip install** the following libraries if not already available:
+
+bng_latlon, geopandas, matplotlib, numpy, os, overpy, pandas, pickle, re, scipy, shapely, time, win32com, wx
 
 ## Inputs
 
@@ -21,11 +31,11 @@ Shapefile provided by [Network Rail](https://www.networkrail.co.uk/). Expected f
  'IDENTIFIED', 'TRACK_STAT', 'LAST_EDITE', 'LAST_EDI_1', 'CHECKED_BY', 'CHECKED_DA',
  'VALIDATED_', 'VALIDATED1', 'EDIT_NOTES', 'PROIRITY_A', 'SHAPE_LENG', 'TRID_CAT']
 
-Only **TRCODE** and **TRID** are used in the current implementation. An older branch of the tool used to also use **ELR** to apply more refined user-defined link filtering when snapping platform locations to the network. However, the tool has now transitioned to an [OpenStreetMap](https://www.openstreetmap.org/about) based approach using the [Overpass API](https://python-overpy.readthedocs.io/en/latest/).
+Only **TRCODE** and **TRID** are used in the current implementation. An older branch of the tool used to also use **ELR** to apply more refined user-defined link filtering when snapping platform locations to the network. However, the tool has now transitioned to an [OpenStreetMap](https://www.openstreetmap.org/about) based approach using the [Overpass API](https://python-overpy.readthedocs.io/en/latest/) (with better examples in the documentation [here](https://wiki.openstreetmap.org/wiki/Overpass_API/Overpass_QL)).
  
 ### BPLAN
 
-This tool uses **Location (LOC) records** & **Platforms and Sidings (PLT) records** from [BPLAN](https://wiki.openraildata.com/index.php?title=BPLAN_data_structure) to determine what possible **TIPLOC** and **PlatformID** codes could be expected in any given **CIF** file. This reduces the regularity of updates required to the underlying network. [BPLAN](https://wiki.openraildata.com/index.php?title=BPLAN_data_structure) is updated every 6 months and can be downloaded [here](https://wiki.openraildata.com/index.php?title=BPLAN_Geography_Data).
+This tool uses **Location (LOC) records** & **Platforms and Sidings (PLT) records** from [BPLAN](https://wiki.openraildata.com/index.php?title=BPLAN_data_structure) to determine what possible **TIPLOC** and **PlatformID** codes could be expected in any given [ATOC CIF](https://wiki.openraildata.com/index.php?title=CIF_Schedule_Records) file. This reduces the regularity of updates required to the underlying network. [BPLAN](https://wiki.openraildata.com/index.php?title=BPLAN_data_structure) is updated every 6 months and can be downloaded [here](https://wiki.openraildata.com/index.php?title=BPLAN_Geography_Data).
 
 ### NaPTAN
 
@@ -35,7 +45,7 @@ It is anticipated that in the future, this program could be updated to use platf
 
 ### ATOC CIF
 
-The ATOC CIF tested is a national passenger rail file provided by [Network Rail](https://www.networkrail.co.uk/). If the user wishes to update the timetable, then railway timetables for Great Britain are available from [The Rail Delivery Group](http://data.atoc.org/). You will need to create an account to download the data, which is available for free, and licensed under [The Creative Commons Attribution 2.0 England and Wales license]( https://creativecommons.org/licenses/by/2.0/uk/legalcode). This permits sharing of the original timetable file and its derivative version (the **GTFS** version of that timetable) while recognising its origin, as above.
+The ATOC CIF tested is a national passenger rail file provided by [Network Rail](https://www.networkrail.co.uk/). If the user wishes to update the timetable, then railway timetables for Great Britain are available from [The Rail Delivery Group](http://data.atoc.org/). You will need to create an account to download the data, which is available for free, and licensed under [The Creative Commons Attribution 2.0 England and Wales license]( https://creativecommons.org/licenses/by/2.0/uk/legalcode). This permits sharing of the original timetable file and its derivative version (the [GTFS](https://gtfs.org/schedule/reference/) version of that timetable) while recognising its origin, as above.
 
 ## Process
 
@@ -72,8 +82,8 @@ The ATOC CIF tested is a national passenger rail file provided by [Network Rail]
 ## License
 
 This code is released under the **MIT License**, as included in this repository.
-Both timetables, the original in **ATOC CIF** format and the derviative work in **GTFS** format are provided under [The Creative Commons Attribution 2.0 England and Wales license]( https://creativecommons.org/licenses/by/2.0/uk/legalcode) as required by the original data provider. This license includes the specific clause that "You must not sublicense the Work". All usage should acknowledge both this repository and the original data source.
+Both timetables, the original in [ATOC CIF](https://wiki.openraildata.com/index.php?title=CIF_Schedule_Records) format and the derviative work in [GTFS](https://gtfs.org/schedule/reference/) format are provided under [The Creative Commons Attribution 2.0 England and Wales license]( https://creativecommons.org/licenses/by/2.0/uk/legalcode) as required by the original data provider. This license includes the specific clause that "You must not sublicense the Work". All usage should acknowledge both this repository and the original data source.
 
 ## Thanks
 
-This project is supported indirectly (and with no guarantee or liability) by partners of [PTV Group](https://company.ptvgroup.com/en/) including [Network Rail](https://www.networkrail.co.uk/). The parsing of the **ATOC CIF** file and some of the **GTFS** file formatting draw heavily from [ATOCCIF2GTFS](https://github.com/odileeds/ATOCCIF2GTFS) shared on GitHub by [ODI Leeds](https://github.com/odileeds) and written by [Thomas Forth](https://github.com/thomasforth), so special thanks to them also.
+This project is supported indirectly (and with no guarantee or liability) by partners of [PTV Group](https://company.ptvgroup.com/en/) including [Network Rail](https://www.networkrail.co.uk/). The parsing of the [ATOC CIF](https://wiki.openraildata.com/index.php?title=CIF_Schedule_Records) file and some of the [GTFS](https://gtfs.org/schedule/reference/) file formatting draw heavily from [ATOCCIF2GTFS](https://github.com/odileeds/ATOCCIF2GTFS) shared on GitHub by [ODI Leeds](https://github.com/odileeds) and written by [Thomas Forth](https://github.com/thomasforth), so special thanks to them also.
