@@ -4,26 +4,17 @@ The puropose of this tool is to convert a ATOC CIF format timetable (commonly us
 
 Railway timetables for Great Britain are available from [The Rail Delivery Group](http://data.atoc.org/). You will need to create an account to download the data. The data is available for free, and I believe that it is licensed under [The Creative Commons Attribution 2.0 England and Wales license]( https://creativecommons.org/licenses/by/2.0/uk/legalcode). This permits sharing of the original timetable file and its derivative version (the GTFS version of that timetable) while recognising its origin, as above.
 
-## Usage
-
-The tool is written in C# .NET Core 3.1 & Python 3.9.9. It was developed and tested in Visual Studio Code February 2023 (version 1.76.1) for Windows. There are ways to open the solution and compile the project on Mac and Linux, either using Visual Studio or the [.NET Core Runtime or SDK](https://dotnet.microsoft.com/download) but I have not tested them.
-
 ## Disclaimer
 
 ATOC CIF is a complicated format and the conversions in this tool are not perfect.
 
-## License
+## Usage
 
-This code is released under the MIT License, as included in this repository.
-Both timetables, the original in ATOC CIF format and the derviative work in GTFS format are provided under [The Creative Commons Attribution 2.0 England and Wales license]( https://creativecommons.org/licenses/by/2.0/uk/legalcode) as required by the original data provider. This license includes the specific clause that "You must not sublicense the Work". All usage should acknowledge both this repository and the original data source.
-
-## Thanks
-
-This project is supported indirectly (and with no guarantee or liability) by partners of [PTV Group](https://company.ptvgroup.com/en/) including [Network Rail](https://www.networkrail.co.uk/). The parsing of the cif file and some of the GTFS file formatting draw heavily from [ATOCCIF2GTFS](https://github.com/odileeds/ATOCCIF2GTFS) shared on GitHub by [ODI Leeds](https://github.com/odileeds) and written by [Thomas Forth](https://github.com/odileeds/ATOCCIF2GTFS/commits?author=thomasforth), so special thanks to them also.
+The tool is written in C# .NET Core 3.1 & Python 3.9.9. It was developed and tested in Visual Studio Code February 2023 (version 1.76.1) for Windows. There are ways to open the solution and compile the project on Mac and Linux, either using Visual Studio or the [.NET Core Runtime or SDK](https://dotnet.microsoft.com/download) but I have not tested them.
 
 ## Inputs
 
-### Network:
+### Network
 
 Shapefile provided by [Network Rail](https://www.networkrail.co.uk/). Expected fields include:
 ['OBJECTID', 'ASSETID', 'L_LINK_ID', 'L_SYSTEM', 'L_VAL', 'L_QUALITY', 'ELR', 'TRID',
@@ -46,3 +37,48 @@ This tool uses [Location (LOC) records] & [Platforms and Sidings (PLT) records] 
 As the Eastings and Northings contained withing [BPLAN](https://wiki.openraildata.com/index.php?title=BPLAN_data_structure) are notoriously unreliable, this program infills Eastings and Northings from the [RLY] subset of [NaPTAN] when available (i.e. nearly all passenger rail station TIPLOCs) using the national Stops.csv file. This can be downloaded [here](https://beta-naptan.dft.gov.uk/download). An up to date version should be used or newer stations risk being ommitted from the output file.
 
 It is anticipated that in the future, this program could be updated to use platform locations from the [RPL] subset of NaPTANs also. However, currently only light rail platforms from the [PLT] subset have significant coverage. Therefore the tool currently only uses the [OpenStreetMap](https://www.openstreetmap.org/about) based approach using the [Overpass API](https://python-overpy.readthedocs.io/en/latest/) described.
+
+## Process
+
+## Warnings
+
+### Prio. = High
+
+### Prio. = Low
+
+## Outputs
+
+### Cached Data
+
+#### 1. OSM Platform Images
+
+#### 2. OSM Platform Pickles
+
+#### 3. BPLAN Pickle
+
+#### 4. BPLAN CSVs
+
+### Zipped GTFS Files
+
+### Visum Version Files
+
+#### 1. LOCs_Only.ver
+
+#### 2. LOCs_and_PLTs.ver
+
+#### 3. GTFS_Only.ver
+
+#### 4. LOCs_and_PLTs_with_GTFS.ver
+
+### Log Files
+
+## Guide to editing OpenStreetMap
+
+## License
+
+This code is released under the MIT License, as included in this repository.
+Both timetables, the original in ATOC CIF format and the derviative work in GTFS format are provided under [The Creative Commons Attribution 2.0 England and Wales license]( https://creativecommons.org/licenses/by/2.0/uk/legalcode) as required by the original data provider. This license includes the specific clause that "You must not sublicense the Work". All usage should acknowledge both this repository and the original data source.
+
+## Thanks
+
+This project is supported indirectly (and with no guarantee or liability) by partners of [PTV Group](https://company.ptvgroup.com/en/) including [Network Rail](https://www.networkrail.co.uk/). The parsing of the cif file and some of the GTFS file formatting draw heavily from [ATOCCIF2GTFS](https://github.com/odileeds/ATOCCIF2GTFS) shared on GitHub by [ODI Leeds](https://github.com/odileeds) and written by [Thomas Forth](https://github.com/odileeds/ATOCCIF2GTFS/commits?author=thomasforth), so special thanks to them also.
