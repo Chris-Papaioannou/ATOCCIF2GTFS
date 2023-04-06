@@ -1,0 +1,12 @@
+agency_id,agency_name,agency_url,agency_timezone
+SN,SN,https://www.google.com/search?q=SN%20rail%20operator%20code,Europe/London
+SE,SE,https://www.google.com/search?q=SE%20rail%20operator%20code,Europe/London
+XR,XR,https://www.google.com/search?q=XR%20rail%20operator%20code,Europe/London
+TL,TL,https://www.google.com/search?q=TL%20rail%20operator%20code,Europe/London
+ES,ES,https://www.google.com/search?q=ES%20rail%20operator%20code,Europe/London
+ZZ,ZZ,https://www.google.com/search?q=ZZ%20rail%20operator%20code,Europe/London
+SW,SW,https://www.google.com/search?q=SW%20rail%20operator%20code,Europe/London
+LO,LO,https://www.google.com/search?q=LO%20rail%20operator%20code,Europe/London
+GX,GX,https://www.google.com/search?q=GX%20rail%20operator%20code,Europe/London
+CC,CC,https://www.google.com/search?q=CC%20rail%20operator%20code,Europe/London
+GW,GW,https://www.google.com/search?q=GW%20rail%20operator%20code,Europe/London

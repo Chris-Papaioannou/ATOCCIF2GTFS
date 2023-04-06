@@ -107,14 +107,14 @@ def process_platformWays(myPlatformWays, crs, desc, x, y):
         #Create a boolean to check if first and last node do not close the shape and then create the corresponding Shapely object accordingly
         isLine = any(way.bngs[0] != way.bngs[-1])
         if isLine:
-            shape = LineString(way.bngs)
+            way.shape = LineString(way.bngs)
         else:
-            shape = Polygon(way.bngs)
+            way.shape = Polygon(way.bngs)
         
         #Cast as a geopandas object and add to our pre-defined plot and get the minimum rotated bounding rectangle
-        gds = gpd.GeoSeries(shape)
+        gds = gpd.GeoSeries(way.shape)
         gds.plot(edgecolor = 'black', color = 'lightcoral', ax = ax2)
-        mrr = shape.minimum_rotated_rectangle
+        mrr = way.shape.minimum_rotated_rectangle
 
         #If area of minimum bounding rectangle is 0, this means object is straight line, so return shapely centroid in the normal fashion
         if mrr.area == 0:
@@ -128,7 +128,7 @@ def process_platformWays(myPlatformWays, crs, desc, x, y):
             
             #Use this bisection line to calculate the centroid of the intersection (nearest points used due to rounding error issues)
             if isLine:
-                way.bng = nearest_points(shape, mrr_bisect.centroid)[0]
+                way.bng = nearest_points(way.shape, mrr_bisect.centroid)[0]
             else:
                 way.bng = gpd.clip(gpd.GeoSeries(mrr_bisect), gds).centroid.values[0]
         
@@ -156,7 +156,7 @@ def process_platformWays(myPlatformWays, crs, desc, x, y):
 def get_OSM_platform_data(path, TIPLOC, desc, x, y, bound):
     
     #Check if OSM data has been saved as pickle already for this station, and if so, read from pickle file, otherwise query them from OSM
-    myPickle = os.path.join(path, f'OSM_pickles\\{TIPLOC}_platforms.p')
+    myPickle = os.path.join(path, f'cached_data\\OSM\\pickles\\{TIPLOC}.p')
     if os.path.exists(myPickle):
         with open(myPickle, 'rb') as f:
             dfPlatforms, = pickle.load(f)
@@ -169,13 +169,14 @@ def get_OSM_platform_data(path, TIPLOC, desc, x, y, bound):
     
         #Process the OSM platform way data and save the resultant figure as a png file
         platformWays, myFig = process_platformWays(platformWays, TIPLOC, desc, x, y)
-        myFig.savefig(os.path.join(path, f'OSM_images\\{TIPLOC}_platforms.png'))
+        myFig.savefig(os.path.join(path, f'cached_data\\OSM\\images\\{TIPLOC}.png'))
         
         #Convert the processed OSM platform way data into a pandas DataFrame and return alongside OSM station node location
         c1 = [way.tags['ref'] for way in platformWays]
         c2 = [way.bng for way in platformWays]
         c3 = [way.dist for way in platformWays]
-        myCols = {'Platform': c1, 'Location': c2, 'Dist': c3}
+        c4 = [way.shape for way in platformWays]
+        myCols = {'Platform': c1, 'Location': c2, 'Dist': c3,  'Shape': c4}
         myTypes = {'Platform': str}
         dfPlatforms = pd.DataFrame.from_dict(myCols).astype(myTypes)
         dfPlatforms = dfPlatforms.explode('Platform').reset_index(drop = True)
@@ -336,7 +337,7 @@ def processBPLAN(path):
     PLTs['index_TIPLOC'] = LOCs.loc[PLTs['TIPLOC']]['index'].values
     
     LOCs = LOCs[~LOCs['index'].isna()]
-    LOCs.to_csv(os.path.join(path, 'input\\BPLAN_LOC.csv'))
+    LOCs.to_csv(os.path.join(path, 'cached_data\\BPLAN\\LOCs.csv'))
     
     PLTs = PLTs[~PLTs['index_TIPLOC'].isna()]
     PLTs['PlatformID'] = PLTs['PlatformID'].str.upper()
@@ -364,6 +365,7 @@ def processBPLAN(path):
                 OSMloc = OSMpltDataFil['Location'].iloc[0]
                 PLTs.loc[i, 'Easting'] = OSMloc.x
                 PLTs.loc[i, 'Northing'] = OSMloc.y
+                PLTs.loc[i, 'Shape'] = OSMpltDataFil['Shape'].iloc[0]
                 PLTs.loc[i, 'Quality'] = 2
                 PLTs.loc[i, 'index'] += row['index_PlatformID']
             elif len(myPlatformNum) > 0:
@@ -373,11 +375,12 @@ def processBPLAN(path):
                     OSMloc = OSMpltDataFil['Location'].iloc[0]
                     PLTs.loc[i, 'Easting'] = OSMloc.x
                     PLTs.loc[i, 'Northing'] = OSMloc.y
+                    PLTs.loc[i, 'Shape'] = OSMpltDataFil['Shape'].iloc[0]
                     PLTs.loc[i, 'Quality'] = 1
                     PLTs.loc[i, 'index'] += row['index_PlatformID']
     
     PLTs = PLTs[PLTs['Quality'] > 0]
-    PLTs.to_csv(os.path.join(path, 'input\\BPLAN_PLT.csv'))
+    PLTs.to_csv(os.path.join(path, 'cached_data\\BPLAN\\PLTs.csv'))
 
     PLTsUnique = pd.pivot_table(PLTs.reset_index(), ['PlatformID', 'StartDate', 'PlatformLength', 'PassengerDOO', 'NonPassengerDOO', 'index_TIPLOC', 'index_PlatformID', 'Easting', 'Northing', 'Quality'], ['index'],
                                aggfunc = {'PlatformID': getCommonPrefix,
@@ -530,7 +533,7 @@ def main():
 
     path = os.path.dirname(__file__)
 
-    myPickle = os.path.join(path, 'input\\BPLAN.p')
+    myPickle = os.path.join(path, 'cached_data\\BPLAN\\uniques.p')
     
     if os.path.exists(myPickle):
         print('Read old already processed BPLAN pickle results from cache')
@@ -542,10 +545,10 @@ def main():
         with open(myPickle, 'wb') as f:
             pickle.dump([LOCsUnique, PLTsUnique], f)
     
-    myShp = os.path.join(path, 'Shp\\NR_Full_Network.shp')
-    myLOCsVer = os.path.join(path, 'output_Visum\\LOCs_Only.ver')
-    myPLTsVer = os.path.join(path, 'output_Visum\\LOCs_and_PLTs.ver')
-    output = os.path.join(path, 'output_GTFS\\stops.txt')
+    myShp = os.path.join(path, 'input\\Shp\\NR_Full_Network.shp')
+    myLOCsVer = os.path.join(path, 'cached_data\\VISUM\\LOCs_Only.ver')
+    myPLTsVer = os.path.join(path, 'cached_data\\VISUM\\LOCs_and_PLTs.ver')
+    output = os.path.join(path, 'output\\GTFS\\stops.txt')
 
     if os.path.exists(myLOCsVer):
         print('Read old processed BPLAN LOCs Version file from cache')

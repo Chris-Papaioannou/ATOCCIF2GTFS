@@ -13,21 +13,13 @@ namespace CIF2GTFS
     class Program
     {
         static void Main(string[] args)
-        {
-
-            Console.WriteLine("Clearing temp directory...");
-            if (Directory.Exists("temp") == true)
-            {
-                Directory.Delete("temp", true);
-            }
-            Directory.CreateDirectory("temp");
-            
+        {   
             Console.WriteLine("Preparing Visum network...");
             ExecProcess("prepare_network.py");
             
             Console.WriteLine("Loading BPLAN PLTs...");
             List<BPLAN_PLT> PLTs = new List<BPLAN_PLT>();
-            using (TextReader textReader = File.OpenText("input/BPLAN_PLT.csv"))
+            using (TextReader textReader = File.OpenText(@"cached_data/BPLAN/PLTs.csv"))
             {
                 CsvReader csvReader = new CsvReader(textReader, CultureInfo.InvariantCulture);
                 csvReader.Configuration.Delimiter = ",";
@@ -56,7 +48,7 @@ namespace CIF2GTFS
 
             Console.WriteLine("Loading BPLAN LOCs...");
             List<BPLAN_LOC> LOCs = new List<BPLAN_LOC>();
-            using (TextReader textReader = File.OpenText("input/BPLAN_LOC.csv"))
+            using (TextReader textReader = File.OpenText("cached_data/BPLAN/LOCs.csv"))
             {
                 CsvReader csvReader = new CsvReader(textReader, CultureInfo.InvariantCulture);
                 csvReader.Configuration.Delimiter = ",";
@@ -84,7 +76,7 @@ namespace CIF2GTFS
             }
 
             Console.WriteLine("Reading the timetable file...");
-            List<string> TimetableFileLines = new List<string>(File.ReadAllLines("input/Winter19_Weekday.CIF"));
+            List<string> TimetableFileLines = new List<string>(File.ReadAllLines("input/KentMay23.CIF"));
             Dictionary<string, List<StationStop>> StopTimesForJourneyIDDictionary = new Dictionary<string, List<StationStop>>();
             Dictionary<string, JourneyDetail> JourneyDetailsForJourneyIDDictionary = new Dictionary<string, JourneyDetail>();
             string CurrentJourneyID = "";
@@ -103,11 +95,11 @@ namespace CIF2GTFS
                     string EndDateString = TimetableLine.Substring(15, 6);
                     string DaysOfOperationString = TimetableLine.Substring(21, 7);
                     // Since a single timetable can have a single Journey ID that is valid at different non-overlapping times a unique Journey ID includes the Date strings and the character at position 79.
-                    // CurrentJourneyID = CurrentJourneyID + StartDateString + EndDateString + TimetableLine.Substring(79, 1);
+                    CurrentJourneyID = CurrentJourneyID + StartDateString + EndDateString;
                     CurrentCalendar = new Calendar()
                     {
                         start_date = "20" + StartDateString,
-                        end_date = "20" + EndDateString,
+                        end_date = 2000 + Math.Min(int.Parse(EndDateString.Substring(0, 2)), int.Parse(StartDateString.Substring(0, 2)) + 49) + EndDateString.Substring(2, 4),
                         service_id = CurrentJourneyID + "_service",
                         monday = int.Parse(DaysOfOperationString.Substring(0, 1)),
                         tuesday = int.Parse(DaysOfOperationString.Substring(1, 1)),
@@ -329,41 +321,37 @@ namespace CIF2GTFS
             List<Calendar> calendarList = JourneyDetailsForJourneyIDDictionary.Values.Select(x => x.OperationsCalendar).ToList();
             // write GTFS txts.
             // agency.txt, calendar.txt, calendar_dates.txt, routes.txt, stop_times.txt, stops.txt, trips.txt
-            if (Directory.Exists("output_GTFS") == false)
-            {
-                Directory.CreateDirectory("output_GTFS");
-            }
 
             Console.WriteLine("Writing agency.txt");
-            TextWriter agencyTextWriter = File.CreateText(@"output_GTFS/agency.txt");
+            TextWriter agencyTextWriter = File.CreateText(@"output/GTFS/agency.txt");
             CsvWriter agencyCSVwriter = new CsvWriter(agencyTextWriter, CultureInfo.InvariantCulture);
             agencyCSVwriter.WriteRecords(AgencyList);
             agencyTextWriter.Dispose();
             agencyCSVwriter.Dispose();
 
             Console.WriteLine("Writing routes.txt");
-            TextWriter routesTextWriter = File.CreateText(@"output_GTFS/routes.txt");
+            TextWriter routesTextWriter = File.CreateText(@"output/GTFS/routes.txt");
             CsvWriter routesCSVwriter = new CsvWriter(routesTextWriter, CultureInfo.InvariantCulture);
             routesCSVwriter.WriteRecords(RoutesList);
             routesTextWriter.Dispose();
             routesCSVwriter.Dispose();
 
             Console.WriteLine("Writing trips.txt");
-            TextWriter tripsTextWriter = File.CreateText(@"output_GTFS/trips.txt");
+            TextWriter tripsTextWriter = File.CreateText(@"output/GTFS/trips.txt");
             CsvWriter tripsCSVwriter = new CsvWriter(tripsTextWriter, CultureInfo.InvariantCulture);
             tripsCSVwriter.WriteRecords(tripList);
             tripsTextWriter.Dispose();
             tripsCSVwriter.Dispose();
 
             Console.WriteLine("Writing calendar.txt");
-            TextWriter calendarTextWriter = File.CreateText(@"output_GTFS/calendar.txt");
+            TextWriter calendarTextWriter = File.CreateText(@"output/GTFS/calendar.txt");
             CsvWriter calendarCSVwriter = new CsvWriter(calendarTextWriter, CultureInfo.InvariantCulture);
             calendarCSVwriter.WriteRecords(calendarList);
             calendarTextWriter.Dispose();
             calendarCSVwriter.Dispose();
 
             Console.WriteLine("Writing stop_times.txt");
-            TextWriter stopTimeTextWriter = File.CreateText("temp/stop_times_full.txt");
+            TextWriter stopTimeTextWriter = File.CreateText(@"cached_data/STOP_TIMES/full.txt");
             CsvWriter stopTimeCSVwriter = new CsvWriter(stopTimeTextWriter, CultureInfo.InvariantCulture);
             stopTimeCSVwriter.WriteRecords(stopTimesList);
             stopTimeTextWriter.Dispose();
@@ -373,11 +361,11 @@ namespace CIF2GTFS
             ExecProcess("drop_single_stop_trips.py");
 
             Console.WriteLine("Creating a GTFS .zip file");
-            if (File.Exists("output_GTFS.zip"))
+            if (File.Exists(@"output/GTFS.zip"))
             {
-                File.Delete("output_GTFS.zip");
+                File.Delete(@"output/GTFS.zip");
             }
-            ZipFile.CreateFromDirectory("output_GTFS", "output_GTFS.zip", CompressionLevel.Optimal, false, Encoding.UTF8);
+            ZipFile.CreateFromDirectory(@"output/GTFS", @"output/GTFS.zip", CompressionLevel.Optimal, false, Encoding.UTF8);
 
             Console.WriteLine("Importing GTFS to Visum...");
             ExecProcess("import_GTFS.py");
@@ -418,7 +406,6 @@ namespace CIF2GTFS
             // 5) Display output
             Console.WriteLine("ERRORS:");
             Console.WriteLine(errors);
-            Console.WriteLine();
             Console.WriteLine("Results:");
             Console.WriteLine(results);
 

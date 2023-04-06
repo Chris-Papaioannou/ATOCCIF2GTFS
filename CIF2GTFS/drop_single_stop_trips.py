@@ -4,7 +4,7 @@ import pandas as pd
 def main():
     #Define path and read oringinal stop times gtfs output from C# CIF to GTFS process
     path = os.path.dirname(__file__)
-    df = pd.read_csv(os.path.join(path, 'temp\\stop_times_full.txt'), low_memory = False)
+    df = pd.read_csv(os.path.join(path, 'cached_data\\STOP_TIMES\\full.txt'), low_memory = False)
 
     #Get pandas DataFrame of unique trip IDs (i.e. single stop trips) only for reporting
     report = df['trip_id'].drop_duplicates(keep = False)
@@ -16,7 +16,7 @@ def main():
 
     #Drop unique trip IDs (i.e. single stop trips) and output to the final location, and get a unique list of stop IDs
     reduced_df = df[df.duplicated(subset = ['trip_id'], keep = False)].reset_index(drop = True)
-    reduced_df.to_csv(os.path.join(path, 'output_GTFS\\stop_times.txt'), index = False)
+    reduced_df.to_csv(os.path.join(path, 'output\\GTFS\\stop_times.txt'), index = False)
 
     print('Done')
     

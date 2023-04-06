@@ -28,7 +28,7 @@ def main():
 
     print('Importing GTFS to new Visum Version File...')
     Visum = com.Dispatch('Visum.Visum.230')
-    Visum.IO.ImportPuTProject(os.path.join(path, 'import_GTFS_to_Visum_23.puti'))
+    Visum.IO.ImportPuTProject(os.path.join(path, 'puti\\import_GTFS_to_Visum_23.puti'))
     Visum.Net.SetProjection(proj_string, False)
     Visum.Net.Stops.SetMultipleAttributes(['No'], Visum.Net.Stops.GetMultipleAttributes(['GTFS_stop_id']))
     Visum.Net.StopAreas.SetMultipleAttributes(['No'], Visum.Net.StopAreas.GetMultipleAttributes(['GTFS_stop_id']))
@@ -37,19 +37,25 @@ def main():
     CalendarPeriod_T = Visum.Net.CalendarPeriod.AttValue('Type')
     CalendarPeriod_VF = Visum.Net.CalendarPeriod.AttValue('ValidFrom')
     CalendarPeriod_VU = Visum.Net.CalendarPeriod.AttValue('ValidUntil')
-    Visum.IO.SaveVersion(os.path.join(path, 'output_Visum\\GTFS_only.ver'))
+    Visum.IO.SaveVersion(os.path.join(path, 'output\\VISUM\\GTFS_Only.ver'))
 
     print('Importing GTFS PT supply into prepared Visum network...')
-    Visum.IO.LoadVersion(os.path.join(path, 'output_Visum\\LOCs_and_PLTs.ver'))
+    Visum.IO.LoadVersion(os.path.join(path, 'cached_data\\VISUM\\LOCs_and_PLTs.ver'))
     Visum.Net.CalendarPeriod.SetAttValue('Type', CalendarPeriod_T)
-    Visum.Net.CalendarPeriod.SetAttValue('ValidFrom', CalendarPeriod_VF)
-    Visum.Net.CalendarPeriod.SetAttValue('ValidUntil', CalendarPeriod_VU)
+    try:
+        Visum.Net.CalendarPeriod.SetAttValue('ValidFrom', CalendarPeriod_VF)
+        Visum.Net.CalendarPeriod.SetAttValue('ValidUntil', CalendarPeriod_VU)
+        print('Note: Your calendar period is in the past.')
+    except:
+        Visum.Net.CalendarPeriod.SetAttValue('ValidUntil', CalendarPeriod_VU)
+        Visum.Net.CalendarPeriod.SetAttValue('ValidFrom', CalendarPeriod_VF)
+        print('Note: Your calendar period is in the future.')
     Visum.Net.Nodes.SetActive()
     Visum.Net.Links.SetActive()
     Visum.Net.StopPoints.SetActive()
-    Visum.IO.ImportPuTProject(os.path.join(path, 'import_PuT_supply_from_Visum_23.puti'))
+    Visum.IO.ImportPuTProject(os.path.join(path, 'puti\\import_PuT_supply_from_Visum_23.puti'))
     Visum.Net.TimeProfileItems.AddUserDefinedAttribute('Speed', 'Speed', 'Speed', 15, formula = '3600*[Sum:UsedLineRouteItems\\PostLinkLength]/[PostRunTime]')
-    Visum.IO.SaveVersion(os.path.join(path, 'output_Visum\\LOCs_and_PLTs_with_GTFS.ver'))
+    Visum.IO.SaveVersion(os.path.join(path, 'output\\VISUM\\LOCs_and_PLTs_with_GTFS.ver'))
 
     print('Done')
 
