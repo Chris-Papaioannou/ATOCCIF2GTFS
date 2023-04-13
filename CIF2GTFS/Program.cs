@@ -46,37 +46,37 @@ namespace CIF2GTFS
                 }
             }
 
-            Console.WriteLine("Loading BPLAN LOCs...");
-            List<BPLAN_LOC> LOCs = new List<BPLAN_LOC>();
-            using (TextReader textReader = File.OpenText("cached_data/BPLAN/LOCs.csv"))
+            Console.WriteLine("Loading TPEs...");
+            List<BPLAN_TPE> TPEs = new List<BPLAN_TPE>();
+            using (TextReader textReader = File.OpenText("cached_data/BPLAN/TPEs.csv"))
             {
                 CsvReader csvReader = new CsvReader(textReader, CultureInfo.InvariantCulture);
                 csvReader.Configuration.Delimiter = ",";
-                LOCs = csvReader.GetRecords<BPLAN_LOC>().ToList();
+                TPEs = csvReader.GetRecords<BPLAN_TPE>().ToList();
             }
 
-            Console.WriteLine("Loading GTFS_STOP_ID keyed dictionary of BPLAN LOCs...");
-            Dictionary<string, BPLAN_LOC> LOCsDictionary = new Dictionary<string, BPLAN_LOC>();
-            List<GTFSattStop> GTFS_LOCsList = new List<GTFSattStop>();
-            foreach (BPLAN_LOC BPLAN_LOC in LOCs)
+            Console.WriteLine("Loading GTFS_STOP_ID keyed dictionary of TPEs...");
+            Dictionary<string, BPLAN_TPE> TPEsDictionary = new Dictionary<string, BPLAN_TPE>();
+            List<GTFSattStop> GTFS_TPEsList = new List<GTFSattStop>();
+            foreach (BPLAN_TPE BPLAN_TPE in TPEs)
             {
-                if (!LOCsDictionary.ContainsKey(BPLAN_LOC.TIPLOC_x))
+                if (!TPEsDictionary.ContainsKey(BPLAN_TPE.Tiploc_x))
                 {
-                    LOCsDictionary.Add(BPLAN_LOC.TIPLOC_x, BPLAN_LOC);
+                    TPEsDictionary.Add(BPLAN_TPE.Tiploc_x, BPLAN_TPE);
 
                     GTFSattStop gTFSattStop = new GTFSattStop()
                     {
-                        stop_id = BPLAN_LOC.index,
-                        stop_code = BPLAN_LOC.TIPLOC_y,
-                        stop_name = BPLAN_LOC.LocationName_y,
+                        stop_id = BPLAN_TPE.index,
+                        stop_code = BPLAN_TPE.Tiploc_y,
+                        stop_name = BPLAN_TPE.Name_y,
                         location_type = 1
                     };
-                    GTFS_LOCsList.Add(gTFSattStop);
+                    GTFS_TPEsList.Add(gTFSattStop);
                 }
             }
 
             Console.WriteLine("Reading the timetable file...");
-            List<string> TimetableFileLines = new List<string>(File.ReadAllLines("input/KentMay23.CIF"));
+            List<string> TimetableFileLines = new List<string>(File.ReadAllLines("input/May22.CIF"));
             Dictionary<string, List<StationStop>> StopTimesForJourneyIDDictionary = new Dictionary<string, List<StationStop>>();
             Dictionary<string, JourneyDetail> JourneyDetailsForJourneyIDDictionary = new Dictionary<string, JourneyDetail>();
             string CurrentJourneyID = "";
@@ -180,9 +180,9 @@ namespace CIF2GTFS
                             StopTimesForJourneyIDDictionary.Add(CurrentJourneyID, new List<StationStop>() { stationStop });
                         }
                     }
-                    else if (LOCsDictionary.ContainsKey(stationStop.Location))
+                    else if (TPEsDictionary.ContainsKey(stationStop.Location))
                     {
-                        stationStop.LOC = LOCsDictionary[stationStop.Location];
+                        stationStop.TPE = TPEsDictionary[stationStop.Location];
                         if (stationStop.Platform != "")
                         {
                             string myWarning = "WARNING (Prio. = Low): " + stationStop.Location + " Platform " + stationStop.Platform + " not found in OSM. Assigned as Platform Unknown instead.";
@@ -285,7 +285,7 @@ namespace CIF2GTFS
                     }
                     else
                     {
-                        myStop = 1000*stationStop.LOC.index;
+                        myStop = 1000*stationStop.TPE.index;
                     }
                     StopTime stopTime = new StopTime()
                     {
@@ -448,7 +448,7 @@ namespace CIF2GTFS
         public int pudoType { get; set; }
         public string Platform { get; set; }
         public string Line { get; set; }
-        public BPLAN_LOC LOC { get; set; }
+        public BPLAN_TPE TPE { get; set; }
         public BPLAN_PLT PLT { get; set; }
     }
 
@@ -524,21 +524,27 @@ namespace CIF2GTFS
         public string agency_url { get; set; }
         public string agency_timezone { get; set; }
     }
-    public class BPLAN_LOC
+    public class BPLAN_TPE
     {
-        public string TIPLOC_x { get; set; }
-        public string LocationName_x { get; set; }
-        public string StartDate { get; set; }
+        public string Tiploc_x { get; set; }
+        public string Name_x { get; set; }
+        public string Stanox_x { get; set; }
+        public string Latitude_x { get; set; }
+        public string Longitude_x { get; set; }
+        public string InBPlan_x { get; set; }
+        public string In_TPS_x { get; set; }
+        public string CRS_x { get; set; }
         public string Easting { get; set; }
         public string Northing { get; set; }
-        public string TimingPointType { get; set; }
-        public int ZoneResponsible { get; set; }
-        public int STANOX { get; set; }
-        public string OffNetwork { get; set; }
-        public int Quality { get; set; }
         public int index { get; set; }
-        public string TIPLOC_y { get; set; }
-        public string LocationName_y { get; set; }
+        public string CRS_y { get; set; }
+        public string InBPlan_y { get; set; }
+        public string InTPS_y { get; set; }
+        public string Latitude_y { get; set; }
+        public string Longitude_y { get; set; }
+        public string Name_y { get; set; }
+        public string Stanox_y { get; set; }
+        public string Tiploc_y { get; set; }        			
     }
     public class BPLAN_PLT
     {

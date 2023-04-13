@@ -1,3 +1,4 @@
+import json
 import os
 os.environ['USE_PYGEOS'] = '0'
 import overpy
@@ -17,7 +18,7 @@ from scipy.interpolate import interp1d
 from shapely.geometry import Point, LineString, Polygon
 from shapely.ops import nearest_points
 
-def fixDirectedNet(Visum):
+def fixDirectedNet(Visum, reversedELRs):
 
     #Container object of reverse of links from directed shapefile
     Links0 = Visum.Net.Links.GetFilteredSet('[TypeNo]=0')
@@ -25,20 +26,37 @@ def fixDirectedNet(Visum):
     #Container object of original links from directed shapefile
     Links1 = Visum.Net.Links.GetFilteredSet('[TypeNo]=1')
 
+    #Create Boolean UDAs for coorecting the directionality of the shapefile when down is not the open direction as expected
+    UDAs = ['is_DOWN', 'is_UP', 'is_BIDIRECT', 'is_reversed']
+    for uda in UDAs:
+        Visum.Net.Links.AddUserDefinedAttribute(uda, uda, uda, 9)
+    
+    #Set boolean values for DOWN, UP, and BIDIRECT respectively (for now assume LOOP can be treated the same as DOWN)
+    Links1.GetFilteredSet('([TRCODE]>=20&[TRCODE]<=29)|([TRCODE]>=40&[TRCODE]<=49)').SetAllAttValues('is_DOWN', True)
+    Links1.GetFilteredSet('[TRCODE]>=10&[TRCODE]<=19').SetAllAttValues('is_UP', True)
+    Links1.GetFilteredSet('([TRCODE]>=30&[TRCODE]<=39)|[TRCODE]>=50').SetAllAttValues('is_BIDIRECT', True)
+    
+    #Iterate through Shapefile directed links and determine whether to reverse them or not
+    
+    iterateELRs = Links1.GetMultipleAttributes(['ELR', 'is_DOWN', 'is_UP'])
+    isReversed = [[link[1]] if link[0] in reversedELRs else [link[2]] for link in iterateELRs]
+    Links1.SetMultipleAttributes(['is_reversed'], isReversed)
+
     #List of UDAs created upon import of directed shapefile
     atts = ['OBJECTID', 'ASSETID', 'L_LINK_ID', 'L_SYSTEM', 'L_VAL', 'L_QUALITY', 'ELR', 'TRID',
             'TRCODE', 'L_M_FROM', 'L_M_TO', 'VERSION_NU', 'VERSION_DA', 'SOURCE', 'EDIT_STATU',
             'IDENTIFIED', 'TRACK_STAT', 'LAST_EDITE', 'LAST_EDI_1', 'CHECKED_BY', 'CHECKED_DA',
-            'VALIDATED_', 'VALIDATED1', 'EDIT_NOTES', 'PROIRITY_A', 'SHAPE_LENG', 'TRID_CAT']
+            'VALIDATED_', 'VALIDATED1', 'EDIT_NOTES', 'PROIRITY_A', 'SHAPE_LENG', 'TRID_CAT',
+            'is_DOWN', 'is_UP', 'is_BIDIRECT', 'is_reversed']
 
     #Copy UDA values from original links to reverse links
     Links0.SetMultipleAttributes(atts, Links1.GetMultipleAttributes(atts))
 
     #Open reverse links if UP, BIDIRECT or TRCODE >= 50
-    Links0.GetFilteredSet('([TRCODE]>=10&[TRCODE]<=19)|([TRCODE]>=30&[TRCODE]<=39)|[TRCODE]>=50').SetAllAttValues('TypeNo', 1)
+    Links0.GetFilteredSet('[is_reversed]|[is_BIDIRECT]').SetAllAttValues('TypeNo', 1)
 
     #Close original links if UP
-    Links1.GetFilteredSet('[TRCODE]>=10&[TRCODE]<=19').SetAllAttValues('TypeNo', 0)
+    Links1.GetFilteredSet('[is_reversed]').SetAllAttValues('TypeNo', 0)
 
     #Set TSys for open links
     Visum.Net.AddTSystem('2', 'PUT')
@@ -187,9 +205,9 @@ def get_OSM_platform_data(path, TIPLOC, desc, x, y, bound):
             pickle.dump([dfPlatforms], f)
     return dfPlatforms
 
-def addStopPoint(Visum, i, row, bound, LOCsUnique):
+def addStopPoint(Visum, i, row, bound, TPEsUnique):
     
-    myLOC = LOCsUnique.loc[row['index_TIPLOC']]
+    aTPE = TPEsUnique.loc[row['index_TIPLOC']]
 
     #Define a boolean that will indicate that the stop point has not yet been successfully added
     unsatis = True
@@ -205,7 +223,7 @@ def addStopPoint(Visum, i, row, bound, LOCsUnique):
     try:
         is_dir = sp_Link.Link.AttValue('ReverseLink\\TypeNo') == 0
     except:
-        print(f"ERROR: No link within {bound}m for {row['index_TIPLOC']}: {myLOC['TIPLOC']}: {myLOC['LocationName']} - Platform {row['PlatformID']}.")
+        print(f"ERROR: No link within {bound}m for {row['index_TIPLOC']}: {aTPE['Tiploc']}: {aTPE['Name']} - Platform {row['PlatformID']}.")
 
     #Define the access node depending on the Relative Position calculated
     if sp_Link.RelPos < 0.5:
@@ -215,7 +233,7 @@ def addStopPoint(Visum, i, row, bound, LOCsUnique):
 
     #Add a new stop area for the platform and populate attributes
     sa = Visum.Net.AddStopArea(i, row['index_TIPLOC'], sa_Node, sp_Link.XPosOnLink, sp_Link.YPosOnLink)
-    sa.SetAttValue('Code', f"{myLOC['TIPLOC']}_{row['PlatformID']}")
+    sa.SetAttValue('Code', f"{aTPE['Tiploc']}_{row['PlatformID']}")
     sa.SetAttValue('Name', f"Platform {row['PlatformID']}")
     
     #Attempt to add the stop point on the link, taking into account whether it should be directed or not
@@ -245,11 +263,20 @@ def addStopPoint(Visum, i, row, bound, LOCsUnique):
                 alt = [altN + 0.001 for altN in alt]
 
     #The attributes for the stop point are populated
-    sp.SetAttValue('Code', f"{myLOC['TIPLOC']}_{row['PlatformID']}")
+    sp.SetAttValue('Code', f"{aTPE['Tiploc']}_{row['PlatformID']}")
     sp.SetAttValue('Name', f"Platform {row['PlatformID']}")
 
+def getJoin(x):
+    xFil = x[x.notna()].unique()
+    xList = [str(anX) for anX in xFil.tolist() if str(anX) != '<NA>']
+    if len(xList) == 1:
+        return xList[0]
+    else:
+        return ','.join(xList)
+    
 def getCommonPrefix(x):
-    xList = [str(anX) for anX in x.tolist()]
+    xFil = x[x.notna()].unique()
+    xList = [str(anX) for anX in xFil.tolist()if str(anX) != '<NA>']
     if len(xList) == 1:
         return xList[0]
     else:
@@ -257,87 +284,42 @@ def getCommonPrefix(x):
 
 def processBPLAN(path):
 
-    NaPTANstops = pd.read_csv(os.path.join(path, 'input\\Stops.csv'), index_col = 'ATCOCode', low_memory = False)
-    NaPTANstops = NaPTANstops[NaPTANstops['StopType'] == 'RLY']
+    myTPE = pd.DataFrame(json.load(open(os.path.join(path, 'input\\TiplocPublicExport_2022-12-24_10-37.json'))).get('Tiplocs')).set_index('Tiploc')
+    myTPE = myTPE[[len(aTiploc) <= 7 for aTiploc in myTPE.index.values]]
+    myTPE['CRS'] = [row['Details'].get('CRS') for _, row in myTPE.iterrows()]
+    myTPE.drop(['DisplayName', 'NodeId', 'Codes', 'Details', 'Elevation'], axis = 1, inplace = True)
+    myTPE['Easting'] = [WGS84toOSGB36(float(row['Latitude']), float(row['Longitude']))[0] for _, row in myTPE.iterrows()]
+    myTPE['Northing'] = [WGS84toOSGB36(float(row['Latitude']), float(row['Longitude']))[1] for _, row in myTPE.iterrows()]
+    myTPE['Stanox'] = myTPE['Stanox'].astype('Int32', False).astype('str', False)
+
+    TPEsUnique = pd.pivot_table(myTPE.reset_index(), ['Tiploc', 'Name', 'Stanox', 'Latitude', 'Longitude', 'InBPlan', 'InTPS', 'CRS'], ['Easting', 'Northing'],
+                               aggfunc = {'Tiploc': getJoin,
+                                          'Name': getCommonPrefix,
+                                          'Stanox': getJoin,
+                                          'Latitude': np.mean,
+                                          'Longitude': np.mean,
+                                          'InBPlan': np.mean,
+                                          'InTPS': np.mean,
+                                          'CRS': getJoin}).reset_index().reset_index()
+
+    TPEsUnique['index'] += 100000
+    TPEsUnique.set_index(['index'], inplace = True)
+
+    myTPE = myTPE.reset_index().merge(TPEsUnique.reset_index(), 'left', ['Easting', 'Northing']).set_index('Tiploc_x')
+
+    myTPE.to_csv(os.path.join(path, 'cached_data\\BPLAN\\TPEs.csv'))
 
     with open(os.path.join(path, 'input\\Geography_20221210_to_20230520_from_20221211.txt')) as f:
         lines = f.readlines()
     lines = [line[:-1].split('\t') for line in lines]
-    
-    LOCs = pd.DataFrame(list(filter(lambda line: line[0] == "LOC", lines)),
-                        columns = ['RecordType', 'ActionCode', 'TIPLOC', 'LocationName', 'StartDate', 'EndDate',
-                                   'Easting', 'Northing', 'TimingPointType', 'ZoneResponsible', 'STANOX', 'OffNetwork', 'ForceLPB'])
-    
-    LOCs.drop(['RecordType', 'ActionCode', 'EndDate', 'ForceLPB'], axis = 1, inplace = True)
-    LOCs.set_index('TIPLOC', inplace = True)
-    LOCs['StartDate'] = LOCs['StartDate'].astype('datetime64', False)
-    LOCs['STANOX'] = LOCs['STANOX'].replace('', 0)
-    
-    for col in ['Easting', 'Northing', 'ZoneResponsible', 'STANOX']:
-        LOCs[col] = LOCs[col].astype('int32', False)
-    LOCs['OffNetwork'] = [aBool == "Y" for aBool in LOCs['OffNetwork']]
-    
-    LOCs['Quality'] = 0
-    
-    for i, row in LOCs.iterrows():
-        try:
-            NaPTANcheck = NaPTANstops.loc['9100' + i]
-            LOCs.loc[i, 'Easting'] = NaPTANcheck['Easting']
-            LOCs.loc[i, 'Northing'] = NaPTANcheck['Northing']
-            LOCs.loc[i, 'Quality'] = 4
-        except KeyError:
-            sharedSTANOX = LOCs[LOCs['STANOX'] == row['STANOX']].drop(['Easting', 'Northing'], axis = 1)
-            if (row['STANOX'] > 0) & (len(sharedSTANOX) > 0):
-                sharedSTANOX.index = '9100' + sharedSTANOX.index
-                sharedSTANOX = sharedSTANOX.join(NaPTANstops, how = 'inner')
-                if len(sharedSTANOX) > 0:
-                    LOCs.loc[i, 'Easting'] = sharedSTANOX['Easting'].mean()
-                    LOCs.loc[i, 'Northing'] = sharedSTANOX['Northing'].mean()
-                    LOCs.loc[i, 'Quality'] = 3
-    
-    boundE = LOCs['Easting'].loc[['PENZNCE', 'LOWSTFT']]
-    boundN = LOCs['Northing'].loc[['PENZNCE', 'THURSO']]
-    untrustedCoords = [0, 1, 10000, 99999, 111111, 222222, 333333, 444444, 555555, 666666, 777777, 888888, 989898, 999999]
-    
-    LOCs.loc[LOCs['Easting'].between(boundE[0], boundE[1])
-             & LOCs['Northing'].between(boundN[0], boundN[1])
-             & ~LOCs['Easting'].isin(untrustedCoords)
-             & ~LOCs['Northing'].isin(untrustedCoords)
-             & (LOCs['Quality'] == 0), 'Quality'] = 2
-    
-    for i, row in LOCs.iterrows():
-        if row['Quality'] == 0:
-            sharedTrustedSTANOX = LOCs[(LOCs['STANOX'] == row['STANOX']) & (LOCs['Quality'] == 2)]
-            if (row['STANOX'] > 0) & (len(sharedTrustedSTANOX) > 0):
-                LOCs.loc[i, 'Easting'] = sharedTrustedSTANOX['Easting'].mean()
-                LOCs.loc[i, 'Northing'] = sharedTrustedSTANOX['Northing'].mean()
-                LOCs.loc[i, 'Quality'] = 1
-    
-    LOCsUnique = pd.pivot_table(LOCs[LOCs['Quality'] > 0].reset_index(), ['TIPLOC', 'LocationName', 'StartDate', 'TimingPointType', 'ZoneResponsible', 'STANOX', 'OffNetwork', 'Quality'], ['Easting', 'Northing'],
-                               aggfunc = {'TIPLOC': getCommonPrefix,
-                                          'LocationName': getCommonPrefix,
-                                          'StartDate': np.min,
-                                          'TimingPointType': getCommonPrefix,
-                                          'ZoneResponsible': getCommonPrefix,
-                                          'STANOX': getCommonPrefix,
-                                          'OffNetwork': np.mean,
-                                          'Quality': np.min}).reset_index().reset_index()
-
-    LOCsUnique['index'] += 100000
-    LOCsUnique.set_index(['index'], inplace = True)
-    
-    LOCs = LOCs.reset_index().merge(LOCsUnique.reset_index()[['Easting', 'Northing', 'index', 'TIPLOC', 'LocationName']], 'left', ['Easting', 'Northing']).set_index('TIPLOC_x')
-    LOCs['index'] = LOCs['index'].astype('Int32')
 
     PLTs = pd.DataFrame(list(filter(lambda line: line[0] == "PLT", lines)),
                         columns = ['RecordType', 'ActionCode', 'TIPLOC', 'PlatformID', 'StartDate', 'EndDate',
                                    'PlatformLength', 'PowerSupplyType', 'PassengerDOO', 'NonPassengerDOO'])
     
     PLTs.drop(['RecordType', 'ActionCode', 'EndDate', 'PowerSupplyType'], axis = 1, inplace = True)
-    PLTs['index_TIPLOC'] = LOCs.loc[PLTs['TIPLOC']]['index'].values
-    
-    LOCs = LOCs[~LOCs['index'].isna()]
-    LOCs.to_csv(os.path.join(path, 'cached_data\\BPLAN\\LOCs.csv'))
+    PLTs = PLTs[[aTIPLOC in myTPE.index for aTIPLOC in PLTs['TIPLOC']]]
+    PLTs['index_TIPLOC'] = myTPE.loc[PLTs['TIPLOC']]['index'].values
     
     PLTs = PLTs[~PLTs['index_TIPLOC'].isna()]
     PLTs['PlatformID'] = PLTs['PlatformID'].str.upper()
@@ -357,32 +339,33 @@ def processBPLAN(path):
 
     for i, row in PLTs.iterrows():
         myPlatformNum = re.sub('[^0-9]', '', row['PlatformID'])
-        myLOC = LOCs.loc[row['TIPLOC']]
-        if myLOC['Quality'] > 0:
-            OSMpltData = get_OSM_platform_data(path, row['index_TIPLOC'], f"{myLOC['TIPLOC_y']}: {myLOC['LocationName_y']}", myLOC['Easting'], myLOC['Northing'], 250)
-            OSMpltDataFil = OSMpltData[OSMpltData['Platform'] == row['PlatformID']]
+        aTPE = myTPE.loc[row['TIPLOC']]
+        OSMpltData = get_OSM_platform_data(path, row['index_TIPLOC'], f"{aTPE['Tiploc_y']}: {aTPE['Name_y']}", aTPE['Easting'], aTPE['Northing'], 250)
+        OSMpltDataFil = OSMpltData[OSMpltData['Platform'] == row['PlatformID']]
+        if len(OSMpltDataFil) > 0:
+            OSMloc = OSMpltDataFil['Location'].iloc[0]
+            PLTs.loc[i, 'Easting'] = OSMloc.x
+            PLTs.loc[i, 'Northing'] = OSMloc.y
+            PLTs.loc[i, 'Shape'] = OSMpltDataFil['Shape'].iloc[0]
+            PLTs.loc[i, 'Quality'] = 2
+            PLTs.loc[i, 'index'] += row['index_PlatformID']
+        elif len(myPlatformNum) > 0:
+            OSMpltData['Platform'] = [re.sub('[^0-9]', '', str(platform)) for platform in OSMpltData['Platform']]
+            OSMpltDataFil = OSMpltData[OSMpltData['Platform'] == myPlatformNum]
             if len(OSMpltDataFil) > 0:
                 OSMloc = OSMpltDataFil['Location'].iloc[0]
                 PLTs.loc[i, 'Easting'] = OSMloc.x
                 PLTs.loc[i, 'Northing'] = OSMloc.y
                 PLTs.loc[i, 'Shape'] = OSMpltDataFil['Shape'].iloc[0]
-                PLTs.loc[i, 'Quality'] = 2
+                PLTs.loc[i, 'Quality'] = 1
                 PLTs.loc[i, 'index'] += row['index_PlatformID']
-            elif len(myPlatformNum) > 0:
-                OSMpltData['Platform'] = [re.sub('[^0-9]', '', str(platform)) for platform in OSMpltData['Platform']]
-                OSMpltDataFil = OSMpltData[OSMpltData['Platform'] == myPlatformNum]
-                if len(OSMpltDataFil) > 0:
-                    OSMloc = OSMpltDataFil['Location'].iloc[0]
-                    PLTs.loc[i, 'Easting'] = OSMloc.x
-                    PLTs.loc[i, 'Northing'] = OSMloc.y
-                    PLTs.loc[i, 'Shape'] = OSMpltDataFil['Shape'].iloc[0]
-                    PLTs.loc[i, 'Quality'] = 1
-                    PLTs.loc[i, 'index'] += row['index_PlatformID']
     
     PLTs = PLTs[PLTs['Quality'] > 0]
     PLTs.to_csv(os.path.join(path, 'cached_data\\BPLAN\\PLTs.csv'))
 
-    PLTsUnique = pd.pivot_table(PLTs.reset_index(), ['PlatformID', 'StartDate', 'PlatformLength', 'PassengerDOO', 'NonPassengerDOO', 'index_TIPLOC', 'index_PlatformID', 'Easting', 'Northing', 'Quality'], ['index'],
+    PLTsUnique = pd.pivot_table(PLTs.reset_index(), ['PlatformID', 'StartDate', 'PlatformLength', 'PassengerDOO', 'NonPassengerDOO',
+                                                     'index_TIPLOC', 'index_PlatformID', 'Easting', 'Northing', 'Quality'],
+                                ['index'],
                                aggfunc = {'PlatformID': getCommonPrefix,
                                           'StartDate': np.min,
                                           'PlatformLength': np.min,
@@ -394,7 +377,7 @@ def processBPLAN(path):
                                           'Northing': np.min,
                                           'Quality': np.min})
 
-    return LOCsUnique, PLTsUnique
+    return TPEsUnique, PLTsUnique
 
 def progressBar(myRange):
     class ProgWin(wx.Frame):
@@ -412,7 +395,7 @@ def progressBar(myRange):
     prog = ProgWin(None, 'wx.Gauge')
     return prog
 
-def getVisumLOCs(LOCsUnique, myVer, myShp):
+def getVisumLOCs(TPEsUnique, myVer, myShp, reversedELRs):
     Visum = com.Dispatch('Visum.Visum.230')
     projString = """
                         PROJCS[
@@ -443,37 +426,36 @@ def getVisumLOCs(LOCsUnique, myVer, myShp):
     ImportShapeFilePara.ObjectType = 0
     ImportShapeFilePara.SetAttValue('Directed', True)
     Visum.IO.ImportShapefile(myShp, ImportShapeFilePara)
-    fixDirectedNet(Visum)
+    fixDirectedNet(Visum, reversedELRs)
     MyMapMatcher = Visum.Net.CreateMapMatcher()
     LinkType = Visum.Net.AddLinkType(2)
     LinkType.SetAttValue('TSysSet', '2')
-    for uda, dtype in [['OffNetwork', 2], ['Quality', 1], ['STANOX', 5], ['StartDate', 5], ['TimingPointType', 5], ['ZoneResponsible', 5]]:
+    for uda, dtype in [['CRS', 5],['InBPlan', 2],['InTPS', 2],['Stanox', 5]]:
         Visum.Net.Stops.AddUserDefinedAttribute(uda, uda, uda, dtype)
     Visum.Graphic.StopDrawing = True
     ex = wx.App()
-    prog = progressBar(LOCsUnique.index.max() - 100000)
-    for i, row in LOCsUnique.iterrows():
+    prog = progressBar(TPEsUnique.index.max() - 100000)
+    for i, row in TPEsUnique.iterrows():
         Node = Visum.Net.AddNode(i, row['Easting'], row['Northing'])
-        Node.SetAttValue('Code', row['TIPLOC'])
-        Node.SetAttValue('Name', row['LocationName'])
+        Node.SetAttValue('Code', row['Tiploc'])
+        Node.SetAttValue('Name', row['Name'])
         Stop = Visum.Net.AddStop(i, row['Easting'], row['Northing'])
-        Stop.SetAttValue('Code', row['TIPLOC'])
-        Stop.SetAttValue('Name', row['LocationName'])
-        Stop.SetAttValue('Quality', row['Quality'])
-        Stop.SetAttValue('STANOX', row['STANOX'])
-        Stop.SetAttValue('StartDate', str(row['StartDate']))
-        Stop.SetAttValue('TimingPointType', row['TimingPointType'])
-        Stop.SetAttValue('ZoneResponsible', row['ZoneResponsible'])
+        Node.SetAttValue('Code', row['Tiploc'])
+        Node.SetAttValue('Name', row['Name'])
+        Stop.SetAttValue('CRS', row['CRS'])
+        Stop.SetAttValue('InBPlan', row['InBPlan'])
+        Stop.SetAttValue('InTPS', str(row['InTPS']))
+        Stop.SetAttValue('Stanox', row['Stanox'])
         StopArea = Visum.Net.AddStopArea(1000*i, i, i, row['Easting'], row['Northing'])
-        StopArea.SetAttValue('Code', row['TIPLOC'])
+        StopArea.SetAttValue('Code', row['Tiploc'])
         StopArea.SetAttValue('Name', 'Platform Unknown')
         StopPoint = Visum.Net.AddStopPointOnNode(1000*i, StopArea, i)
-        StopPoint.SetAttValue('Code', row['TIPLOC'])
+        StopPoint.SetAttValue('Code', row['Tiploc'])
         StopPoint.SetAttValue('Name', 'Platform Unknown')
         unsatis = True
         fil_string = '[TYPENO]=1'
-        nTRID = 1
-        while unsatis & (nTRID <= 3):
+        nTRID = 0
+        while unsatis & (nTRID < 10):
             Visum.Net.Links.SetPassive()
             Visum.Net.Links.GetFilteredSet(fil_string).SetActive()
             split_Link = MyMapMatcher.GetNearestLink(row['Easting'], row['Northing'], 250, True, True)
@@ -494,8 +476,8 @@ def getVisumLOCs(LOCsUnique, myVer, myShp):
                 else:
                     split_Node = Visum.Net.AddNode(split_no, split_Link.XPosOnLink, split_Link.YPosOnLink)
                     split_Link.Link.SplitViaNode(split_Node)
-                    Visum.Net.Links.ItemByKey(split_Link.Link.AttValue('FromNodeNo'), split_no).SetNo(split_no + 3)
-                    Visum.Net.Links.ItemByKey(split_no, split_Link.Link.AttValue('ToNodeNo')).SetNo(split_no + 6)
+                    Visum.Net.Links.ItemByKey(split_Link.Link.AttValue('FromNodeNo'), split_no).SetNo(split_no + 1000000)
+                    Visum.Net.Links.ItemByKey(split_no, split_Link.Link.AttValue('ToNodeNo')).SetNo(split_no + 2000000)
                     Visum.Net.AddLink(split_no, split_no, i, 2)
                 fil_string += f"&[TRID]!=\"{split_TRID}\""
                 nTRID += 1
@@ -505,7 +487,7 @@ def getVisumLOCs(LOCsUnique, myVer, myShp):
     Visum.IO.SaveVersion(myVer)
 
 
-def getVisumPLTs(PLTsUnique, myPLTsVer, myLOCsVer, LOCsUnique, output):
+def getVisumPLTs(PLTsUnique, myPLTsVer, myLOCsVer, TPEsUnique, output):
     Visum = com.Dispatch('Visum.Visum.230')
     Visum.IO.LoadVersion(myLOCsVer)
     Visum.Net.Links.GetFilteredSet('[TypeNo]=1').SetActive()
@@ -513,7 +495,7 @@ def getVisumPLTs(PLTsUnique, myPLTsVer, myLOCsVer, LOCsUnique, output):
     ex = wx.App()
     prog = progressBar(PLTsUnique.index.max() - 100000000)
     for i, row in PLTsUnique.iterrows():
-        addStopPoint(Visum, i, row, 250, LOCsUnique)
+        addStopPoint(Visum, i, row, 250, TPEsUnique)
         prog.gauge.SetValue(i - 100000000)
     Visum.Graphic.StopDrawing = False
     Visum.Net.Links.SetMultipleAttributes(['Length'], Visum.Net.Links.GetMultipleAttributes(['LengthPoly']))
@@ -538,12 +520,12 @@ def main():
     if os.path.exists(myPickle):
         print('Read old already processed BPLAN pickle results from cache')
         with open(myPickle, 'rb') as f:
-            LOCsUnique, PLTsUnique = pickle.load(f)
+            TPEsUnique, PLTsUnique = pickle.load(f)
     else:
         print('Reprocessed BPLAN to obtain new pickle results and saved to cache')
-        LOCsUnique, PLTsUnique = processBPLAN(path)
+        TPEsUnique, PLTsUnique = processBPLAN(path)
         with open(myPickle, 'wb') as f:
-            pickle.dump([LOCsUnique, PLTsUnique], f)
+            pickle.dump([TPEsUnique, PLTsUnique], f)
     
     myShp = os.path.join(path, 'input\\Shp\\NR_Full_Network.shp')
     myLOCsVer = os.path.join(path, 'cached_data\\VISUM\\LOCs_Only.ver')
@@ -552,15 +534,17 @@ def main():
 
     if os.path.exists(myLOCsVer):
         print('Read old processed BPLAN LOCs Version file from cache')
-    else:
+    else: 
+        reversedELRsDF = pd.read_csv(os.path.join(path, 'input\\Reverse_ELR_Direction.txt'), low_memory = False)
+        reversedELRs = [reversedELR[0] for reversedELR in reversedELRsDF.values]
         print('Reprocessed BPLAN to obtain new LOCs Version file and saved to cache')
-        getVisumLOCs(LOCsUnique, myLOCsVer, myShp)
+        getVisumLOCs(TPEsUnique, myLOCsVer, myShp, reversedELRs)
 
     if os.path.exists(myPLTsVer):
         print('Read old processed BPLAN PLTs Version file from cache')
     else:
         print('Reprocessed BPLAN to obtain new PLTs Version file and saved to cache')
-        getVisumPLTs(PLTsUnique, myPLTsVer, myLOCsVer, LOCsUnique, output)
+        getVisumPLTs(PLTsUnique, myPLTsVer, myLOCsVer, TPEsUnique, output)
 
     print('Done')
 

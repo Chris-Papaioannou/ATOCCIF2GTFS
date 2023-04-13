@@ -1,0 +1,1383 @@
+HD                    0512221007                                                
+AANY90472C383752205162209081111000JJSMCHYNLT  TP                                
+AANY57364Y574072205162210211111100VVSCRNLRCH  TP                                
+AANY57372Y574092205162210211111100VVSCRNLRCH  TP                                
+AANY57411Y573762205162210211111100JJSCRNLRCH  TP                                
+AANY57390Y574142205162210201111000VVSCRNLRCH  TP                                
+AANY57416Y573952201012212310010000JJSCRNLRCH  TP                                
+AANY66165Y673562205162210071111100JJSSOTON    TP                                
+AANY67339Y661892205162212091111100VVSSOTON    TP                                
+AANY66216Y673542205162210071111100JJSSOTON    TP                                
+AANY66759Y668512205162212091111100JJSSLSBRY   TP                                
+AANY67246Y674622205162212091111100VVSSOTON    TP                                
+AANY67253Y674632205162212091111100VVSSOTON    TP                                
+AANY67255Y674682205162212091111100VVSSOTON    TP                                
+AANY93423Y928302205172209090111100VVSCRDFCEN  TP                                
+AANP93805W774272205162212091111100VVSHYWRDSH  TP                                
+AANP93806W770602205162212091111100VVSHORSHAM  TP                                
+AANW77517W770712205162212091111100VVSHORSHAM  TP                                
+AANW77119W775182205162212091111100JJSHORSHAM  TP                                
+AANW77121W775192205162212091111100JJSHORSHAM  TP                                
+AANW77520W770732205162212091111100VVSHORSHAM  TP                                
+AANW77122W775212205162212091111100JJSHORSHAM  TP                                
+AANW77124W775222205162212091111100JJSHORSHAM  TP                                
+AANW77523W770752205162212091111100VVSHORSHAM  TP                                
+AANW77127W775252205162212091111100JJSHORSHAM  TP                                
+AANW77526W770772205162212091111100VVSHORSHAM  TP                                
+AANW77128W775272205162212091111100JJSHORSHAM  TP                                
+AANW77129W775282205162212091111100JJSHORSHAM  TP                                
+AANW77529W770782205162212091111100VVSHORSHAM  TP                                
+AANW77130W775302205162212091111100JJSHORSHAM  TP                                
+AANW77131W775312205162212091111100JJSHORSHAM  TP                                
+AANW77532W770792205162212091111100VVSHORSHAM  TP                                
+AANW77132W775332205162212091111100JJSHORSHAM  TP                                
+AANW77134W775342205162212091111100JJSHORSHAM  TP                                
+AANW77535W770812205162212091111100VVSHORSHAM  TP                                
+AANW77135W775362205162212091111100JJSHORSHAM  TP                                
+AANW77137W775372205162212091111100JJSHORSHAM  TP                                
+AANW77538W770832205162212091111100VVSHORSHAM  TP                                
+AANW77138W775392205162212091111100JJSHORSHAM  TP                                
+AANW77142W775412205162212091111100JJSHORSHAM  TP                                
+AANW77144W775422205162212091111100JJSHORSHAM  TP                                
+AANW77152W775432205162212091111100JJSHORSHAM  TP                                
+AANW77159W775452201012212310010000JJSHORSHAM  TP                                
+AANW78110W779512205162212091111100JJSREDHILL  TP                                
+AANW78111W779522205162212091111100JJSREDHILL  TP                                
+AANW78113W779542205162212091111100JJSREDHILL  TP                                
+AANW78114W779552205162212091111100JJSREDHILL  TP                                
+AANW77863W796352205162212091111100VVSPURLEY   TP                                
+AANP13525P133782205162212081111000JJSHDRSFLD  TP                                
+AANW50020W504252205162212091111100JJSCLCHSTR  TP                                
+AANW77502W770622205162212091111100VVSHORSHAM  TP                                
+AANW77106W770632205162212091111100VVSHORSHAM  TP                                
+AANW77505W770642201012212310010000VVSHORSHAM  TP                                
+AANW77109W770652205162212091111100VVSHORSHAM  TP                                
+AANW77508W770662205162212091111100VVSHORSHAM  TP                                
+AANW77112W770672205162212091111100VVSHORSHAM  TP                                
+AANW77511W770682205162212091111100VVSHORSHAM  TP                                
+AANW77514W770692205162212091111100VVSHORSHAM  TP                                
+AANW77117W770702205162212091111100VVSHORSHAM  TP                                
+AANW77120W770722205162212091111100VVSHORSHAM  TP                                
+AANW77123W770742205162212091111100VVSHORSHAM  TP                                
+AANW77126W770762205162212091111100VVSHORSHAM  TP                                
+AANW77133W770802205162212091111100VVSHORSHAM  TP                                
+AANW77136W770822205162212091111100VVSHORSHAM  TP                                
+AANW77139W770842201012212310010000VVSHORSHAM  TP                                
+AANW77143W770852205162212091111100VVSBRHM     TP                                
+AANW77150W770862205162212091111100VVSHORSHAM  TP                                
+AANW77151W770872201012212310010000VVSHORSHAM  TP                                
+AANW77153W770882205162212091111100VVSHORSHAM  TP                                
+AANW77101W774992205162212091111100JJSHORSHAM  TP                                
+AANW77104W775012205162212091111100JJSHORSHAM  TP                                
+AANW77105W775032205162212091111100JJSHORSHAM  TP                                
+AANW77107W775042205162212091111100JJSHORSHAM  TP                                
+AANW77108W775062205162212091111100JJSHORSHAM  TP                                
+AANW77110W775072205162212091111100JJSHORSHAM  TP                                
+AANW77111W775092205162212091111100JJSHORSHAM  TP                                
+AANW77113W775102205162212091111100JJSHORSHAM  TP                                
+AANW77114W775122205162212091111100JJSHORSHAM  TP                                
+AANW77115W775132205162212091111100JJSHORSHAM  TP                                
+AANW77116W775152205162212091111100JJSHORSHAM  TP                                
+AANW77118W775162205162212091111100JJSHORSHAM  TP                                
+AANW77791W795072205172212090111100JJSPURLEY   TP                                
+AANW77793W795092205162212091111100VVSPURLEY   TP                                
+AANW77794W795122205172212090111100JJSPURLEY   TP                                
+AANW77796W795142205162212091111100VVSPURLEY   TP                                
+AANW77797W795162205162212091111100JJSPURLEY   TP                                
+AANW77798W795182205162212091111100VVSPURLEY   TP                                
+AANW77799W795202205162212091111100JJSPURLEY   TP                                
+AANW77800W795222201012212310010000VVSPURLEY   TP                                
+AANW77801W795242205162212091111100JJSPURLEY   TP                                
+AANW77802W795262205162212091111100VVSPURLEY   TP                                
+AANW77803W795282205162212091111100JJSPURLEY   TP                                
+AANW77804W795302205162212091111100VVSPURLEY   TP                                
+AANW77805W795322205162212091111100JJSPURLEY   TP                                
+AANW77806W795342205162212091111100VVSPURLEY   TP                                
+AANW77807W795362205162212091111100JJSPURLEY   TP                                
+AANW77808W795382205162212091111100VVSPURLEY   TP                                
+AANW77809W795402205162212091111100JJSPURLEY   TP                                
+AANW77810W795422205162212091111100VVSPURLEY   TP                                
+AANW77811W795442205162212091111100JJSPURLEY   TP                                
+AANW77812W795462205162212091111100VVSPURLEY   TP                                
+AANW77813W795482205162212091111100JJSPURLEY   TP                                
+AANW77814W795502205162212091111100VVSPURLEY   TP                                
+AANW77815W795522205162212091111100JJSPURLEY   TP                                
+AANW77369W772512205162212091111100JJSHYWRDSH  TP                                
+AANW77426W773032205162212091111100VVSHYWRDSH  TP                                
+AANW77306W774232205162212081111000JJSHYWRDSH  TP                                
+AANW77816W795542205162212091111100VVSPURLEY   TP                                
+AANW77817W795562205162212091111100JJSPURLEY   TP                                
+AANW77818W795582205162212091111100VVSPURLEY   TP                                
+AANW77819W795602205162212091111100JJSPURLEY   TP                                
+AANW77820W795622205162212091111100VVSPURLEY   TP                                
+AANW77821W795642205162212091111100JJSPURLEY   TP                                
+AANW77822W795662205162212091111100VVSPURLEY   TP                                
+AANW77823W795682205162212091111100JJSPURLEY   TP                                
+AANW77824W795702205162212091111100VVSPURLEY   TP                                
+AANW77825W795722205162212091111100JJSPURLEY   TP                                
+AANW77826W795742205162212091111100VVSPURLEY   TP                                
+AANW77827W795762205162212091111100JJSPURLEY   TP                                
+AANW77828W795782205162212091111100VVSPURLEY   TP                                
+AANW77829W795802205162212091111100JJSPURLEY   TP                                
+AANW77830W795822205162212091111100VVSPURLEY   TP                                
+AANW77831W795842205162212091111100JJSPURLEY   TP                                
+AANW77832W795852205162212091111100VVSPURLEY   TP                                
+AANW77833W795872205162212091111100JJSPURLEY   TP                                
+AANW77834W795882205162212091111100VVSPURLEY   TP                                
+AANW77835W795902205162212091111100JJSPURLEY   TP                                
+AANW77836W795912205162212091111100VVSPURLEY   TP                                
+AANW77837W795932205162212091111100JJSPURLEY   TP                                
+AANW77838W795942205162212091111100VVSPURLEY   TP                                
+AANW77839W795962205162212091111100JJSPURLEY   TP                                
+AANW77840W795972205162212091111100VVSPURLEY   TP                                
+AANW77841W795992205162212091111100JJSPURLEY   TP                                
+AANW77842W796002205162212091111100VVSPURLEY   TP                                
+AANW77843W796022205162212091111100JJSPURLEY   TP                                
+AANW77844W796032205162212091111100VVSPURLEY   TP                                
+AANW77845W796052205162212091111100JJSPURLEY   TP                                
+AANW77846W796062205162212091111100VVSPURLEY   TP                                
+AANW77847W796082205162212091111100JJSPURLEY   TP                                
+AANW77848W796092205162212091111100VVSPURLEY   TP                                
+AANW77849W796112205162212091111100JJSPURLEY   TP                                
+AANW77850W796122205162212091111100VVSPURLEY   TP                                
+AANW77851W796142205162212091111100JJSPURLEY   TP                                
+AANW77852W796152205162212091111100VVSPURLEY   TP                                
+AANW77853W796172205162212091111100JJSPURLEY   TP                                
+AANW77854W796182205162212091111100VVSPURLEY   TP                                
+AANW77855W796202205162212091111100JJSPURLEY   TP                                
+AANW77856W796222205162212091111100VVSPURLEY   TP                                
+AANW77857W796242205162212091111100JJSPURLEY   TP                                
+AANW77858W796262205162212091111100VVSPURLEY   TP                                
+AANW77859W796282205162212091111100JJSPURLEY   TP                                
+AANW77860W796302205162212081111000VVSPURLEY   TP                                
+AANW77862W796332205162212091111100JJSPURLEY   TP                                
+AANW77865W796392201012212310010000VVNPURLEY   TP                                
+AANW77885W780352205162212091111100VVSREDHILL  TP                                
+AANW77886W780382205162212091111100VVSREDHILL  TP                                
+AANW77918W780742205162212091111100VVSREDHILL  TP                                
+AANW77921W780772205162212091111100VVSREDHILL  TP                                
+AANW77923W780802205162212091111100VVSREDHILL  TP                                
+AANW77930W780892201012212310010000VVSREDHILL  TP                                
+AANW78108W779492205162212091111100JJSREDHILL  TP                                
+AANW78109W779502205162212091111100JJSREDHILL  TP                                
+AANW79500W795042201012212310010000VVSPURLEY   TP                                
+AANY66674Y668452205162212091111100JJSSLSBRY   TP                                
+AANY66718Y668482205162212091111100JJSSLSBRY   TP                                
+AANY67260Y674732205162212091111100VVSSOTON    TP                                
+AANY67287Y674172205162212091111100VVSBOMO     TP                                
+AANY67321Y674582205162212091111100VVSSOTON    TP                                
+AANY67327Y674772205162212091111100VVSSOTON    TP                                
+AANY67331Y674672205162212091111100VVSSOTON    TP                                
+AANY67334Y674722205162212091111100VVSSOTON    TP                                
+AANY90617Y922522205162209091111100JJSMCHYNLT  TP                                
+AANY90629Y922552205162209091111100JJSMCHYNLT  TP                                
+AANY90641Y922582205162209091111100JJSMCHYNLT  TP                                
+AANY90653Y922612205162209091111100JJSMCHYNLT  TP                                
+AANY90677Y922752205162209091111100VVSMCHYNLT  TP                                
+AANY90684Y922792205162209091111100VVSMCHYNLT  TP                                
+AANY90692Y922882205162209091111100VVSMCHYNLT  TP                                
+AANY90700Y922902205162209091111100VVSMCHYNLT  TP                                
+AANY90707Y922952205162209091111100VVSMCHYNLT  TP                                
+AANY90594Y923212205162209091111100JJSSHRWBY   TP                                
+AANY90604Y924142205162209091111100JJSSHRWBY   TP                                
+AANW77425W773082201012212310010000VVSHYWRDSH  TP                                
+BSNC009572205162212091111100 POO2U14    124627006 EMU483 045      S             
+BX         ILY                                                                  
+LOSHANKLN 0815 0815          T                                                  
+LILAKEIOW 0817 0817H     08170817         T                                     
+LISNDOWN  0820 0820H     08200820         T                                     
+LIBRDING  0824H0825H     08250825         T                                     
+LISMALBRK           0830 00000000                                               
+LIRYDS    0832 0833      08320833         T                                     
+LIRYDE    0836 0837      08360837         T                                     
+LTRYDP    0839 0839      T                                                      
+BSNC009602205162212091111100 POO2U16    124627006 EMU483 045      S             
+BX         ILY                                                                  
+LOSHANKLN 0848 0848          T                                                  
+LILAKEIOW 0850 0850H     08500850         T                                     
+LISNDOWN  0853 0853H     08530853         T                                     
+LIBRDING  0857H0858H     08580858         T X                                   
+LISMALBRK           0903 00000000                                               
+LTRYDS    0905 0905      T                                                      
+BSNC009612205162212091111100 POO2U18    124627006 EMU483 045      S             
+BX         ILY                                                                  
+LOSHANKLN 0915 0915          T                                                  
+LILAKEIOW 0917 0917H     09170917         T                                     
+LISNDOWN  0920 0920H     09200920         T                                     
+LIBRDING  0924H0925H     09250925         T                                     
+LISMALBRK           0930 00000000                                               
+LIRYDS    0932 0933      09320933         T                                     
+LIRYDE    0936 0937      09360937         T                                     
+LTRYDP    0939 0939      T                                                      
+BSNC009652205162211041111100 POO2U22    124627006 EMU483 045      S             
+BX         ILY                                                                  
+LOSHANKLN 1015 1015          T                                                  
+LILAKEIOW 1017H1018      10181018         T                                     
+LISNDOWN  1020H1021H     10211021         T                                     
+LIBRDING  1025H1026H     10261026         T                                     
+LISMALBRK 1031 1031H     10311031         R                                     
+LIRYDS    1034 1035      10341035         T                                     
+LIRYDE    1038 1039      10381039         T                                     
+LTRYDP    1041 1041      T                                                      
+BSNC009732205162211041111100 POO2U26    124627006 EMU483 045      S             
+BX         ILY                                                                  
+LOSHANKLN 1117 1117          T                                                  
+LILAKEIOW 1119H1120      11201120         T                                     
+LISNDOWN  1122H1123H     11231123         T                                     
+LIBRDING  1127H1128H     11281128         T                                     
+LISMALBRK 1133 1133H     11331133         R                                     
+LIRYDS    1136 1137      11361137         T                                     
+LTRYDE    1140 1140      T                                                      
+BSNC009812205162211041111100 POO2U30    124627006 EMU483 045      S             
+BX         ILY                                                                  
+LOSHANKLN 1214 1214          T                                                  
+LILAKEIOW 1216H1217      12171217         T                                     
+LISNDOWN  1219H1220H     12201220         T                                     
+LIBRDING  1224H1225H     12251225         T                                     
+LISMALBRK 1230 1230H     12301230         R                                     
+LIRYDS    1233 1234      12331234         T                                     
+LIRYDE    1237 1238      12371238         T                                     
+LTRYDP    1240 1240      T                                                      
+BSNC009892205162211041111100 POO2U34    124627006 EMU483 045      S             
+BX         ILY                                                                  
+LOSHANKLN 1315 1315          T                                                  
+LILAKEIOW 1317H1318      13181318         T                                     
+LISNDOWN  1320H1321H     13211321         T                                     
+LIBRDING  1325H1326H     13261326         T                                     
+LISMALBRK 1331 1331H     13311331         R                                     
+LIRYDS    1334 1335      13341335         T                                     
+LIRYDE    1338 1339      13381339         T                                     
+LTRYDP    1341 1341      T                                                      
+BSNC009952205162211041111100 POO2U38    124627006 EMU483 045      S             
+BX         ILY                                                                  
+LOSHANKLN 1417 1417          T                                                  
+LILAKEIOW 1419H1420      14201420         T                                     
+LISNDOWN  1422H1423H     14231423         T                                     
+LIBRDING  1427H1428H     14281428         T                                     
+LISMALBRK 1433 1433H     14331433         R                                     
+LIRYDS    1436 1437      14361437         T                                     
+LTRYDE    1440 1440      T                                                      
+BSNC010012205162211041111100 POO2U42    124627006 EMU483 045      S             
+BX         ILY                                                                  
+LOSHANKLN 1514 1514          T                                                  
+LILAKEIOW 1516H1517      15171517         T                                     
+LISNDOWN  1519H1520H     15201520         T                                     
+LIBRDING  1524H1525H     15251525         T X                                   
+LISMALBRK 1530 1530H     15301530         R                                     
+LIRYDS    1533 1534      15331534         T                                     
+LIRYDE    1537 1538      15371538         T                                     
+LTRYDP    1540 1540      T                                                      
+BSNC010082205162211041111100 POO2U44    124627006 EMU483 045      S             
+BX         ILY                                                                  
+LOSHANKLN 1548 1548          T                                                  
+LILAKEIOW 1550H1551      15511551         T                                     
+LISNDOWN  1553H1554H     15541554         T                                     
+LIBRDING  1558H1559H     15591559         T X                                   
+LISMALBRK 1604 1604H     16041604         R                                     
+LIRYDS    1607 1608      16071608         T                                     
+LTRYDE    1611 1611      T                                                      
+BSNC010092205162211041111100 POO2U46    124627006 EMU483 045      S             
+BX         ILY                                                                  
+LOSHANKLN 1616 1616          T                                                  
+LILAKEIOW 1618H1619      16191619         T                                     
+LISNDOWN  1621H1622H     16221622         T                                     
+LIBRDING  1626H1627H     16271627         T X                                   
+LISMALBRK           1632 00000000                                               
+LIRYDS    1634 1635      16341635         T                                     
+LIRYDE    1638 1639      16381639         T                                     
+LTRYDP    1641 1641      T                                                      
+BSNC010152205162212091111100 POO2U48    124627006 EMU483 045      S             
+BX         ILY                                                                  
+LOSHANKLN 1648 1648          T                                                  
+LILAKEIOW 1650 1650H     16501650         T                                     
+LISNDOWN  1653 1653H     16531653         T                                     
+LIBRDING  1657H1658H     16581658         T X                                   
+LISMALBRK           1703 00000000                                               
+LIRYDS    1705 1706      17051706         T                                     
+LTRYDE    1709 1709      T                                                      
+BSNC010172205162212091111100 POO2U50    124627006 EMU483 045      S             
+BX         ILY                                                                  
+LOSHANKLN 1715 1715          T                                                  
+LILAKEIOW 1717 1717H     17171717         T                                     
+LISNDOWN  1720 1720H     17201720         T                                     
+LIBRDING  1724H1725H     17251725         T                                     
+LISMALBRK           1730 00000000                                               
+LIRYDS    1732 1733      17321733         T                                     
+LIRYDE    1736 1737      17361737         T                                     
+LTRYDP    1739 1739      T                                                      
+BSNC010202205162212091111100 POO2U52    124627006 EMU483 045      S             
+BX         ILY                                                                  
+LOSHANKLN 1748 1748          T                                                  
+LILAKEIOW 1750 1750H     17501750         T                                     
+LISNDOWN  1753 1753H     17531753         T                                     
+LIBRDING  1757H1758H     17581758         T X                                   
+LISMALBRK           1803 00000000                                               
+LIRYDS    1805 1806      18051806         T                                     
+LTRYDE    1809 1809      T                                                      
+BSNC010222205162212091111100 POO2U54    124627006 EMU483 045      S             
+BX         ILY                                                                  
+LOSHANKLN 1815 1815          T                                                  
+LILAKEIOW 1817 1817H     18171817         T                                     
+LISNDOWN  1820 1820H     18201820         T                                     
+LIBRDING  1824H1825H     18251825         T                                     
+LISMALBRK           1830 00000000                                               
+LIRYDS    1832 1833      18321833         T                                     
+LIRYDE    1836 1837      18361837         T                                     
+LTRYDP    1839 1839      T                                                      
+BSNC010252205162212091111100 POO2U56    124627006 EMU483 045      S             
+BX         ILY                                                                  
+LOSHANKLN 1848 1848          T                                                  
+LILAKEIOW 1850 1850H     18501850         T                                     
+LISNDOWN  1853 1853H     18531853         T                                     
+LIBRDING  1857H1858H     18581858         T X                                   
+LISMALBRK           1903 00000000                                               
+LIRYDS    1905 1906      19051906         T                                     
+LTRYDE    1909 1909      T                                                      
+BSNC010272205162212091111100 POO2U58    124627006 EMU483 045      S             
+BX         ILY                                                                  
+LOSHANKLN 1915 1915          T                                                  
+LILAKEIOW 1917 1917H     19171917         T                                     
+LISNDOWN  1920 1920H     19201920         T                                     
+LIBRDING  1924H1925H     19251925         T                                     
+LISMALBRK           1930 00000000                                               
+LIRYDS    1932 1933      19321933         T                                     
+LIRYDE    1936 1937      19361937         T                                     
+LTRYDP    1939 1939      T                                                      
+BSNC010302205162212091111100 POO2U62    124627006 EMU483 045      S             
+BX         ILY                                                                  
+LOSHANKLN 2019 2019          T                                                  
+LILAKEIOW 2021 2021H     20212021         T                                     
+LISNDOWN  2024 2024H     20242024         T                                     
+LIBRDING  2028H2029H     20292029         T                                     
+LISMALBRK           2034 00000000                                               
+LIRYDS    2036 2037      20362037         T                                     
+LIRYDE    2040 2041      20402041         T                                     
+LTRYDP    2043 2043      T                                                      
+BSNC010332205162212091111100 POO2U66    124627006 EMU483 045      S             
+BX         ILY                                                                  
+LOSHANKLN 2119 2119          T                                                  
+LILAKEIOW 2121 2121H     21212121         T                                     
+LISNDOWN  2124 2124H     21242124         T                                     
+LIBRDING  2128H2129H     21292129         T                                     
+LISMALBRK           2134 00000000                                               
+LIRYDS    2136 2137      21362137         T                                     
+LIRYDE    2140 2141      21402141         T                                     
+LTRYDP    2143 2143      T                                                      
+BSNC010372205162212091111100 POO2U72    124627006 EMU483 045      S             
+BX         ILY                                                                  
+LOSHANKLN 2242 2242          T                                                  
+LILAKEIOW 2244 2244H     22442244         T                                     
+LISNDOWN  2247 2247H     22472247         T                                     
+LIBRDING  2251H2252H     22522252         T                                     
+LISMALBRK           2257 00000000                                               
+LIRYDS    2259 2300      22592300         T                                     
+LIRYDE    2303 2304      23032304         T                                     
+LTRYDP    2306 2306      T                                                      
+BSNC287562205162210071111100 PXX1F548012124648000 EMU395 140      S S           
+BX         SEY                                                                  
+LOSTPANCI 1825 182513 PRL    T                                                  
+LISTFORDI 1831 1832      183118323  DNC   T                                     
+CREBSFLTI XX1F548012124648001 EMU395 140      S S                               
+LIEBSFLTI 1842 1843H     184218436  NKD   T                                     
+LIGRVSEND 1846H1848      184718482        T                                     
+LISTROOD  1858 1859      185818591        T                                     
+LIRCHT    1901H1902H     190219022        T                                     
+LICHATHAM 1905 1906      190519062        T                                     
+LIGLNGHMK 1909H1911      191019113        T                                     
+LIRAINHMK 1915 1916      191519162        T                                     
+LINEWNGTN           1919 00000000                                               
+LISTNGBRN 1922H1923H     192319232        T                                     
+LIFAVRSHM 1931 1933      193119333        T                                     
+LIWHSTBLE 1940H1941H     19411941         T                                     
+LIHRNEBAY 1946 1947      194619472        T                                     
+LIBCNGNOS 1955 1956      19551956         T                                     
+LIMARGATE 2000H2002      200120021        T                                     
+LIBRSR    2007 2008      20072008         T                                     
+LTRAMSGTE 2013 20151     T                                                      
+BSNC287572205162212081111000 PXX1F768176124648004 EMU395 140      S S           
+BX         SEY                                                                  
+LOSTPANCI 2355 235511 PRL    T                                                  
+LISTFORDI 0001 0002      000100023  DNC   T                                     
+CREBSFLTI XX1F768176124648005 EMU395 140      S S                               
+LIEBSFLTI 0012 0013H     001200136  NKD   T                                     
+LIGRVSEND 0016H0018      001700182        T                                     
+LISTROOD  0028 0029      002800291        T                                     
+LIRCHT    0031H0032H     003200322        T                                     
+LICHATHAM 0035 0036      003500362        T                                     
+LIGLNGHMK 0039H0040H     004000403        T                                     
+LIRAINHMK 0044H0045H     004500452        D                                     
+LINEWNGTN           0048H00000000                                               
+LISTNGBRN 0052 0053      005200522        D                                     
+LTFAVRSHM 0101 01012     T                                                      
+BSNC287582205162212091111100 PXX1J058205124647005 EMU395 140      S S           
+BX         SEY                                                                  
+LORAMSGTE 0455 04552         T                                                  
+LIMINSTER 0500H0501H     05010501         T                                     
+LISTURRY  0512H0513H     05130513         T                                     
+LICNTBW   0517 0518H     051705181        T                                     
+LICHARTHM 0523 0524      05230524         T                                     
+LICLMN    0527 0528      05270528         T                                     
+LIWYEE    0533H0534H     05340534         T               1                     
+CRASHFKY  XX1J058205124647004 EMU395 140      S S                               
+LIASHFKY  0541 0543      054105435  UWC   T                                     
+LIEBSFLTI 0601H0602H     060206022  UPC   T                                     
+LISTFORDI 0613H0614H     061406142  UPC   T                                     
+LTSTPANCI 0621 062112    T                                                      
+BSNC287592205162210071111100 PXX1J098209124647001 EMU395 140      S S           
+BX         SEY                                                                  
+LOMARGATE 0548 05484         T                                                  
+LIBRSR    0553 0554      05530554         T                                     
+LIRAMSGTE 0558H0600      055906002        T                                     
+LIMINSTER           0605 00000000                                               
+LISTURRY            0615 00000000                                               
+LICNTBW   0618H0619H     061906191        T                                     
+LIWYEE              0628H00000000                                               
+CRASHFKY  XX1J098209124647000 EMU395 140      S S                               
+LIASHFKY  0633H0635      063406355  UWC   T                                     
+LIEBSFLTI 0653H0654H     065406542  UPC   T                                     
+LISTFORDI 0705H0706H     070607062  UPC   T                                     
+LTSTPANCI 0713 071311    T                                                      
+BSNC287602205162212091111100 PXX1M90    124657005 EMU    090D                   
+BX         SEY                                                                  
+LOCHRX    0734 07345  FL     T                                                  
+LIWLOE    0736H0737H     07370737C        T                                     
+LILNDNBDE 0741 0743      074107436  6     T                                     
+LINWCROSS           0748 00000000   FL                                          
+LILEWISHM           0751 000000004                                              
+LIBLKHTH            0752H000000002                       H                      
+LIELTHAM            0757 00000000                       7                       
+LIBRNHRST           0809 00000000                                               
+LTCRFD    0818 0818      T                                                      
+BSNC287612205162212091111100 PXX1M92    124657005 EMU    090D                   
+BX         SEY                                                                  
+LOCHRX    0804 08045  FL     T                                                  
+LIWLOE    0806H0807H     08070807C        T                                     
+LILNDNBDE 0811 0813      081108137  7     T                                     
+LINWCROSS           0818 00000000   FL                                          
+LILEWISHM           0821 000000004                                              
+LIBLKHTH            0822H000000002                       H                      
+LIELTHAM            0827 00000000                       7                       
+LIBRNHRST           0839 00000000                                               
+LTCRFD    0848 0848      T                                                      
+BSNC287622205162212091111100 PXX1M94    124657005 EMU    090D                   
+BX         SEY                                                                  
+LOCHRX    0834 08345  FL     T                                                  
+LIWLOE    0836H0837H     08370837C        T                                     
+LILNDNBDE 0841 0843      084108436  6     T                                     
+LINWCROSS           0848 00000000   FL                                          
+LILEWISHM           0851 000000004                                              
+LIBLKHTH            0852H000000002                       H                      
+LIELTHAM            0857 00000000                       7                       
+LIBRNHRST           0909 00000000                                               
+LTCRFD    0918 0918      T                                                      
+BSNC287632205162212091111100 PXX1N90    124657005 EMU    090D                   
+BX         SEY                                                                  
+LOCHRX    0750 07504  FL     T                                                  
+LIWLOE    0752H0753H     07530753C        T              H                      
+LILNDNBDE 0757H0759H     075807596  6     T                                     
+LINWCROSS           0804 00000000   FL                                          
+LIHTHRGRN           0810 000000006                      1                       
+LILEEE              0812 00000000                       5                       
+LISIDCUP            0821H00000000                       5                       
+LICRFD              0830 00000000                                               
+LTBRNHRST 0843 0843      T                                                      
+BSNC287722205162212091111100 POO2T42    124608006 EMU    100      S             
+BX         SEY                                                                  
+LOSTROOD  1434 14343         T                                                  
+LICXTN    1438 1438H     14381438         T                                     
+LIHALG    1441H1442      14421442         T                                     
+LISNODLND 1444H1445      14451445         T                                     
+LINWHYTHE 1447 1447H     14471447         T                                     
+LIAYLESFD 1449H1450      14501450         T                                     
+LIMSTONEB 1454H1455H     14551455         T                                     
+LTMSTONEW 1457 14572     T                                                      
+BSNC301382205162212091111100 POO2C38    122216000 EMU313 075D     S             
+BX         LOY                                                                  
+LOWATFJDC 1445 14454  DC     T                                                  
+LIWATFDHS 1447H1448      144814481        T                                     
+LIBUSHYDC 1450 1450H     145014502        T                                     
+LICRPNDPK 1453 1453H     145314531        T                                     
+LIHTCHEND 1456 1456H     145614561        T                                     
+LIHEDSTNL 1458 1458H     145814581        T               1                     
+LIHROWDC  1502 1502H     150215022        T                                     
+LIKTON    1504H1505      150515051        T                H                    
+LISKENTON 1507 1507H     150715071        T                                     
+LINWEMBLY 1509 1509H     150915091        T                                     
+LIWMBYDC  1511 1511H     151115112        T                H                    
+LISTNBGPK 1514 1514H     151415141        T                                     
+LIHARLSDN 1516H1517      151715171        T                                     
+LIWLSDNJL 1518H1519H     151915191        T                                     
+LIKENSLG  1521H1522      152215221        T                                     
+LIQPRK    1524 1524H     152415241        T                                     
+LIKLBRNHR 1526 1526H     152615261        T                                     
+LISHMPSTD 1528 1528H     152815281        T           1                         
+LTEUSTON  1536 15369     T                                                      
+BSNC301492205162212091111100 POO9Y98    122742000 EMU700 100D     S             
+BX         TLY                                                                  
+LOSVNOAKS 1752 17524         T                                                  
+LIBATABAL 1755 1755H     17551755         T                                     
+LIOTFORD  1758H1759      17591759         T                                     
+LISHRMKT  1801H1802      18021802         T                                     
+LIEYNSFD  1805 1805H     18051805         T                                     
+LISWLY    1810 1811      181018111  FL    T                                     
+LISTMRYC  1814H1815      181518151        T                                     
+LIBICKLEY 1819 1820      18191820         T                                     
+LIBROMLYS 1822 1823      182218231        T                                     
+LISHRTLND 1825 1825H     18251825         T                                     
+LIRBRN    1827H1828      18281828         T                                     
+LIBCKNHMH 1829H1830      18301830         T                                     
+LIBELNGHM 1831H1832H     18321832         T                                     
+LICATFORD 1834H1835H     18351835         T                                     
+LICFPK    1837H1838      18381838         T                                     
+LINUNHEAD 1840 1841      184018411        T                                     
+LIPCKHMRY 1843 1844      184318443        T                                     
+LIDENMRKH 1846 1847      184618473        T                                     
+LILBGHJN            1849 00000000   FL                    1                     
+LIELPHNAC 1853H1854H     185418543        T                                     
+LIBLFR    1858H1859H     185918592  NB    T                                     
+LICTMSLNK 1900H1901H     190119011        T                                     
+LIFRNDNLT 1903 1904      190319044        T                                     
+CRSTPXBOX OO9Y98    122723100 EMU700 100D     S                                 
+LISTPXBOX 1907H1908H     19081908B  DCT   T               1                     
+LIFNPK    1914H1916      191519167  SL2   T                                     
+LIALEXNDP           1919 000000003  SL                                          
+LINEWSGAT 1921 1922      19211922         T                                     
+LIOKLGHPK 1924H1925      19251925         T                                     
+LINBARNET 1926H1927H     192719274        T                                     
+LIPOTRSBR 1931H1932H     193219324        T                                     
+LIHATFILD 1937H1938      193819383        T           1                         
+LTWLWYNGC 1942 19423     T                                                      
+BSNC301502205162212091111100 POO9Y88    122742000 EMU700 100D     S             
+BX         TLY                                                                  
+LOSVNOAKS 1522 15224         T                                                  
+LIBATABAL 1525 1525H     15251525         T                                     
+LIOTFORD  1528H1529      15291529         T                                     
+LISHRMKT  1531H1532      15321532         T                                     
+LIEYNSFD  1535 1535H     15351535         T                                     
+LISWLY    1540 1541      154015411  FL    T                                     
+LISTMRYC  1544H1545      154515451        T                                     
+LIBICKLEY 1549 1550      15491550         T                                     
+LIBROMLYS 1552 1553      155215531        T                                     
+LISHRTLND 1555 1555H     15551555         T                                     
+LIRBRN    1557H1558      15581558         T                                     
+LIBCKNHMH 1559H1600      16001600         T                                     
+LIBELNGHM 1601H1602H     16021602         T                                     
+LICATFORD 1604H1605H     16051605         T                                     
+LICFPK    1607H1608      16081608         T                                     
+LINUNHEAD 1610 1611      161016111        T                                     
+LIPCKHMRY 1613 1614      161316143        T                                     
+LIDENMRKH 1616 1617      161616173        T                                     
+LILBGHJN            1619 00000000   FL                    1                     
+LIELPHNAC 1623H1624H     162416243        T                                     
+LIBLFR    1628H1629H     162916292  NB    T                                     
+LICTMSLNK 1630H1631H     163116311        T                                     
+LIFRNDNLT 1633 1634      163316344        T                                     
+CRSTPXBOX OO9Y88    122723100 EMU700 100D     S                                 
+LISTPXBOX 1637H1638H     16381638B  DCT   T               1                     
+LIFNPK    1644H1646      164516467  SL2   T                                     
+LIALEXNDP           1649 000000003  SL                                          
+LINEWSGAT 1651 1652      16511652         T                                     
+LIOKLGHPK 1654H1655      16551655         T                                     
+LINBARNET 1656H1657H     165716574        T                                     
+LIPOTRSBR 1701H1702H     170217024        T                                     
+LIHATFILD 1707H1708      170817083        T           1 1                       
+LTWLWYNGC 1713 17134     T                                                      
+BSNC301512205162212091111100 POO9Y84    122742000 EMU700 100D     S             
+BX         TLY                                                                  
+LOSVNOAKS 0745 07454         T                                                  
+LIBATABAL 0748 0748H     07480748         T                                     
+LIOTFORD  0751H0752      07520752         T                                     
+LISHRMKT  0754H0755      07550755         T                                     
+LIEYNSFD  0758 0758H     07580758         T                                     
+LISWLY    0803 0804      080308041  FL    T                                     
+LISTMRYC  0807H0808      080808081        T                                     
+LIBICKLEY 0816 0820      08160820         T                                     
+LIBROMLYS 0822 0823      082208231        T                                     
+LISHRTLND 0825 0825H     08250825         T                                     
+LIRBRN    0827H0828      08280828         T                                     
+LIBCKNHMH 0829H0830      08300830         T                                     
+LIBELNGHM 0831H0832H     08320832         T                                     
+LICATFORD 0834H0835H     08350835         T                                     
+LICFPK    0837H0838      08380838         T                                     
+LINUNHEAD 0840 0841      084008411        T                                     
+LIPCKHMRY 0843 0844      084308443        T                                     
+LIDENMRKH 0846 0847      084608473        T                                     
+LILBGHJN            0849 00000000   FL                    1                     
+LIELPHNAC 0853H0854H     085408543        T                                     
+LIBLFR    0858H0859H     085908592  NB    T                                     
+LICTMSLNK 0900H0901H     090109011        T                                     
+LIFRNDNLT 0903 0904      090309044        T                                     
+CRSTPXBOX OO9Y84    122723100 EMU700 100D     S                                 
+LISTPXBOX 0907H0908H     09080908B  DCT   T               1                     
+LIFNPK    0914H0916      091509167  SL2   T                                     
+LIALEXNDP           0919 000000003  SL                                          
+LINEWSGAT 0921 0922      09210922         T                                     
+LIOKLGHPK 0924H0925      09250925         T                                     
+LINBARNET 0926H0927H     092709274        T                                     
+LIPOTRSBR 0931H0932H     093209324        T                                     
+LIHATFILD 0937H0938      093809383        T           1                         
+LTWLWYNGC 0942 09423     T                                                      
+BSNC301522205162212091111100 POO9Y78    122742000 EMU700 100D     S             
+BX         TLY                                                                  
+LOSVNOAKS 0622 06224         T                                                  
+LIBATABAL 0625 0625H     06250625         T                                     
+LIOTFORD  0628H0629      06290629         T                                     
+LISHRMKT  0631H0632      06320632         T                                     
+LIEYNSFD  0635 0635H     06350635         T                                     
+LISWLY    0640 0641      064006411  FL    T                                     
+LISTMRYC  0644H0645      064506451        T                                     
+LIBICKLEY 0649 0650      06490650         T                                     
+LIBROMLYS 0652 0653      065206531        T                                     
+LISHRTLND 0655 0655H     06550655         T                                     
+LIRBRN    0657H0658      06580658         T                                     
+LIBCKNHMH 0659H0700      07000700         T                                     
+LIBELNGHM 0701H0702H     07020702         T                                     
+LICATFORD 0704H0705H     07050705         T                                     
+LICFPK    0707H0708      07080708         T                                     
+LINUNHEAD 0710 0711      071007111        T                                     
+LIPCKHMRY 0713 0714      071307143        T                                     
+LIDENMRKH 0716 0717      071607173        T                                     
+LILBGHJN            0719 00000000   FL                    1                     
+LIELPHNAC 0723H0724H     072407243        T                                     
+LIBLFR    0728H0729H     072907292  NB    T                                     
+LICTMSLNK 0730H0731H     073107311        T                                     
+LIFRNDNLT 0733 0734      073307344        T                                     
+CRSTPXBOX OO9Y78    122723100 EMU700 100D     S                                 
+LISTPXBOX 0737H0738H     07380738B  DCT   T               1                     
+LIFNPK    0744H0746      074507467  SL2   T                                     
+LIALEXNDP           0749 000000003  SL                                          
+LINEWSGAT 0751 0752      07510752         T                                     
+LIOKLGHPK 0754H0755      07550755         T                                     
+LINBARNET 0756H0757H     075707574        T                                     
+LIPOTRSBR 0801H0802H     080208024        T                                     
+LIHATFILD 0807H0808      080808083        T           1 1                       
+LTWLWYNGC 0813 08133     T                                                      
+BSNC301532205162212091111100 POO9Y94    122742000 EMU700 100D     S             
+BX         TLY                                                                  
+LOSVNOAKS 1652 16524         T                                                  
+LIBATABAL 1655 1655H     16551655         T                                     
+LIOTFORD  1658H1659      16591659         T                                     
+LISHRMKT  1701H1702      17021702         T                                     
+LIEYNSFD  1705 1705H     17051705         T                                     
+LISWLY    1710 1711      171017111  FL    T                                     
+LISTMRYC  1714H1715      171517151        T                                     
+LIBICKLEY 1719 1720      17191720         T                                     
+LIBROMLYS 1722 1723      172217231        T                                     
+LISHRTLND 1725 1725H     17251725         T                                     
+LIRBRN    1727H1728      17281728         T                                     
+LIBCKNHMH 1729H1730      17301730         T                                     
+LIBELNGHM 1731H1732H     17321732         T                                     
+LICATFORD 1734H1735H     17351735         T                                     
+LICFPK    1737H1738      17381738         T                                     
+LINUNHEAD 1740 1741      174017411        T                                     
+LIPCKHMRY 1743 1744      174317443        T                                     
+LIDENMRKH 1746 1747      174617473        T                                     
+LILBGHJN            1749 00000000   FL                    1                     
+LIELPHNAC 1753H1754H     175417543        T                                     
+LIBLFR    1758H1759H     175917592  NB    T                                     
+LICTMSLNK 1800H1801H     180118011        T                                     
+LIFRNDNLT 1803 1804      180318044        T                                     
+CRSTPXBOX OO9Y94    122723100 EMU700 100D     S                                 
+LISTPXBOX 1807H1808H     18081808B  DCT   T               1                     
+LIFNPK    1814H1816      181518167        T                                     
+LIALEXNDP           1819 000000003  SL                                          
+LINEWSGAT 1821 1822      18211822         T                                     
+LIOKLGHPK 1824H1825      18251825         T                                     
+LINBARNET 1826H1827H     182718274        T                                     
+LIPOTRSBR 1831H1832H     183218324        T                                     
+LIHATFILD 1837H1838      183818383        T           1 1                       
+LTWLWYNGC 1843 18433     T                                                      
+BSNC301542205162212091111100 POO9Y82    122742000 EMU700 100D     S             
+BX         TLY                                                                  
+LOSVNOAKS 0718 07184         T                                                  
+LIBATABAL 0721 0721H     07210721         T                                     
+LIOTFORD  0725H0726      07260726         T                                     
+LISHRMKT  0728H0729      07290729         T                                     
+LIEYNSFD  0732 0732H     07320732         T                                     
+LISWLY    0737 0738      073707381  FL    T                                     
+LISTMRYC  0741H0742      074207421        T                                     
+LIBICKLEY 0746 0750      07460750         T                                     
+LIBROMLYS 0752 0753      075207531        T                                     
+LISHRTLND 0755 0755H     07550755         T                                     
+LIRBRN    0757H0758      07580758         T                                     
+LIBCKNHMH 0759H0800      08000800         T                                     
+LIBELNGHM 0801H0802H     08020802         T                                     
+LICATFORD 0804H0805H     08050805         T                                     
+LICFPK    0807H0808      08080808         T                                     
+LINUNHEAD 0810 0811      081008111        T                                     
+LIPCKHMRY 0813 0814      081308143        T                                     
+LIDENMRKH 0816 0817      081608173        T                                     
+LILBGHJN            0819 00000000   FL                    1                     
+LIELPHNAC 0823H0824H     082408243        T                                     
+LIBLFR    0828H0829H     082908292  NB    T                                     
+LICTMSLNK 0830H0831H     083108311        T                                     
+LIFRNDNLT 0833 0834      083308344        T                                     
+CRSTPXBOX OO9Y82    122723100 EMU700 100D     S                                 
+LISTPXBOX 0837H0838H     08380838B  DCT   T               1                     
+LIFNPK    0844H0846      084508467  SL2   T                                     
+LIALEXNDP           0849 000000003  SL                                          
+LINEWSGAT 0851 0852      08510852         T                                     
+LIOKLGHPK 0854H0855      08550855         T                                     
+LINBARNET 0856H0857H     085708574        T                                     
+LIPOTRSBR 0901H0902H     090209024        T                                     
+LIHATFILD 0907H0908      090809083        T           1 1                       
+LTWLWYNGC 0913 09133     T                                                      
+BSNC301552205162212091111100 POO9Y80    122742000 EMU700 100D     S             
+BX         TLY                                                                  
+LOSVNOAKS 0645 06454         T                                                  
+LIBATABAL 0648 0648H     06480648         T                                     
+LIOTFORD  0651H0652      06520652         T                                     
+LISHRMKT  0654H0655      06550655         T                                     
+LIEYNSFD  0658 0658H     06580658         T                                     
+LISWLY    0703 0704      070307041  FL    T                                     
+LISTMRYC  0707H0708      070807081        T                                     
+LIBICKLEY 0713 0720      07130720         T                                     
+LIBROMLYS 0722 0723      072207231        T                                     
+LISHRTLND 0725 0725H     07250725         T                                     
+LIRBRN    0727H0728      07280728         T                                     
+LIBCKNHMH 0729H0730      07300730         T                                     
+LIBELNGHM 0731H0732H     07320732         T                                     
+LICATFORD 0734H0735H     07350735         T                                     
+LICFPK    0737H0738      07380738         T                                     
+LINUNHEAD 0740 0741      074007411        T                                     
+LIPCKHMRY 0743 0744      074307443        T                                     
+LIDENMRKH 0746 0747      074607473        T                                     
+LILBGHJN            0749 00000000   FL                    1                     
+LIELPHNAC 0753H0754H     075407543        T                                     
+LIBLFR    0758H0759H     075907592  NB    T                                     
+LICTMSLNK 0800H0801H     080108011        T                                     
+LIFRNDNLT 0803 0804      080308044        T                                     
+CRSTPXBOX OO9Y80    122723100 EMU700 100D     S                                 
+LISTPXBOX 0807H0808H     08080808B  DCT   T               1                     
+LIFNPK    0814H0816      081508167  SL2   T                                     
+LIALEXNDP           0819 000000003  SL                                          
+LINEWSGAT 0821 0822      08210822         T                                     
+LIOKLGHPK 0824H0825      08250825         T                                     
+LINBARNET 0826H0827H     082708274        T                                     
+LIPOTRSBR 0831H0832H     083208324        T                                     
+LIHATFILD 0837H0838      083808383        T           1 1                       
+LTWLWYNGC 0843 08433     T                                                      
+BSNC301562205162212091111100 POO9Y90    122742000 EMU700 100D     S             
+BX         TLY                                                                  
+LOSVNOAKS 1552 15524         T                                                  
+LIBATABAL 1555 1555H     15551555         T                                     
+LIOTFORD  1558H1559      15591559         T                                     
+LISHRMKT  1601H1602      16021602         T                                     
+LIEYNSFD  1605 1605H     16051605         T                                     
+LISWLY    1610 1611      161016111  FL    T                                     
+LISTMRYC  1614H1615      161516151        T                                     
+LIBICKLEY 1619 1620      16191620         T                                     
+LIBROMLYS 1622 1623      162216231        T                                     
+LISHRTLND 1625 1625H     16251625         T                                     
+LIRBRN    1627H1628      16281628         T                                     
+LIBCKNHMH 1629H1630      16301630         T                                     
+LIBELNGHM 1631H1632H     16321632         T                                     
+LICATFORD 1634H1635H     16351635         T                                     
+LICFPK    1637H1638      16381638         T                                     
+LINUNHEAD 1640 1641      164016411        T                                     
+LIPCKHMRY 1643 1644      164316443        T                                     
+LIDENMRKH 1646 1647      164616473        T                                     
+LILBGHJN            1649 00000000   FL                    1                     
+LIELPHNAC 1653H1654H     165416543        T                                     
+LIBLFR    1658H1659H     165916592  NB    T                                     
+LICTMSLNK 1700H1701H     170117011        T                                     
+LIFRNDNLT 1703 1704      170317044        T                                     
+CRSTPXBOX OO9Y90    122723100 EMU700 100D     S                                 
+LISTPXBOX 1707H1708H     17081708B  DCT   T               1                     
+LIFNPK    1714H1716      171517167  SL2   T                                     
+LIALEXNDP           1719 000000003  SL                                          
+LINEWSGAT 1721 1722      17211722         T                                     
+LIOKLGHPK 1724H1725      17251725         T                                     
+LINBARNET 1726H1727H     172717274        T                                     
+LIPOTRSBR 1731H1732H     173217324        T                                     
+LIHATFILD 1737H1738      173817383        T           1 1                       
+LTWLWYNGC 1743 17433     T                                                      
+BSNC301572205162212091111100 POO9Y92    122742000 EMU700 100D     S             
+BX         TLY                                                                  
+LOSVNOAKS 1622 16224         T                                                  
+LIBATABAL 1625 1625H     16251625         T                                     
+LIOTFORD  1628H1629      16291629         T                                     
+LISHRMKT  1631H1632      16321632         T                                     
+LIEYNSFD  1635 1635H     16351635         T                                     
+LISWLY    1640 1641      164016411  FL    T                                     
+LISTMRYC  1644H1645      164516451        T                                     
+LIBICKLEY 1649 1650      16491650         T                                     
+LIBROMLYS 1652 1653      165216531        T                                     
+LISHRTLND 1655 1655H     16551655         T                                     
+LIRBRN    1657H1658      16581658         T                                     
+LIBCKNHMH 1659H1700      17001700         T                                     
+LIBELNGHM 1701H1702H     17021702         T                                     
+LICATFORD 1704H1705H     17051705         T                                     
+LICFPK    1707H1708      17081708         T                                     
+LINUNHEAD 1710 1711      171017111        T                                     
+LIPCKHMRY 1713 1714      171317143        T                                     
+LIDENMRKH 1716 1717      171617173        T                                     
+LILBGHJN            1719 00000000   FL                    1                     
+LIELPHNAC 1723H1724H     172417243        T                                     
+LIBLFR    1728H1729H     172917292  NB    T                                     
+LICTMSLNK 1730H1731H     173117311        T                                     
+LIFRNDNLT 1733 1734      173317344        T                                     
+CRSTPXBOX OO9Y92    122723100 EMU700 100D     S                                 
+LISTPXBOX 1737H1738H     17381738B  DCT   T               1                     
+LIFNPK    1744H1746      174517467        T                                     
+LIALEXNDP           1749 000000003  SL                                          
+LINEWSGAT 1751 1752      17511752         T                                     
+LIOKLGHPK 1754H1755      17551755         T                                     
+LINBARNET 1756H1757H     175717574        T                                     
+LIPOTRSBR 1801H1802H     180218024        T                                     
+LIHATFILD 1807H1808      180818083        T           1 1                       
+LTWLWYNGC 1813 18133     T                                                      
+BSNC301582205162212091111100 POO9Y96    122742000 EMU700 100D     S             
+BX         TLY                                                                  
+LOSVNOAKS 1722 17224         T                                                  
+LIBATABAL 1725 1725H     17251725         T                                     
+LIOTFORD  1728H1729      17291729         T                                     
+LISHRMKT  1731H1732      17321732         T                                     
+LIEYNSFD  1735 1735H     17351735         T                                     
+LISWLY    1740 1741      174017411  FL    T                                     
+LISTMRYC  1744H1745      174517451        T                                     
+LIBICKLEY 1749 1750      17491750         T                                     
+LIBROMLYS 1752 1753      175217531        T                                     
+LISHRTLND 1755 1755H     17551755         T                                     
+LIRBRN    1757H1758      17581758         T                                     
+LIBCKNHMH 1759H1800      18001800         T                                     
+LIBELNGHM 1801H1802H     18021802         T                                     
+LICATFORD 1804H1805H     18051805         T                                     
+LICFPK    1807H1808      18081808         T                                     
+LINUNHEAD 1810 1811      181018111        T                                     
+LIPCKHMRY 1813 1814      181318143        T                                     
+LIDENMRKH 1816 1817      181618173        T                                     
+LILBGHJN            1819 00000000   FL                    1                     
+LIELPHNAC 1823H1824H     182418243        T                                     
+LIBLFR    1828H1829H     182918292  NB    T                                     
+LICTMSLNK 1830H1831H     183118311        T                                     
+LIFRNDNLT 1833 1834      183318344        T                                     
+CRSTPXBOX OO9Y96    122723100 EMU700 100D     S                                 
+LISTPXBOX 1837H1838H     18381838B  DCT   T               1                     
+LIFNPK    1844H1846      184518467  SL2   T                                     
+LIALEXNDP           1849 000000003  SL                                          
+LINEWSGAT 1851 1852      18511852         T                                     
+LIOKLGHPK 1854H1855      18551855         T                                     
+LINBARNET 1856H1857H     185718574        T                                     
+LIPOTRSBR 1901H1902H     190219024        T                                     
+LIHATFILD 1907H1908      190819083        T           1                         
+LTWLWYNGC 1912 19123     T                                                      
+BSNC302192205162212091111100 PXX1A81    124606004 EMU    090                    
+BX         SEY                                                                  
+LOMSTONEE 1232 12323         T                                                  
+LIWMALING 1239H1240H     12401240         T                                     
+LIBORWGAW 1247 1248      12471248         T                                     
+LIOTFORD  1254H1255H     12551255         T                                     
+LISWLY    1303H1304H     130413041  FL    T                                     
+LIBROMLYS 1312H1313H     131313133        T                                     
+LIBCKNHMJ           1316 00000000                       1                       
+LIKENTHOS           1318 000000002                      1H                      
+LIHERNEH            1325 000000002                                              
+LILBGHJN            1327 00000000   SL                                          
+LIELPHNAC 1330H1331H     133113311        T                                     
+LTBLFR    1335 13354     T                                                      
+BSNC302272205162212091111100 PXX1F27    124606004 EMU    090                    
+BX         SEY                                                                  
+LOBLFR    1140 11404  DSL    T                                                  
+LIELPHNAC 1143 1144      114311442        T                                     
+LILBGHJN            1148 00000000                                               
+LIDENMRKH           1149H000000004                                              
+LINUNHEAD           1152 000000002                                              
+LIBELNGHM           1156H00000000                                               
+LIBROMLYS 1200H1202      120112024        T                                     
+LISWLY    1210H1211H     121112112        T             2                       
+LIOTFORD  1221 1222      12211222         T                                     
+LIBORWGAW 1229 1230      12291230         T                                     
+LIWMALING 1236 1237      12361237         T                                     
+LTMSTONEE 1244 12443     T                                                      
+BSNC302302205162212091111100 PXX1F39    124606004 EMU    090                    
+BX         SEY                                                                  
+LOBLFR    1440 14404  DSL    T                                                  
+LIELPHNAC 1443 1444      144314442        T                                     
+LILBGHJN            1448 00000000                                               
+LIDENMRKH           1449H000000004                                              
+LINUNHEAD           1454 000000002                                              
+LIBELNGHM           1458H00000000                                               
+LIBROMLYS 1502H1503H     150315034        T                                     
+LISWLY    1512 1513      151215132        T              H                      
+LIOTFORD  1521 1522      15211522         T                                     
+LIBORWGAW 1529 1530      15291530         T                                     
+LIWMALING 1536 1537      15361537         T                                     
+LTMSTONEE 1544 15443     T                                                      
+BSNC302332205162212091111100 PXX1F57    124606004 EMU    090                    
+BX         SEY                                                                  
+LOMSTONEE 1555 15553         T                                                  
+LIWMALING 1603 1604      16031604         T                                     
+LIBORWGAW 1610H1611H     16111611         T                                     
+LIOTFORD  1618 1619      16181619         T               1                     
+LISWLY    1628 1629      162816291  FL    T                                     
+LIBROMLYS 1637 1639      163716393        T             1                       
+LIBELNGHM           1644 00000000                                               
+LINUNHEAD           1648 000000001                                              
+LIDENMRKH           1650 000000003                                              
+LILBGHJN            1652 00000000   SL                  1                       
+LIELPHNAC 1656H1657H     165716571        T                                     
+LTBLFR    1702 17024     T                                                      
+BSNC302392205162212091111100 PXX1F71    124606004 EMU    090                    
+BX         SEY                                                                  
+LOMSTONEE 0954 09543         T                                                  
+LIWMALING 1002 1003      10021003         T                                     
+LIBORWGAW 1009H1010H     10101010         T                                     
+LIOTFORD  1017 1018      10171018         T                                     
+LISWLY    1026 1027      102610271  FL    T                                     
+LIBROMLYS 1035 1036      103510363        T                                     
+LIBELNGHM           1040 00000000                                               
+LINUNHEAD           1044 000000001                      2H                      
+LIDENMRKH           1050 000000003                                              
+LILBGHJN            1052 00000000   FL                                          
+LIELPHNAC 1055H1056H     105610563        T                                     
+LTBLFR    1101 11014     T                                                      
+BSNC302462205162212091111100 POO2A906190124606000 EMU    090D     S S           
+BX         SEY                                                                  
+LOSWLY    0632 06322  FL     T                                                  
+LISTMRYC  0636H0640      063706401        T                                     
+LIBROMLYS 0646 0648      064606483        T                                     
+LIBCKNHMJ           0650H00000000                                               
+LIKENTHOS           0651H000000002                                              
+LIHERNEH            0656 000000002                      2                       
+LIBRIXTON           0659 00000000                                               
+LTVICTRIE 0706 07064     T                                                      
+BSNC309222205162212091111100 POO2W533180111838821 DMUA   075        S           
+BX         NTY                                                                  
+LOHULL    2216 22166         T                                                  
+LICTTGHM  2223 2223H     22232223         T                                     
+LIBEVERLY 2229 2230      222922302        T                                     
+LIHTNCRNS 2238H2239      22392239         T                                     
+LIDRIFILD 2243H2244H     22442244         T                                     
+LINAFERTN 2248 2248H     22482248         T           1                         
+LTBRDLNGT 2300 23015     T                                                      
+BSNC313332205162212091111100 PXX1B84    113564825 EMU380 100      S             
+BX         SRY                                                                  
+LOCRSTRS  0718 07181         T                                                  
+LICRLK    0726 0726H     07260726         T                                     
+LIWISHAW  0734H0735      07350735         T                                     
+LISHILDMR           0738 000000001                                              
+LIMOTHRWL 0741 0742      074107422        T                                     
+LTGLGC    0803 080311    T                                                      
+BSNC313492205162212091111100 POO2L60    123536003 D      100      S             
+BX         SRY                                                                  
+LOARBROTH 1559H15591         T                                                  
+LICNST    1605H1606H     160616061        T                                     
+LIMONIFTH 1611H1612      161216121        T                                     
+LIBRFRY   1615H1616H     161616161        T           1                         
+LTDUNDETB 1624 16241N    T                                                      
+BSNC315792205162212081111000 PXX1B12    121911000 E      100D     S             
+BX         LEY                                                                  
+LOLIVST   0610 06106  S      T                                                  
+LIBTHNLGR           0613 00000000   FL S                                        
+LIHAKNYNM           0616 000000002                                              
+LITTNHMHL 0621 0622      062106224        T                                     
+LIBRIMSDN           0626H00000000                       3                       
+LICHESHNT           0632 000000002                    1                         
+LIBROXBRN           0636 000000003                                              
+LIHRLWTWN 0641 0642      064106423        T           1                         
+LIBSHPSFD 0650H0651H     065106511        T                                     
+LISTANMFC 0655H0656      06560656         T                                     
+LTSTANAIR 0702 07021     T                                                      
+BSNC315822205162212091111100 POO2M00    121920000 EMU360 100D     S             
+BX         LEY                                                                  
+LOSTFD    0552 055211        T                                                  
+LILEABDGE 0557H0558      05580558   LVR   T X                                   
+LITTNHMHL 0601 0602      06010602         T                                     
+LINMBRLPK 0603H0604      06040604         T               1                     
+LTMWRWSTN 0607 06072     T                                                      
+BSNC315832205162212081111000 POO2O60    121920000 EMU360 100D     S             
+BX         LEY                                                                  
+LOLIVST   0552 05525  ML1    T                                                  
+LIBTHNLGR           0555 00000000   ML ML1                                      
+LISTFD    0602 0603      0602060312    BL T             1                       
+LILEABDGE 0609H0610      06090609         T             1H                      
+LITTNHMHL 0615H0616      061606164        T                                     
+LINMBRLPK 0618 0618H     06180618         T                                     
+LIMWRWSTN 0620 0620H     062006204        T                                     
+LIBRIMSDN           0623H00000000                                               
+LIENFLDLK 0625 0625H     06250625         T                                     
+LICHESHNT 0628H0629      062906292        T           1                         
+LIBROXBRN 0634 0638      063406384        T                                     
+LIRYEHOUS 0641 0641H     06410641         T                                     
+LISMARGRT 0644 0644H     06440644         T                                     
+LIWARE    0648 0648H     06480648         T           1                         
+LTHERTFDE 0654 06541     T                                                      
+BSNC318112205162212091111100 PXX1N922894124672204 EMU450 100      S             
+BX         SWY                                                                  
+LOFARNHAM 0649 06491         T                                                  
+LIALDRSHT 0654H0655H     065506551        T                                     
+LIASHVALE 0700 0701      07000701         T                                     
+LIFRIMLEY 0706H0710      07070710         T                                     
+LICMBLEY  0713H0717      07140717         T                                     
+LIBAGSHOT 0722 0722H     07220722         T                                     
+LIASCOT   0728 0729      072807291        T                                     
+LISUNNGDL 0732 0732H     07320732         T                                     
+LILNGCROS 0735 0735H     07350735         T                                     
+LIVRGNWTR 0738H0739      073907391        T                                     
+LIEGHAM   0742 0743      07410742         T                                     
+LISTAINES 0747 0748      074707481        T                                     
+LIASFDMSX 0750H0751      07510751         T                                     
+LIFELTHAM 0755 0756      075507561        T                                     
+LIWHTTON  0759H0800      08000800         T                                     
+LITWCKNHM 0802H0803H     080308034        T                                     
+LISTMGTS            0805 00000000                                               
+LIRICHMND 0807 0808H     080708082        T                                     
+LIBARNES            0812H000000002  FL                                          
+LICLPHMJW 0816 0817      081608174  WFL   T                                     
+LIQTRDBAT           0819H000000002                       H                      
+LIVAUXHLM 0822 0823      08220823         T             1                       
+LTWATRLMN 0828 083018    T                                                      
+BSNC318282205162212091111100 POO2N1628  124672404 EMU450 100      B             
+BX         SWY                                                                  
+LOALDRSHT 0723 07233         T                                                  
+LIASHVALE 0727 0727H     07270727         T                                     
+LIFRIMLEY 0733 0733H     07330733         T                                     
+LICMBLEY  0737 0738      07370738         T                                     
+LIBAGSHOT 0743 0743H     07430743         T                                     
+LTASCOT   0750 07503     T                                                      
+BSNC318532205162212091111100 POO2S181316124671205 EMU450 100      S             
+BX         SWY                                                                  
+LOWEYBDGB 0803 08031         T                                                  
+LIADLESTN 0806H0807      08070807         T                                     
+LICHTSEY  0809H0810H     08100810         T                                     
+LIVRGNWTR 0815 0824      081508243        T                                     
+LIEGHAM   0827 0828      08270828         T                                     
+LISTAINES 0832 0833      083208331        T                                     
+LIASFDMSX 0835H0836      08360836         T                                     
+LIFELTHAM 0840 0841      084008411        T                                     
+LIHOUNSLW 0845H0846H     084608461        T                                     
+LIISLEWTH 0849 0849H     08490849         T                                     
+LISYONLA  0851 0851H     08510851         T                                     
+LIBNTFORD 0853 0854      08530854         T                                     
+LIKEWBDGE 0856 0856H     08560856         T                                     
+LICHISWCK 0858H0859      08590859         T                                     
+LIBNSBDGE 0901 0901H     09010901         T               1                     
+LIBARNES  0904 0904H     090409041  SL    T                                     
+LIPUTNEY  0906H0907H     09070907         T                                     
+LIWDWTOWN 0910 0910H     09100910         T                                     
+LICLPHMJW 0912H0913H     091309133  WSL   T                                     
+LIQTRDBAT 0916 0916H     091609162        T                                     
+LIVAUXHLM 0919 0920      09190920         T             4                       
+LTWATRLMN 0928 092915    T                                                      
+BSNC318732205162212091111100 POO2E21    125905005 EMU    100D                   
+BX         HXY                                                                  
+LOHTRWAPT 0514 05141         T                                                  
+LTHTRWTM5 0518 05183     T                                                      
+BSNC328802205162212091111100 PXX1A923002121750001 DMU    125      B S           
+BX         HTY                                                                  
+LOBEVERLY 0753 07532         T                                                  
+LICTTGHM  0758H0759H     07590759         T                                     
+LIHULL    0806 0824      080608247        T                                     
+LIBROUGH  0835 0836      083508362        T                                     
+LIGLBRDYK           0842 00000000                                               
+LIHOWDEN  0847 0848      08470848         T           1                         
+LISELBY   0858 0901      085809012        T                                     
+LIDONC    0917 0923      091709231  ESL   T K           1H                      
+LIRTFD    0937H0939      093809391        T                                     
+LINEWANG            0951 000000002                                              
+LIGTHM    0959 1000H     095910001        T                                     
+LIPBRO              1017H000000003                                              
+LIHNTNGDN           1026H00000000   FL FL                                       
+LISNDY              1034 00000000   FL                                          
+LIBIGLSWD           1035H000000002                       H                      
+LIHITCHIN           1040H00000000   FL                  1H                      
+LISTEVNGE           1044 000000002                      1                       
+LIWLWYNGC           1051H00000000                                               
+LIPOTRSBR           1055H000000002                                              
+LIALEXNDP           1100H00000000   FL                                          
+LIFNPK              1102 000000004                                              
+LTKNGX    1108 11083     T                                                      
+BSNC328822205162212091111100 PXX1H034003121750001 DMU    125      B S           
+BX         HTY                                                                  
+LOKNGX    1148 11483  CX     T                                                  
+LIFNPK              1152 000000005                                              
+LIALEXNDP           1153H00000000   FL                   H                      
+LIPOTRSBR           1158H000000003                       H                      
+LIWLWYNGC           1203 00000000                        H                      
+LISTEVNGE           1208 000000003                                              
+LIHITCHIN           1210H00000000   FL                                          
+LIBIGLSWD           1215 000000003                                              
+LISNDY              1216H00000000   FL                                          
+LIHNTNGDN           1223H00000000   FL FL             1                         
+LIPBRO              1233H00000000DF                                             
+LIGTHM    1248H1250      124912502        T                                     
+LINEWANG            1259H000000001                                              
+LIRTFD    1310 1311H     131013112        T           1                         
+LIDONC    1326 1331      132613314        T                                     
+LISELBY   1345H1346H     134613461        T                                     
+LIHOWDEN  1355 1356H     13551356         T                                     
+LIGLBRDYK           1401H00000000                                               
+LIBROUGH  1407H1409      140814091        T           1 2                       
+LTHULL    1425H14267     T                                                      
+BSNC328842205162212091111100 PXX1A943004121750001 DMU    125      B S           
+BX         HTY                                                                  
+LOHULL    1233 12337         T                                                  
+LIBROUGH  1244 1245      124412452        T                                     
+LIGLBRDYK           1251 00000000                                               
+LIHOWDEN  1256 1257      12561257         T           1                         
+LISELBY   1307 1308      130713082        T                                     
+LIDONC    1323 1325      132313251        T                                     
+LIRTFD    1337H1339      133813391        T                                     
+LINEWANG            1351 000000002                                              
+LIGTHM    1359 1400H     135914001        T                                     
+LIPBRO              1417H000000003                                              
+LIHNTNGDN           1426H00000000   FL FL                                       
+LISNDY              1434 00000000   FL                                          
+LIBIGLSWD           1435H000000002                       H                      
+LIHITCHIN           1440H00000000   FL                  1H                      
+LISTEVNGE           1444 000000002                      2                       
+LIWLWYNGC           1451H00000000                                               
+LIPOTRSBR           1455H000000002                                              
+LIALEXNDP           1500H00000000   FL                                          
+LIFNPK              1502 000000004                                              
+LTKNGX    1507 15073     T                                                      
+BSNC328852205162212091111100 PXX1A913001121750001 DMU    125      B S           
+BX         HTY                                                                  
+LOBEVERLY 0605 06052         T                                                  
+LICTTGHM  0610H0611H     06110611         T                                     
+LIHULL    0618 0625      061806257        T                                     
+LIBROUGH  0636 0637H     063606372        T              H                      
+LIGLBRDYK           0644 00000000                                               
+LIHOWDEN  0648H0650      06490650         T           1                         
+LISELBY   0700 0701      070007012        T                                     
+LIDONC    0716H0721      071707211  ESL   T K                                   
+LIRTFD    0734H0741      073507411        T                                     
+LINEWANG            0753H000000002                                              
+LIGTHM    0801H0803      080208031        T                                     
+LIPBRO              0820 000000003                                              
+LIHNTNGDN           0829 00000000   FL FL                                       
+LISNDY              0836H00000000   FL                                          
+LIBIGLSWD           0838 000000002                      1                       
+LIHITCHIN           0843H00000000   FL                  1H                      
+LISTEVNGE           0847 000000002                      4H                      
+LIWLWYNGC           0856H00000000                        H                      
+LIPOTRSBR           0901 000000002                       H                      
+LIALEXNDP           0906H00000000   FL                  1                       
+LIFNPK              0909 000000004                                              
+LTKNGX    0914 09142     T                                                      
+BSNC328862205162212091111100 PXX1H064006121750001 DMU    125      B S           
+BX         HTY                                                                  
+LOKNGX    1848 18483  CX     T                                                  
+LIFNPK              1852 000000005                                              
+LIALEXNDP           1853H00000000   FL                   H                      
+LIPOTRSBR           1858H000000003                       H                      
+LIWLWYNGC           1903 00000000                        H                      
+LISTEVNGE           1908 000000003                                              
+LIHITCHIN           1910H00000000   FL                                          
+LIBIGLSWD           1915 000000003                                              
+LISNDY              1916H00000000   FL                                          
+LIHNTNGDN           1923H00000000   FL FL             1                         
+LIPBRO              1933H00000000DF                                             
+LIGTHM    1950 1952      195119522        T                                     
+LINEWANG            2001H000000001                       H                      
+LIRTFD    2012H2014      201320142        T           1                         
+LIDONC    2027 2029      202720294        T                                     
+LISELBY   2047 2049      204720491        T                                     
+LIHOWDEN  2057H2058H     20582058         T                                     
+LIGLBRDYK           2103H00000000                                               
+LIBROUGH  2109H2110H     211021101        T           1                         
+LIHULL    2123 2137      212321377        T                                     
+LICTTGHM  2143 2144      21432144         T                                     
+LTBEVERLY 2150 21502     T                                                      
+BSNC328872205162212091111100 PXX1H044004121750001 DMU    125      B S           
+BX         HTY                                                                  
+LOKNGX    1348 13482  B      T                                                  
+LIFNPK              1352 000000005                                              
+LIALEXNDP           1353H00000000   FL                                          
+LIPOTRSBR           1358 000000003                                              
+LIWLWYNGC           1402 00000000                       1                       
+LISTEVNGE           1407H000000003                                              
+LIHITCHIN           1410 00000000   FL                                          
+LIBIGLSWD           1414H000000003                                              
+LISNDY              1416 00000000   FL                                          
+LIHNTNGDN           1423 00000000   FL FL             1                         
+LIPBRO              1433 00000000DF                                             
+LIGTHM    1448 1449H     144814492        T                                     
+LINEWANG            1459 000000001                                              
+LIRTFD    1511 1512H     151115122        T           1                         
+LIDONC    1525H1528      152615284        T                                     
+LISELBY   1542H1544      154315441        T                                     
+LIHOWDEN  1552H1554H     15531554         T                                     
+LIGLBRDYK           1559H00000000                       1                       
+LIBROUGH  1606H1608H     160716081        T           1 4                       
+LTHULL    1626 16267     T                                                      
+BSNC328882205162212091111100 PXX1A963006121750001 DMU    125      B S           
+BX         HTY                                                                  
+LOHULL    1708 17087         T                                                  
+LIBROUGH  1720H1721H     172117212        T                                     
+LIGLBRDYK           1727H00000000                                               
+LIHOWDEN  1732H1733H     17331733         T           1                         
+LISELBY   1743H1745      174417452        T                                     
+LIDONC    1801 1804      180118041        T                                     
+LIRTFD    1816H1818      181718181        T                                     
+LINEWANG            1830 000000002                                              
+LIGTHM    1838 1839H     183818391        T                                     
+LIPBRO              1856H000000003                                              
+LIHNTNGDN           1908H00000000   FL FL                                       
+LISNDY              1916 00000000   FL                                          
+LIBIGLSWD           1917H000000002                                              
+LIHITCHIN           1922 00000000   FL                                          
+LISTEVNGE           1924 000000002                                              
+LIWLWYNGC           1929 00000000                                               
+LIPOTRSBR           1933 000000002                                              
+LIALEXNDP           1938 00000000   FL                                          
+LIFNPK              1939H000000004                                              
+LTKNGX    1945 19455     T                                                      
+BSNC328902205162212091111100 PXX1H014001121750001 DMU    125      B S           
+BX         HTY                                                                  
+LOKNGX    0727 07271  B      T                                                  
+LIFNPK              0731 000000005                                              
+LIALEXNDP           0732H00000000   FL                                          
+LIPOTRSBR           0737 000000003                       H                      
+LIWLWYNGC           0741H00000000                                               
+LISTEVNGE           0746 000000003                                              
+LIHITCHIN           0748H00000000   FL                                          
+LIBIGLSWD           0753 000000003                                              
+LISNDY              0754H00000000   FL                                          
+LIHNTNGDN           0801H00000000   FL FL             1                         
+LIPBRO              0811H00000000DF                                             
+LIGTHM    0826H0828      082708282        T                                     
+LINEWANG            0837H000000001                                              
+LIRTFD    0850H0852      085108522        T           1                         
+LIDONC    0905 0907      090509073B       T                                     
+LISELBY   0922H0924      092309241        T                                     
+LIHOWDEN  0932H0934      09330934         T                                     
+LIGLBRDYK           0939 00000000                                               
+LIBROUGH  0945 0946      094509461        T           1                         
+LTHULL    0959 09597     T                                                      
+BSNC328922205162212091111100 PXX1H054005121750001 DMU    125      B S           
+BX         HTY                                                                  
+LOKNGX    1548 15483  C      T                                                  
+LIFNPK              1552H000000005                                              
+LIALEXNDP           1554 00000000   FL                                          
+LIPOTRSBR           1558H000000003                                              
+LIWLWYNGC           1602H00000000                       1                       
+LISTEVNGE           1608 000000003                                              
+LIHITCHIN           1610H00000000   FL                                          
+LIBIGLSWD           1615 000000003                                              
+LISNDY              1616H00000000   FL                                          
+LIHNTNGDN           1623H00000000   FL FL             1                         
+LIPBRO              1633H00000000DF                                             
+LIGTHM    1648H1650      164916502        T                                     
+LINEWANG            1659H000000001                                              
+LIRTFD    1710H1712      171117122        T           1                         
+LIDONC    1726 1728      172617284        T                                     
+LISELBY   1742H1743H     174317431        T                                     
+LIHOWDEN  1752 1753      17521753         T             1                       
+LIGLBRDYK           1759 00000000                       1H                      
+LIBROUGH  1806H1807H     180718071        T           1 1                       
+LIHULL    1823H1829H     182418297        T                                     
+LICTTGHM  1835H1836H     18361836         T                                     
+LTBEVERLY 1842 18422     T                                                      
+BSNC328962205162212091111100 PXX1A973007121750001 DMU    125      B S           
+BX         HTY                                                                  
+LOHULL    1908 19087         T                                                  
+LIBROUGH  1919 1920      191919202        T           1 1                       
+LIGLBRDYK           1928 00000000                                               
+LIHOWDEN  1933 1934      19331934         T                                     
+LISELBY   1943 1945      194319452        T             1H                      
+LIDONC    2002H2004H     200320041        T                                     
+LIRTFD    2017 2018H     201720181        T                                     
+LINEWANG            2030H000000002                                              
+LIGTHM    2038H2040      203920401        T                                     
+LIPBRO              2059 000000003                                              
+LIHNTNGDN           2110 00000000   FL FL                                       
+LISNDY              2117H00000000   FL                                          
+LIBIGLSWD           2119 000000002                                              
+LIHITCHIN           2123H00000000   FL                                          
+LISTEVNGE           2125H000000002                                              
+LIWLWYNGC           2130H00000000                                               
+LIPOTRSBR           2134H000000002                                              
+LIALEXNDP           2139H00000000   FL                                          
+LIFNPK              2141 000000004                                              
+LTKNGX    2146 21464     T                                                      
+BSNC328982205162212091111100 PXX1A953005121750001 DMU    125      B S           
+BX         HTY                                                                  
+LOHULL    1508 15087         T                                                  
+LIBROUGH  1519 1520      151915202        T                                     
+LIGLBRDYK           1526 00000000                                               
+LIHOWDEN  1531 1532      15311532         T           1                         
+LISELBY   1542 1543H     154215432        T                                     
+LIDONC    1603 1605      160316051        T                                     
+LIRTFD    1617H1619      161816191        T                                     
+LINEWANG            1631 000000002                                              
+LIGTHM    1639 1640H     163916401        T                                     
+LIPBRO              1657H000000003                                              
+LIHNTNGDN           1709H00000000   FL FL                                       
+LISNDY              1717 00000000   FL                                          
+LIBIGLSWD           1718H000000002                                              
+LIHITCHIN           1723 00000000   FL                                          
+LISTEVNGE           1725 000000002                                              
+LIWLWYNGC           1730 00000000                                               
+LIPOTRSBR           1734 000000002                                              
+LIALEXNDP           1739 00000000   FL                                          
+LIFNPK              1740H000000004                       H                      
+LTKNGX    1746 17463     T                                                      
+BSNC328992205162212091111100 PXX1A933003121750001 DMU    125      B S           
+BX         HTY                                                                  
+LOHULL    1034 10347         T                                                  
+LIBROUGH  1045 1046      104510462        T                                     
+LIGLBRDYK           1052 00000000                                               
+LIHOWDEN  1057 1058      10571058         T           1                         
+LISELBY   1108 1109      110811092        T                                     
+LIDONC    1124 1126      112411261        T           1                         
+LIRTFD    1139H1141      114011411        T                                     
+LINEWANG            1153 000000002                                              
+LIGTHM    1201 1202H     120112021        T                                     
+LIPBRO              1219H000000003                                              
+LIHNTNGDN           1228H00000000   FL FL                                       
+LISNDY              1236 00000000   FL                                          
+LIBIGLSWD           1237H000000002                                              
+LIHITCHIN           1242 00000000   FL                  1H                      
+LISTEVNGE           1245H000000002                      1                       
+LIWLWYNGC           1251H00000000                                               
+LIPOTRSBR           1255H000000002                                              
+LIALEXNDP           1300H00000000   FL                                          
+LIFNPK              1302 000000004                                              
+LTKNGX    1307 13072     T                                                      
+BSNC329002205162212091111100 PXX1H074007121750001 DMU    125      B S           
+BX         HTY                                                                  
+LOKNGX    2030 20305  CX     T                                                  
+LIFNPK              2034 000000005                                              
+LIALEXNDP           2035H00000000   FL                                          
+LIPOTRSBR           2040 000000003                                              
+LIWLWYNGC           2044 00000000                                               
+LISTEVNGE           2049 000000003                                              
+LIHITCHIN           2051H00000000   FL                                          
+LIBIGLSWD           2056 000000003                                              
+LISNDY              2057H00000000   FL                   H                      
+LIHNTNGDN           2105 00000000   FL FL             1                         
+LIPBRO              2115 00000000DF                                             
+LIGTHM    2130 2131H     213021312        T                                     
+LINEWANG            2141 000000001                                              
+LIRTFD    2151H2153      215221532        T           1                         
+LIDONC    2206 2208      220622084        T                                     
+LISELBY   2222H2224H     222322241        T                                     
+LIHOWDEN  2233 2234      22332234         T                                     
+LIGLBRDYK           2239 00000000                                               
+LIBROUGH  2245 2246      224522461        T           1                         
+LTHULL    2259 22597     T                                                      
+BSNC329012205162212091111100 PXX1H024002121750001 DMU    125      B S           
+BX         HTY                                                                  
+LOKNGX    0948 09482  CX     T                                                  
+LIFNPK              0952H000000005                                              
+LIALEXNDP           0954 00000000   FL                   H                      
+LIPOTRSBR           0959 000000003                       H                      
+LIWLWYNGC           1003H00000000                                               
+LISTEVNGE           1008 000000003                                              
+LIHITCHIN           1010H00000000   FL                                          
+LIBIGLSWD           1015 000000003                                              
+LISNDY              1016H00000000   FL                                          
+LIHNTNGDN           1023H00000000   FL FL             1                         
+LIPBRO              1033H00000000DF                                             
+LIGTHM    1048H1050      104910502        T                                     
+LINEWANG            1059H000000001                                              
+LIRTFD    1110 1111H     111011112        T           1                         
+LIDONC    1126 1128      112611284        T                                     
+LISELBY   1142H1143H     114311431        T                                     
+LIHOWDEN  1152 1153      11521153         T                                     
+LIGLBRDYK           1158 00000000                                               
+LIBROUGH  1204 1205      120412051        T           1                         
+LTHULL    1217H12187     T                                                      
+ZZ                                                                              
