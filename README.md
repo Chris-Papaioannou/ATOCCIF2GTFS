@@ -31,7 +31,7 @@ The shapefile is provided by [Network Rail](https://www.networkrail.co.uk/). Exp
  'IDENTIFIED', 'TRACK_STAT', 'LAST_EDITE', 'LAST_EDI_1', 'CHECKED_BY', 'CHECKED_DA',
  'VALIDATED_', 'VALIDATED1', 'EDIT_NOTES', 'PROIRITY_A', 'SHAPE_LENG', 'TRID_CAT']
 
-Only **TRID**, **TRCODE, and **TRACK_STAT** are used in the current implementation. An older branch of the tool used to also use **ELR** to apply more refined user-defined link filtering when snapping platform locations to the network. However, the tool has now transitioned to an [OpenStreetMap](https://www.openstreetmap.org/about) based approach using the [Overpass API](https://python-overpy.readthedocs.io/en/latest/) (with better examples in the documentation [here](https://wiki.openstreetmap.org/wiki/Overpass_API/Overpass_QL)).
+Only **TRID**, **TRCODE**, and **TRACK_STAT** are used in the current implementation. An older branch of the tool used to also use **ELR** to apply more refined user-defined link filtering when snapping platform locations to the network. However, the tool has now transitioned to an [OpenStreetMap](https://www.openstreetmap.org/about) based approach using the [Overpass API](https://python-overpy.readthedocs.io/en/latest/) (with better examples in the documentation [here](https://wiki.openstreetmap.org/wiki/Overpass_API/Overpass_QL)).
  
 ### BPLAN
 
