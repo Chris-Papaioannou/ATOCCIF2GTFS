@@ -76,54 +76,107 @@ namespace CIF2GTFS
             }
 
             Console.WriteLine("Reading the timetable file...");
-            List<string> TimetableFileLines = new List<string>(File.ReadAllLines("input/May23 Full CIF 230413.CIF"));
+            List<string> TimetableFileLines = new List<string>(File.ReadAllLines("input/Dec22 WTT CIF 230413.CIF"));
             Dictionary<string, List<StationStop>> StopTimesForJourneyIDDictionary = new Dictionary<string, List<StationStop>>();
             Dictionary<string, JourneyDetail> JourneyDetailsForJourneyIDDictionary = new Dictionary<string, JourneyDetail>();
             string CurrentJourneyID = "";
-            string CurrentOperatorCode = "";
-            string CurrentTrainType = "";
-            string CurrentTrainClass = "";
-            string CurrentTrainMaxSpeed = "";
+            string CurrentTransactionType = "";
+            string CurrentTrainUID = "";
+            string CurrentBankHolidayRunning = "";
+            string CurrentTrainStatus = "";
+            string CurrentTrainCategory = "";
+            string CurrentTrainIdentity = "";
+            string CurrentHeadcode = "";
+            string CurrentTrainServiceCode = "";
+            string CurrentPortionID = "";
+            string CurrentPowerType = "";
+            string CurrentTimingLoad = "";
+            string CurrentSpeed = "";
+            string CurrentOperatingCharacteristics = "";
+            string CurrentSeatingClass = "";
+            string CurrentSleepers = "";
+            string CurrentReservations = "";
+            string CurrentCateringCode = "";
+            string CurrentServiceBranding = "";
+            string CurrentSTP = "";
+            string CurrentUIC = "";
+            string CurrentATOC = "";
+            string CurrentApplicableTimetableCode = "";
             Calendar CurrentCalendar = null;
             List<string> PrioList = new List<string>();
             foreach (string TimetableLine in TimetableFileLines)
             {
                 if (TimetableLine.StartsWith("BS"))
                 {
-                    CurrentJourneyID = TimetableLine.Substring(2, 7);
+                    CurrentTransactionType = TimetableLine.Substring(2, 1);
+                    CurrentTrainUID = TimetableLine.Substring(3, 6);
                     string StartDateString = TimetableLine.Substring(9, 6);
                     string EndDateString = TimetableLine.Substring(15, 6);
-                    string DaysOfOperationString = TimetableLine.Substring(21, 7);
+                    string DaysRun = TimetableLine.Substring(21, 7);
+                    CurrentBankHolidayRunning = TimetableLine.Substring(28, 1).Trim();
+                    CurrentTrainStatus = TimetableLine.Substring(29, 1).Trim();
+                    CurrentTrainCategory = TimetableLine.Substring(30, 2).Trim();
+                    CurrentTrainIdentity = TimetableLine.Substring(32, 4).Trim();
+                    CurrentHeadcode = TimetableLine.Substring(36, 4).Trim();
+                    CurrentTrainServiceCode = TimetableLine.Substring(41, 8).Trim();
+                    CurrentPortionID = TimetableLine.Substring(49, 1).Trim();
+                    CurrentPowerType = TimetableLine.Substring(50, 3).Trim();
+                    CurrentTimingLoad = TimetableLine.Substring(53, 3).Trim();
+                    CurrentSpeed = TimetableLine.Substring(57, 3).Trim();
+                    CurrentOperatingCharacteristics = TimetableLine.Substring(60, 6).Trim();
+                    CurrentSeatingClass = TimetableLine.Substring(66, 1).Trim();
+                    CurrentSleepers = TimetableLine.Substring(67, 1).Trim();
+                    CurrentReservations = TimetableLine.Substring(68, 1).Trim();
+                    CurrentCateringCode = TimetableLine.Substring(70, 4).Trim();
+                    CurrentServiceBranding = TimetableLine.Substring(74, 4).Trim();
+                    CurrentSTP = TimetableLine.Substring(79, 1).Trim();
                     // Since a single timetable can have a single Journey ID that is valid at different non-overlapping times a unique Journey ID includes the Date strings and the character at position 79.
-                    CurrentJourneyID = CurrentJourneyID + StartDateString + EndDateString + TimetableLine.Substring(79, 1).Trim();
+                    CurrentJourneyID = CurrentTransactionType + CurrentTrainUID + StartDateString + EndDateString + CurrentSTP;
                     CurrentCalendar = new Calendar()
                     {
                         start_date = "20" + StartDateString,
                         end_date = 2000 + Math.Min(int.Parse(EndDateString.Substring(0, 2)), int.Parse(StartDateString.Substring(0, 2)) + 49) + EndDateString.Substring(2, 4),
                         service_id = CurrentJourneyID + "_service",
-                        monday = int.Parse(DaysOfOperationString.Substring(0, 1)),
-                        tuesday = int.Parse(DaysOfOperationString.Substring(1, 1)),
-                        wednesday = int.Parse(DaysOfOperationString.Substring(2, 1)),
-                        thursday = int.Parse(DaysOfOperationString.Substring(3, 1)),
-                        friday = int.Parse(DaysOfOperationString.Substring(4, 1)),
-                        saturday = int.Parse(DaysOfOperationString.Substring(5, 1)),
-                        sunday = int.Parse(DaysOfOperationString.Substring(6, 1))
+                        monday = int.Parse(DaysRun.Substring(0, 1)),
+                        tuesday = int.Parse(DaysRun.Substring(1, 1)),
+                        wednesday = int.Parse(DaysRun.Substring(2, 1)),
+                        thursday = int.Parse(DaysRun.Substring(3, 1)),
+                        friday = int.Parse(DaysRun.Substring(4, 1)),
+                        saturday = int.Parse(DaysRun.Substring(5, 1)),
+                        sunday = int.Parse(DaysRun.Substring(6, 1))
                     };
-                    CurrentTrainType = TimetableLine.Substring(50, 3);
-                    CurrentTrainClass = TimetableLine.Substring(53, 3);
-                    CurrentTrainMaxSpeed = TimetableLine.Substring(57, 3);
                 }
                 if (TimetableLine.StartsWith("BX"))
                 {
-                    CurrentOperatorCode = TimetableLine.Substring(11, 2);
+                    CurrentUIC = TimetableLine.Substring(6, 5).Trim();
+                    CurrentATOC = TimetableLine.Substring(11, 2).Trim();
+                    CurrentApplicableTimetableCode = TimetableLine.Substring(13, 1).Trim();
                     JourneyDetail journeyDetail = new JourneyDetail()
                     {
                         JourneyID = CurrentJourneyID,
-                        OperatorCode = CurrentOperatorCode,
-                        OperationsCalendar = CurrentCalendar,
-                        TrainClass = CurrentTrainClass,
-                        TrainMaxSpeed = CurrentTrainMaxSpeed,
-                        TrainType = CurrentTrainType
+                        TransactionType = CurrentTransactionType,
+                        TrainUID = CurrentTrainUID,
+                        BankHolidayRunning = CurrentBankHolidayRunning,
+                        TrainStatus = CurrentTrainStatus,
+                        TrainCategory = CurrentTrainCategory,
+                        TrainIdentity = CurrentTrainIdentity,
+                        Headcode = CurrentHeadcode,
+                        TrainServiceCode = CurrentTrainServiceCode,
+                        PortionID = CurrentPortionID,
+                        PowerType = CurrentPowerType,
+                        TimingLoad = CurrentTimingLoad,
+                        Speed = CurrentSpeed,
+                        OperatingCharacteristics = CurrentOperatingCharacteristics,
+                        SeatingClass = CurrentSeatingClass,
+                        Sleepers = CurrentSleepers,
+                        Reservations = CurrentReservations,
+                        CateringCode = CurrentCateringCode,
+                        ServiceBranding = CurrentServiceBranding,
+                        STP = CurrentSTP,
+                        UIC = CurrentUIC,
+                        ATOC = CurrentATOC,
+                        ApplicableTimetableCode = CurrentApplicableTimetableCode,
+                        OperationsCalendar = CurrentCalendar
                     };
                     JourneyDetailsForJourneyIDDictionary.Add(CurrentJourneyID, journeyDetail);
                 }
@@ -217,7 +270,7 @@ namespace CIF2GTFS
             }
             Console.WriteLine($"Read {StopTimesForJourneyIDDictionary.Keys.Count} journeys.");
             Console.WriteLine("Creating GTFS output.");
-            List<string> Agencies = JourneyDetailsForJourneyIDDictionary.Values.Select(x => x.OperatorCode).Distinct().ToList();
+            List<string> Agencies = JourneyDetailsForJourneyIDDictionary.Values.Select(x => x.ATOC).Distinct().ToList();
             // AgencyList will hold the GTFS agency.txt file contents
             List<Agency> AgencyList = new List<Agency>();
             // Get all unique agencies from our output
@@ -238,10 +291,10 @@ namespace CIF2GTFS
                 JourneyDetail journeyDetail = JourneyDetailsForJourneyIDDictionary[journeyID];
                 Route route = new Route()
                 {
-                    agency_id = journeyDetail.OperatorCode,
+                    agency_id = journeyDetail.ATOC,
                     route_id = journeyDetail.JourneyID + "_route",
                     route_type = "2",
-                    route_short_name = journeyDetail.OperatorCode + "_" + journeyDetail.JourneyID
+                    route_short_name = journeyDetail.ATOC + "_" + journeyDetail.JourneyID
                 };
                 RoutesList.Add(route);
             }
@@ -360,11 +413,11 @@ namespace CIF2GTFS
             Console.WriteLine("Dropping trip IDs with only one matched stop from stop_times.txt");
             ExecProcess("drop_single_stop_trips.py");
 
-            TextWriter testTextWriter = File.CreateText(@"cached_data/test.txt");
-            CsvWriter testCSVwriter = new CsvWriter(testTextWriter, CultureInfo.InvariantCulture);
-            testCSVwriter.WriteRecords(JourneyDetailsForJourneyIDDictionary);
-            testTextWriter.Dispose();
-            testCSVwriter.Dispose();
+            TextWriter JourneyDetailsTextWriter = File.CreateText(@"cached_data/JourneyDetails.txt");
+            CsvWriter JourneyDetailsCSVwriter = new CsvWriter(JourneyDetailsTextWriter, CultureInfo.InvariantCulture);
+            JourneyDetailsCSVwriter.WriteRecords(JourneyDetailsForJourneyIDDictionary);
+            JourneyDetailsTextWriter.Dispose();
+            JourneyDetailsCSVwriter.Dispose();
 
             Console.WriteLine("Creating a GTFS .zip file");
             if (File.Exists(@"output/GTFS.zip"))
@@ -438,10 +491,28 @@ namespace CIF2GTFS
     public class JourneyDetail
     {
         public string JourneyID { get; set; }
-        public string OperatorCode { get; set; }
-        public string TrainType { get; set;}
-        public string TrainClass { get; set;}
-        public string TrainMaxSpeed { get; set;}
+        public string TransactionType { get; set; }
+        public string TrainUID { get; set; }
+        public string BankHolidayRunning { get; set; }
+        public string TrainStatus { get; set; }
+        public string TrainCategory { get; set; }
+        public string TrainIdentity { get; set; }
+        public string Headcode { get; set; }
+        public string TrainServiceCode { get; set; }
+        public string PortionID { get; set; }
+        public string PowerType { get; set; }
+        public string TimingLoad { get; set; }
+        public string Speed { get; set; }
+        public string OperatingCharacteristics { get; set; }
+        public string SeatingClass { get; set; }
+        public string Sleepers { get; set; }
+        public string Reservations { get; set; }
+        public string CateringCode { get; set; }
+        public string ServiceBranding { get; set; }
+        public string STP { get; set; }
+        public string UIC { get; set; }
+        public string ATOC { get; set; }
+        public string ApplicableTimetableCode { get; set; }
         public Calendar OperationsCalendar { get; set; }
     }
 

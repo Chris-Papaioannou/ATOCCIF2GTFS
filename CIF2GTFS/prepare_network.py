@@ -278,7 +278,7 @@ def getJoin(x):
     
 def getCommonPrefix(x):
     xFil = x[x.notna()].unique()
-    xList = [str(anX) for anX in xFil.tolist()if str(anX) != '<NA>']
+    xList = [str(anX) for anX in xFil.tolist() if str(anX) != '<NA>']
     if len(xList) == 1:
         return xList[0]
     else:
@@ -436,7 +436,8 @@ def getVisumLOCs(TPEsUnique, myVer, myShp, reversedELRs):
         Visum.Net.Stops.AddUserDefinedAttribute(uda, uda, uda, dtype)
     Visum.Graphic.StopDrawing = True
     ex = wx.App()
-    prog = progressBar(TPEsUnique.index.max() - 100000)
+    TPEoffset = TPEsUnique.index.min()
+    prog = progressBar(TPEsUnique.index.max() - TPEoffset)
     for i, row in TPEsUnique.iterrows():
         Node = Visum.Net.AddNode(i, row['Easting'], row['Northing'])
         Node.SetAttValue('Code', row['Tiploc'])
@@ -478,12 +479,12 @@ def getVisumLOCs(TPEsUnique, myVer, myShp, reversedELRs):
                 else:
                     split_Node = Visum.Net.AddNode(split_no, split_Link.XPosOnLink, split_Link.YPosOnLink)
                     split_Link.Link.SplitViaNode(split_Node)
-                    Visum.Net.Links.ItemByKey(split_Link.Link.AttValue('FromNodeNo'), split_no).SetNo(split_no + 1000000)
-                    Visum.Net.Links.ItemByKey(split_no, split_Link.Link.AttValue('ToNodeNo')).SetNo(split_no + 2000000)
+                    Visum.Net.Links.ItemByKey(split_Link.Link.AttValue('FromNodeNo'), split_no).SetNo(split_no + 10*TPEoffset)
+                    Visum.Net.Links.ItemByKey(split_no, split_Link.Link.AttValue('ToNodeNo')).SetNo(split_no + 20*TPEoffset)
                     Visum.Net.AddLink(split_no, split_no, i, 2)
                 fil_string += f"&[TRID]!=\"{split_TRID}\""
                 nTRID += 1
-        prog.gauge.SetValue(i - 100000)
+        prog.gauge.SetValue(i - TPEoffset)
     Visum.Graphic.StopDrawing = False
     Visum.Net.Turns.GetFilteredSet('[FromLink\\TypeNo]=2&[ToLink\\TypeNo]=2&[FromLink\\No]!=[ToLink\\No]').SetAllAttValues('TSysSet', '')
     Visum.IO.SaveVersion(myVer)
@@ -495,10 +496,11 @@ def getVisumPLTs(PLTsUnique, myPLTsVer, myLOCsVer, TPEsUnique, output):
     Visum.Net.Links.GetFilteredSet('[TypeNo]=1').SetActive()
     Visum.Graphic.StopDrawing = True
     ex = wx.App()
-    prog = progressBar(PLTsUnique.index.max() - 100000000)
+    PLToffset = PLTsUnique.index.min()
+    prog = progressBar(PLTsUnique.index.max() - PLToffset)
     for i, row in PLTsUnique.iterrows():
         addStopPoint(Visum, i, row, 250, TPEsUnique)
-        prog.gauge.SetValue(i - 100000000)
+        prog.gauge.SetValue(i - PLToffset)
     Visum.Graphic.StopDrawing = False
     Visum.Net.Links.SetMultipleAttributes(['Length'], Visum.Net.Links.GetMultipleAttributes(['LengthPoly']))
     DFcols_Visum = ['No', 'Code', 'Name', 'YCoord', 'XCoord']

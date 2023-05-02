@@ -1,4 +1,5 @@
 import os
+import pandas as pd
 import win32com.client as com
 
 def main():
@@ -58,6 +59,17 @@ def main():
     LinkType = None
     Visum.IO.ImportPuTProject(os.path.join(path, 'puti\\import_PuT_supply_from_Visum_23.puti'))
     Visum.Net.TimeProfileItems.AddUserDefinedAttribute('Speed', 'Speed', 'Speed', 15, formula = '3600*[Sum:UsedLineRouteItems\\PostLinkLength]/[PostRunTime]')
+    journeyDetails = pd.read_csv(os.path.join(path, 'cached_data\\JourneyDetails.csv'), low_memory = False)
+    journeyDetails.drop(['Key', 'JourneyID', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday', 'start_date', 'end_date'], axis = 1, inplace = True)
+    VJs = pd.DataFrame(Visum.Net.VehicleJourneys.GetMultiAttValues('Name'), columns = ['No', 'service_id'])
+    VJs['service_id'] = VJs['service_id'].str.replace('_trip', '_service')
+    journeyDetails = VJs.merge(journeyDetails, 'left', 'service_id')
+    journeyDetails.fillna('', inplace = True)
+    journeyDetails.drop(columns = ['No', 'service_id'], inplace = True)
+    for col in journeyDetails.columns.values:
+        Visum.Net.VehicleJourneys.AddUserDefinedAttribute(col, col, col, 5)
+    Visum.Net.VehicleJourneys.SetMultipleAttributes(journeyDetails.columns.values, journeyDetails.values)
+
     Visum.IO.SaveVersion(os.path.join(path, 'output\\VISUM\\LOCs_and_PLTs_with_GTFS.ver'))
 
     print('Done')
