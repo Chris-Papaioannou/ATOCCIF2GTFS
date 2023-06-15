@@ -433,7 +433,7 @@ def getVisumLOCs(path, TPEsUnique, myVer, myShp, reversedELRs):
     Visum.IO.ImportShapefile(myShp, ImportShapeFilePara)
     TSysDefs = pd.read_csv(os.path.join(path, 'input\\TSys_definitions.csv'), low_memory = False).set_index('Code')
     railBased = str(TSysDefs.index[TSysDefs['rail_based']].values).replace('\n', '').replace("' '", ',').replace("['", '').replace("']", '')
-    PTpermitted = str(TSysDefs.index[TSysDefs['PT_permitted']].values).replace('\n', '').replace("' '", ',').replace("['", '').replace("']", '')
+    PTpermitted = str(TSysDefs.index[TSysDefs['PT_permitted']].values).replace('\n', '').replace("' '", ',').replace("['", '').replace("']", '') + ',W' 
     fixDirectedNet(Visum, reversedELRs, TSysDefs, railBased, PTpermitted)
     MyMapMatcher = Visum.Net.CreateMapMatcher()
     LinkType = Visum.Net.AddLinkType(2)
