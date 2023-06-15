@@ -55,11 +55,11 @@ def main():
     Visum.Net.Links.SetActive()
     Visum.Net.StopPoints.SetActive()
     LinkType = Visum.Net.AddLinkType(99)
-    LinkType.SetAttValue('TSysSet', '2')
+    LinkType.SetAttValue('TSysSet', '')
     LinkType = None
     Visum.IO.ImportPuTProject(os.path.join(path, 'puti\\import_PuT_supply_from_Visum_23.puti'))
     Visum.Net.TimeProfileItems.AddUserDefinedAttribute('Speed', 'Speed', 'Speed', 15, formula = '3600*[Sum:UsedLineRouteItems\\PostLinkLength]/[PostRunTime]')
-    journeyDetails = pd.read_csv(os.path.join(path, 'cached_data\\JourneyDetails.csv'), low_memory = False)
+    journeyDetails = pd.read_csv(os.path.join(path, 'cached_data\\JourneyDetails.txt'), low_memory = False)
     journeyDetails.drop(['Key', 'JourneyID', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday', 'start_date', 'end_date'], axis = 1, inplace = True)
     VJs = pd.DataFrame(Visum.Net.VehicleJourneys.GetMultiAttValues('Name'), columns = ['No', 'service_id'])
     VJs['service_id'] = VJs['service_id'].str.replace('_trip', '_service')

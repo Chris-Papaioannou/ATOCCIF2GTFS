@@ -76,7 +76,7 @@ namespace CIF2GTFS
             }
 
             Console.WriteLine("Reading the timetable file...");
-            List<string> TimetableFileLines = new List<string>(File.ReadAllLines("input/Dec22 WTT CIF 230413.CIF"));
+            List<string> TimetableFileLines = new List<string>(File.ReadAllLines("input/May23 Full CIF 230413.CIF"));
             Dictionary<string, List<StationStop>> StopTimesForJourneyIDDictionary = new Dictionary<string, List<StationStop>>();
             Dictionary<string, JourneyDetail> JourneyDetailsForJourneyIDDictionary = new Dictionary<string, JourneyDetail>();
             string CurrentJourneyID = "";
@@ -115,7 +115,7 @@ namespace CIF2GTFS
                     string DaysRun = TimetableLine.Substring(21, 7);
                     CurrentBankHolidayRunning = TimetableLine.Substring(28, 1).Trim();
                     CurrentTrainStatus = TimetableLine.Substring(29, 1).Trim();
-                    CurrentTrainCategory = TimetableLine.Substring(30, 2).Trim();
+                    CurrentTrainCategory = TimetableLine.Substring(30, 2);
                     CurrentTrainIdentity = TimetableLine.Substring(32, 4).Trim();
                     CurrentHeadcode = TimetableLine.Substring(36, 4).Trim();
                     CurrentTrainServiceCode = TimetableLine.Substring(41, 8).Trim();
@@ -293,7 +293,7 @@ namespace CIF2GTFS
                 {
                     agency_id = journeyDetail.ATOC,
                     route_id = journeyDetail.JourneyID + "_route",
-                    route_type = "2",
+                    route_type = journeyDetail.TrainStatus + journeyDetail.TrainCategory.Substring(0, 1).Trim(),
                     route_short_name = journeyDetail.ATOC + "_" + journeyDetail.JourneyID
                 };
                 RoutesList.Add(route);

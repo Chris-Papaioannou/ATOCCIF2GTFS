@@ -18,7 +18,7 @@ from scipy.interpolate import interp1d
 from shapely.geometry import Point, LineString, Polygon
 from shapely.ops import nearest_points
 
-def fixDirectedNet(Visum, reversedELRs):
+def fixDirectedNet(Visum, reversedELRs, TSysDefs, railBased, PTpermitted):
 
     #Container object of reverse of links from directed shapefile
     Links0 = Visum.Net.Links.GetFilteredSet('[TypeNo]=0')
@@ -60,10 +60,13 @@ def fixDirectedNet(Visum, reversedELRs):
     Links1.GetFilteredSet('[is_REVERSE]').SetAllAttValues('TypeNo', 0)
 
     #Set TSys for open links
-    Visum.Net.AddTSystem('2', 'PUT')
+    for i, row in TSysDefs.iterrows():
+        myTSys = Visum.Net.AddTSystem(i, 'PUT')
+        myTSys.SetAttValue('Name', row['Name'])
+    Visum.Net.Modes.ItemByKey('X').SetAttValue('TSysSet', PTpermitted)
     Visum.Net.Links.GetFilteredSet('[is_CLOSED]').SetAllAttValues('TypeNo', 0)
-    Visum.Net.Links.GetFilteredSet('[TypeNo]=1').SetAllAttValues('TSysSet', '2')
-    Visum.Net.Turns.GetFilteredSet('[FromLink\\TSysSet]="2"&[ToLink\\TSysSet]="2"').SetAllAttValues('TSysSet', '2')
+    Visum.Net.Links.GetFilteredSet('[TypeNo]=1').SetAllAttValues('TSysSet', railBased)
+    Visum.Net.Turns.GetFilteredSet(f'[FromLink\\TSysSet]="{railBased}"&[ToLink\\TSysSet]="{railBased}"').SetAllAttValues('TSysSet', railBased)
 
 def overpass_query(overpassQLstring):
     
@@ -329,7 +332,7 @@ def processBPLAN(path):
     PLTs['index'] = 1000*PLTs['index_TIPLOC']
     PLTs['TIPLOC_PlatformID'] = PLTs['TIPLOC'] + '_' +  PLTs['PlatformID']
     PLTs.set_index(['TIPLOC_PlatformID'], inplace = True)
-    PLTs['StartDate'] = PLTs['StartDate'].astype('datetime64', False)
+    PLTs['StartDate'] = pd.to_datetime(PLTs['StartDate'], dayfirst = True)
     PLTs['PlatformLength'] = PLTs['PlatformLength'].replace('', 0)
     PLTs['PlatformLength'] = PLTs['PlatformLength'].astype('int32', False)
     
@@ -397,7 +400,7 @@ def progressBar(myRange):
     prog = ProgWin(None, 'wx.Gauge')
     return prog
 
-def getVisumLOCs(TPEsUnique, myVer, myShp, reversedELRs):
+def getVisumLOCs(path, TPEsUnique, myVer, myShp, reversedELRs):
     Visum = com.Dispatch('Visum.Visum.230')
     projString = """
                         PROJCS[
@@ -428,10 +431,13 @@ def getVisumLOCs(TPEsUnique, myVer, myShp, reversedELRs):
     ImportShapeFilePara.ObjectType = 0
     ImportShapeFilePara.SetAttValue('Directed', True)
     Visum.IO.ImportShapefile(myShp, ImportShapeFilePara)
-    fixDirectedNet(Visum, reversedELRs)
+    TSysDefs = pd.read_csv(os.path.join(path, 'input\\TSys_definitions.csv'), low_memory = False).set_index('Code')
+    railBased = str(TSysDefs.index[TSysDefs['rail_based']].values).replace('\n', '').replace("' '", ',').replace("['", '').replace("']", '')
+    PTpermitted = str(TSysDefs.index[TSysDefs['PT_permitted']].values).replace('\n', '').replace("' '", ',').replace("['", '').replace("']", '')
+    fixDirectedNet(Visum, reversedELRs, TSysDefs, railBased, PTpermitted)
     MyMapMatcher = Visum.Net.CreateMapMatcher()
     LinkType = Visum.Net.AddLinkType(2)
-    LinkType.SetAttValue('TSysSet', '2')
+    LinkType.SetAttValue('TSysSet', railBased)
     for uda, dtype in [['CRS', 5],['InBPlan', 2],['InTPS', 2],['Stanox', 5]]:
         Visum.Net.Stops.AddUserDefinedAttribute(uda, uda, uda, dtype)
     Visum.Graphic.StopDrawing = True
@@ -542,7 +548,7 @@ def main():
         reversedELRsDF = pd.read_csv(os.path.join(path, 'input\\Reverse_ELR_Direction.txt'), low_memory = False)
         reversedELRs = [reversedELR[0] for reversedELR in reversedELRsDF.values]
         print('Reprocessed BPLAN to obtain new LOCs Version file and saved to cache')
-        getVisumLOCs(TPEsUnique, myLOCsVer, myShp, reversedELRs)
+        getVisumLOCs(path, TPEsUnique, myLOCsVer, myShp, reversedELRs)
 
     if os.path.exists(myPLTsVer):
         print('Read old processed BPLAN PLTs Version file from cache')
