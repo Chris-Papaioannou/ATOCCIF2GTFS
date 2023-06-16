@@ -223,41 +223,64 @@ def processMND(path, connSharesDict):
 
 def main():
 
+    #Define file path of scrips and read user defined connector shares for combined ticketing areas from csv (N.B. The user should ensure these add to 1 and that XLD is included, and that XZA is NOT included)
     path = os.path.dirname(__file__)
     connShares = pd.read_csv(os.path.join(path, 'input\\connector_shares.csv'), low_memory = False)
+
+    #redefine connShares as a dict and pass them to the processMND function
     connSharesDict = connShares.set_index('StationCRS')['CRS'].to_dict()
     myMatrix = processMND(path, connSharesDict).reset_index()
+
+    #Get a unique list of zones from the MOIRA hourly matrices
     fromZones = myMatrix[['$ODPAIR:FROMZONENO', 'FROMZONE\CODE']].rename(columns = {'$ODPAIR:FROMZONENO': 'ZONENO', 'FROMZONE\CODE': 'CODE'})
     toZones = myMatrix[['TOZONENO', 'TOZONE\CODE']].rename(columns = {'TOZONENO': 'ZONENO', 'TOZONE\CODE': 'CODE'})
     zones = pd.concat([fromZones.drop_duplicates(), toZones.drop_duplicates()]).drop_duplicates().set_index('ZONENO')
 
+    #Launch Visum and load in the final supply network version without zones & demand
     Visum = com.Dispatch('Visum.Visum.230')
     Visum.IO.LoadVersion(os.path.join(path, 'output\\VISUM\\LOCs_and_PLTs_with_GTFS.ver'))
     
+    #Get a DataFrame of all dummy stop areas for which the parent Stop is served (this is because only the dummy Platform Unknown stop area needs a connector and transfer links)
     allStopAreas = Visum.Net.StopAreas.FilteredBy(f'[NAME]="Platform Unknown"&[STOP\SUM:STOPAREAS\SUM:STOPPOINTS\COUNT:SERVINGVEHJOURNEYS]>0')
     atts = ['Code', 'NodeNo', 'XCoord', 'YCoord', 'Stop\\Name', 'Stop\\CRS']
     allStopAreasDF = pd.DataFrame(allStopAreas.GetMultipleAttributes(atts), columns = atts).set_index('Code')
 
+    #Read in the user defined crsTIPLOC override file which defines which TIPLOC should be matched to for a given CRS when one othr than that defined in the TIPLOC json is needed
     crsTIPLOCoverride = pd.read_csv(os.path.join(path, 'input\\CRS-TIPLOC_manual_override.csv'), low_memory = False)[['CRS', 'TIPLOC']].dropna().set_index('CRS')
 
+    #Copy the connector shares from XLD and apply them also for XZA (It is important the user does not define XZA themselves as the StationCRS field in the user defined csv is assumed to be unique)
     connSharesTravelcard = connShares[connShares['CRS'] == 'XLD'].copy()
     connSharesTravelcard.loc[connSharesTravelcard.index, 'CRS'] = 'XZA'
     connShares = pd.concat([connShares, connSharesTravelcard], ignore_index = True)
 
+    #Turn off Visum drawing to imporve performance
     Visum.Graphic.StopDrawing = True
-    
+
+    #Now start iterating through Zones
     for i, row in zones.iterrows():
+
+        #extract CRS string from row data and filter connector shares
         aCRS = row['CODE']
         myConnShares = connShares[connShares['CRS'] == aCRS].merge(allStopAreasDF, 'left', left_on = 'StationCRS', right_on = 'Stop\\CRS')
+        
+        #Check if the CRS is a grouped ticketing area
         if len(myConnShares) > 0:
+
+            #If so, iterate through the child StationCRS locations, and optain their geographic locations
             for j, connRow in myConnShares.iterrows():
                 if connRow['StationCRS'] in crsTIPLOCoverride.index:
                     myConnShares.loc[j, myConnShares.columns[-5:]]  = allStopAreasDF.loc[crsTIPLOCoverride.loc[connRow['StationCRS']]].iloc[0]
+            
+            #Then calculate the location of the grouped ticketing zone by calculating the centroid weighted by connector proportions (N.B. since all connectors will have effective 0 length and 0 delay, this is purely aesthetic)
             weightedLoc = np.dot(myConnShares['ConnectorShare'], myConnShares[['XCoord', 'YCoord']])
+            
+            #Add the grouped ticketing area zone and set it's code, name, and status as having fixed weight connectors
             aZone = Visum.Net.AddZone(i, weightedLoc[0], weightedLoc[1])
             aZone.SetAttValue('Code', aCRS)
             aZone.SetAttValue('Name', myConnShares.loc[0, 'CRS_Name'])
             aZone.SetAttValue('SharePuT', True)
+
+            #Iterate through again and create the connectors, setting their weight (N.B. Visum will round to nearest int, so multiplying by 1000000 gives splits to the nearest 0.0001%, whereas multiplying by 1000 would only give to the nearest 0.1%)
             for _, connRow in myConnShares.iterrows():
                 try:
                     aConn = Visum.Net.AddConnector(aZone, connRow['NodeNo'])
@@ -267,29 +290,42 @@ def main():
                     aConn.SetAttValue('ReverseConnector\\T0_TSys(W)', 0)
                 except:
                     print(f"Warning: No served node found for {connRow['StationCRS']}. Connector shares will be incorrect unless you define the desired CRS-TIPLOC match in the manual override csv.")
+        
+        #Otherwise, if not a grouped ticketing area CRS, check if the TIPLOC is in the override file, and apply it's TIPLOC match manually, or otherwise, find the correct TIPLOC from the JSON
         else:
             if aCRS in crsTIPLOCoverride.index:
                 myLoc = allStopAreasDF.loc[crsTIPLOCoverride.loc[aCRS, 'TIPLOC']]
             else:
                 aStopArea = allStopAreasDF[allStopAreasDF['Stop\\CRS'] == aCRS]
+
+                # Provide warnings to advise when using the override would be sensible in the case of 0 matches or multiple matches (N.B. It is still not worth using the override if the location has no services from the CIF file, as the demand will not be asigned properly anyway)
                 if aStopArea.shape[0] == 0:
                     print(f'Warning: No served node found for {aCRS}. Demand will be dropped unless you define the desired CRS-TIPLOC match in the manual override csv.')
                 else:
                     if aStopArea.shape[0] > 1:
                         print(f'Warning: Multiple served nodes found for {aCRS}. The first match will be taken unless you define the desired CRS-TIPLOC match in the manual override csv.')
                     myLoc = aStopArea.iloc[0]
+            
+            #Add the CRS zone and define code & name, before providing the connector
             aZone = Visum.Net.AddZone(i, myLoc['XCoord'], myLoc['YCoord'])
             aZone.SetAttValue('Code', aCRS)
             aZone.SetAttValue('Name', myLoc['Stop\\Name'])
             Visum.Net.AddConnector(aZone, myLoc['NodeNo'])
 
+    #Add a new link type for use as user defined transfer links
     LinkType = Visum.Net.AddLinkType(3)
     LinkType.SetAttValue('TSysSet', 'W')
 
+    #Make a DataFrame of user defined transfer links and set the index
     myCSV = pd.read_csv(os.path.join(path, 'input\\transfer_links.csv'), low_memory = False).set_index(['FromCRS', 'ToCRS'])
     
+    #Iterate through the user defined transfer links
     for i, row in myCSV.iterrows():
+
+        #We only need to create one if the from_CRS alphabetically preceeds the to_CRS, because the reverse direction will automatically be created
         if i[0] < i[1]:
+
+            #Check if crsTIPLOC override applies, or otherwise use normal match to find the correct node. Using warnings and flags if a match is not found
             if i[0] in crsTIPLOCoverride.index:
                 myFromNode = allStopAreasDF.loc[crsTIPLOCoverride.loc[i[0]], 'NodeNo'][0]
                 fromFlag = True
@@ -310,16 +346,21 @@ def main():
                 except:
                     print(f'Warning: No served node found for {i[1]}. No transfer link will be created unless you define the desired CRS-TIPLOC match in the manual override csv.')
                     toFlag = False
+
+            #If both from_CRS and to_CRS are found, create the user defined transfer link and apply the correct times to both directions
             if fromFlag & toFlag:
                 myLink = Visum.Net.AddLink(-1, myFromNode, myToNode, 3)
                 myLink.SetAttValue('T_PUTSYS(W)', 60*row['TravelTime'])
                 myLink.SetAttValue('REVERSELINK\\T_PUTSYS(W)', myCSV.loc[(i[1], i[0]), 'TravelTime'])
 
+    #Add another link type to be used for automatic walking speed transfer links
     LinkType = Visum.Net.AddLinkType(4)
     LinkType.SetAttValue('TSysSet', 'W')
 
+    #Create a list of all possible cobinations of served dummy Stop Areas
     cc = list(combinations(allStopAreasDF[['NodeNo', 'XCoord', 'YCoord']].values, 2))
 
+    #Iterate through each possible permutation and calculate the distance, adding a link for any pair closer than 250m (N.B. This is many orders of magnitude faster then the Visum COM MapMatcher geographic search approach)
     for pair in cc:
         nodeFrom, xFrom, yFrom = pair[0]
         nodeTo, xTo, yTo = pair[1]
@@ -330,9 +371,14 @@ def main():
             except:
                 print('Warning: This link has already been been manually defined. Therefore, no link is created.')
     
+    #We have now finished iterative slow processes, so we can turn back on drawing in Visum again
     Visum.Graphic.StopDrawing = False
+
+    #Get an index of all OD pairs from Visum, and merge our final hourly MOIRA matrices onto them
     myIndex = pd.DataFrame(Visum.Net.ODPairs.GetMultipleAttributes(['FROMZONE\CODE', 'TOZONE\CODE']), columns = ['FROMZONE\CODE', 'TOZONE\CODE'])
     myExpandedMatrix = myIndex.merge(myMatrix, 'left', ['FROMZONE\CODE', 'TOZONE\CODE'])
+
+    #Then adding the relevant TimeSeries before iterating through the hours, creating matrices, reading in the values, and adding timeSeriesItems
     myTimeSeries = Visum.Net.AddTimeSeries(2, 1)
     for i in range(24):
         myVisumMatrix = Visum.Net.AddMatrix(100 + i, 2, 3)
@@ -342,6 +388,7 @@ def main():
         myTimeSeriesItem = myTimeSeries.AddTimeSeriesItem(3600*i, 3600*(i + 1))
         myTimeSeriesItem.SetAttValue('Matrix', f"Matrix([NO]={myVisumMatrix.AttValue('No')})")
 
+    #Finally save the ver file to assign (though there are several manual things you must do that I have not included in COM yet)
     Visum.IO.SaveVersion(os.path.join(path, 'output\\VISUM\\LOCs_and_PLTs_with_GTFS_to_assign.ver'))
 
     print('Done')
