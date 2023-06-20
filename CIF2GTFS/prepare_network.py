@@ -20,6 +20,20 @@ from shapely.ops import nearest_points
 
 def fixDirectedNet(Visum, reversedELRs, TSysDefs, railBased, PTpermitted):
 
+    '''
+    PLACEHOLDER.
+        
+        Parameters:
+            Visum (os object): PLACEHOLDER
+            reversedELRs (): PLACEHOLDER
+            TSysDefs (): PLACEHOLDER
+            railBased (): PLACEHOLDER
+            PTpermitted (): PLACEHOLDER
+    
+        Returns:
+            None
+    '''
+
     #Container object of reverse of links from directed shapefile
     Links0 = Visum.Net.Links.GetFilteredSet('[TypeNo]=0')
 
@@ -38,7 +52,6 @@ def fixDirectedNet(Visum, reversedELRs, TSysDefs, railBased, PTpermitted):
     Links1.GetFilteredSet('([TRCODE]>=30&[TRCODE]<=39)|[TRCODE]>=50').SetAllAttValues('is_BIDIRECT', True)
     
     #Iterate through Shapefile directed links and determine whether to reverse them or not
-    
     iterateELRs = Links1.GetMultipleAttributes(['ELR', 'is_DOWN', 'is_UP'])
     isReversed = [[link[1]] if link[0] in reversedELRs else [link[2]] for link in iterateELRs]
     Links1.SetMultipleAttributes(['is_REVERSE'], isReversed)
@@ -69,6 +82,16 @@ def fixDirectedNet(Visum, reversedELRs, TSysDefs, railBased, PTpermitted):
     Visum.Net.Turns.GetFilteredSet(f'[FromLink\\TSysSet]="{railBased}"&[ToLink\\TSysSet]="{railBased}"').SetAllAttValues('TSysSet', railBased)
 
 def overpass_query(overpassQLstring):
+
+    '''
+    PLACEHOLDER.
+        
+        Parameters:
+            overpassQLstring (string): PLACEHOLDER
+    
+        Returns:
+            result (): PLACEHOLDER 
+    '''
     
     #Create API object and boolean switch
     apiPy = overpy.Overpass()
@@ -89,6 +112,17 @@ def overpass_query(overpassQLstring):
     return result
 
 def str_clean(myStr, desc):
+
+    '''
+    Takes a raw platform string from the OSM query data and cleans it to prepare for attempted match with BPLAN PLTs.
+        
+        Parameters:
+            myStr (string): Contains an uncleaned OSM platfom string
+            desc (string): Contains the station name
+    
+        Returns:
+            myStr (string): A cleaned OSM platform string
+    '''
     
     #Make string upper case, and if the platform name simply contains the station name, treat the same as blank or missing OSM tags
     myStr = myStr.upper()
@@ -106,6 +140,21 @@ def str_clean(myStr, desc):
         return myStr
 
 def process_platformWays(myPlatformWays, crs, desc, x, y):
+    
+    '''
+    Processes the platform data from OSM within a 500m x 500m bounding box centred on a given TIPLOC location
+        
+        Parameters:
+            myPlatformWays (): PLACEHOLDER
+            crs (string): PLACEHOLDER
+            desc (string): PLACEHOLDER
+            x (float): the X-Coordinate of the given TIPLOC
+            y (float): the Y-Coordinate of the given TIPLOC
+    
+        Returns:
+            myPlatformWays (): PLACEHOLDER 
+            fig (pyplot object): A figure showing the processed platforms from OSM
+    '''
     
     #Close previous plot(s), then pre-define new plot with equal axis scales and set title
     plt.close('all')
@@ -208,6 +257,7 @@ def get_OSM_platform_data(path, TIPLOC, desc, x, y, bound):
         dfPlatforms = dfPlatforms.rename(columns = {'value': 'Platform'}).drop('variable', axis = 1).sort_values('Dist').reset_index(drop = True)
         with open(myPickle, 'wb') as f:
             pickle.dump([dfPlatforms], f)
+    
     return dfPlatforms
 
 def addStopPoint(Visum, i, row, bound, TPEsUnique):
