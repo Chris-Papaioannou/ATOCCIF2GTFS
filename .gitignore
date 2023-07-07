@@ -10,7 +10,9 @@
 *.sln.docstates
 *.cif
 *hourlyOD.csv
-*to_assign.ver
+*_to_assign.ver
+*_to_assign_calendar.ver
+*_assigned.ver
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
