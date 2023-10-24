@@ -1,3 +1,9 @@
+import sys
+import pathlib
+
+cur_dir = pathlib.Path(__file__).parent.resolve()
+sys.path.append(f"{cur_dir}\\src")
+
 import json
 import os
 os.environ['USE_PYGEOS'] = '0'
@@ -511,6 +517,9 @@ def getVisumLOCs(path, TPEsUnique, myVer, myShp, reversedELRs):
         StopPoint = Visum.Net.AddStopPointOnNode(1000*i, StopArea, i)
         StopPoint.SetAttValue('Code', row['Tiploc'])
         StopPoint.SetAttValue('Name', 'Platform Unknown')
+        StopArea = Visum.Net.AddStopArea(1000*i+999, i, i, row['Easting'], row['Northing'])
+        StopArea.SetAttValue('Code', row['Tiploc'])
+        StopArea.SetAttValue('Name', 'AccessEgress')
         unsatis = True
         fil_string = '[TYPENO]=1'
         nTRID = 0

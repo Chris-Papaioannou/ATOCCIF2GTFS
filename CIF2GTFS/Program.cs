@@ -76,7 +76,7 @@ namespace CIF2GTFS
             }
 
             Console.WriteLine("Reading the timetable file...");
-            List<string> TimetableFileLines = new List<string>(File.ReadAllLines("input/May23 Full CIF 230413.CIF"));
+            List<string> TimetableFileLines = new List<string>(File.ReadAllLines("input/Winter19_Weekday.CIF"));
             Dictionary<string, List<StationStop>> StopTimesForJourneyIDDictionary = new Dictionary<string, List<StationStop>>();
             Dictionary<string, JourneyDetail> JourneyDetailsForJourneyIDDictionary = new Dictionary<string, JourneyDetail>();
             string CurrentJourneyID = "";
@@ -194,17 +194,47 @@ namespace CIF2GTFS
                         string SAT = TimetableLine.Substring(10, 5).Trim();
                         string SDT = TimetableLine.Substring(15, 5).Trim();
                         string SP = TimetableLine.Substring(20, 5).Trim();
-                        if (SAT != "" && SDT != "")
+                        string ACT1 = TimetableLine.Substring(42,2).Trim();
+                        string ACT2 = TimetableLine.Substring(44,2).Trim();
+                        string ACT3 = TimetableLine.Substring(46,2).Trim();
+                        string ACT4 = TimetableLine.Substring(48,2).Trim();
+                        string ACT5 = TimetableLine.Substring(50,2).Trim();
+                        string ACT6 = TimetableLine.Substring(52,2).Trim();
+                        
+                        if (SAT != "" && SDT != "" && (ACT1 == "T" || ACT2 == "T" || ACT3 == "T" || ACT4 == "T" || ACT5 == "T" || ACT6 == "T")) 
                         {
                             stationStop.ScheduledArrivalTime = stringToTimeSpan(SAT);
                             stationStop.ScheduledDepartureTime = stringToTimeSpan(SDT);
-                            stationStop.pudoType = 0;
+                            stationStop.puType = 0;
+                            stationStop.doType = 0;
+                        }
+                        else if (SAT != "" && SDT != "" && (ACT1 == "U" || ACT2 == "U" || ACT3 == "U" || ACT4 == "U" || ACT5 == "U" || ACT6 == "U")) 
+                        {
+                            stationStop.ScheduledArrivalTime = stringToTimeSpan(SAT);
+                            stationStop.ScheduledDepartureTime = stringToTimeSpan(SDT);
+                            stationStop.puType = 0;
+                            stationStop.doType = 1;
+                        }
+                        else if (SAT != "" && SDT != "" && (ACT1 == "D" || ACT2 == "D" || ACT3 == "D" || ACT4 == "D" || ACT5 == "D" || ACT6 == "D"))  
+                        {
+                            stationStop.ScheduledArrivalTime = stringToTimeSpan(SAT);
+                            stationStop.ScheduledDepartureTime = stringToTimeSpan(SDT);
+                            stationStop.puType = 1;
+                            stationStop.doType = 0;
+                        }
+                        else if (SAT != "" && SDT != "")  
+                        {
+                            stationStop.ScheduledArrivalTime = stringToTimeSpan(SAT);
+                            stationStop.ScheduledDepartureTime = stringToTimeSpan(SDT);
+                            stationStop.puType = 1;
+                            stationStop.doType = 1;
                         }
                         else
                         {
                             stationStop.ScheduledArrivalTime = stringToTimeSpan(SP);
                             stationStop.ScheduledDepartureTime = stringToTimeSpan(SP);
-                            stationStop.pudoType = 1;
+                            stationStop.puType = 1;
+                            stationStop.doType = 1;
                         }
                         stationStop.Platform = TimetableLine.Substring(33, 3).Trim();
                         stationStop.Line = TimetableLine.Substring(36, 3).Trim();
@@ -214,7 +244,8 @@ namespace CIF2GTFS
                         string SDT = TimetableLine.Substring(10, 5).Trim();
                         stationStop.ScheduledArrivalTime = stringToTimeSpan(SDT);
                         stationStop.ScheduledDepartureTime = stringToTimeSpan(SDT);
-                        stationStop.pudoType = 0;
+                        stationStop.puType = 0;
+                        stationStop.doType = 0;
                         stationStop.Platform = TimetableLine.Substring(19, 3).Trim();
                         stationStop.Line = TimetableLine.Substring(22, 3).Trim();
                     }
@@ -345,8 +376,8 @@ namespace CIF2GTFS
                         trip_id = JourneyID + "_trip",
                         stop_id = myStop,
                         stop_sequence = count,
-                        pickup_type = stationStop.pudoType,
-                        drop_off_type = stationStop.pudoType
+                        pickup_type = stationStop.puType,
+                        drop_off_type = stationStop.doType
                     };
                     if (JourneyStartedYesterdayFlagA == true)
                     {
@@ -522,7 +553,8 @@ namespace CIF2GTFS
         public string Location { get; set; }
         public TimeSpan ScheduledArrivalTime { get; set; }
         public TimeSpan ScheduledDepartureTime { get; set; }
-        public int pudoType { get; set; }
+        public int puType { get; set; }
+        public int doType { get; set; }
         public string Platform { get; set; }
         public string Line { get; set; }
         public BPLAN_TPE TPE { get; set; }

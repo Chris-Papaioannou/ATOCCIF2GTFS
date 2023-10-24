@@ -1,5 +1,11 @@
 ﻿Code,Name,rail_based,PT_permitted
 1E,STP - Passenger & Parcels - Empty Coaching Stock,TRUE,FALSE
+1O,STP - Passenger - Ordinary,TRUE,TRUE
+1P,STP - Parcels - Other,TRUE,FALSE
+1X,STP - Passenger - Express,TRUE,TRUE
+2D,STP - Freight - Departmental,TRUE,FALSE
+3E,STP - Trip - Empty Coaching Stock,TRUE,FALSE
+5B,STP - Bus,FALSE,TRUE
 BB,Bus,FALSE,TRUE
 FA,Freight - Trainload Coal (Distributive),TRUE,FALSE
 FB,Freight - Trainload Other,TRUE,FALSE
@@ -18,3 +24,4 @@ PZ,Passenger - Light Locomotive,TRUE,TRUE
 S,Ship,FALSE,TRUE
 TE,Trip - Empty Coaching Stock,TRUE,FALSE
 TZ,Trip - Light Locomotive,TRUE,TRUE
+P,Passenger,TRUE,TRUE
