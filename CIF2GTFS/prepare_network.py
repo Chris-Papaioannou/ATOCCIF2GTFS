@@ -23,6 +23,8 @@ from bng_latlon import OSGB36toWGS84, WGS84toOSGB36
 from scipy.interpolate import interp1d
 from shapely.geometry import Point, LineString, Polygon
 from shapely.ops import nearest_points
+from itertools import combinations
+import math
 
 def fixDirectedNet(Visum, reversedELRs, TSysDefs, railBased, PTpermitted):
 
@@ -343,9 +345,9 @@ def getCommonPrefix(x):
     else:
         return f'{os.path.commonprefix(xList)}*'
 
-def processBPLAN(path):
+def processBPLAN(path, bplan_file, tiploc_file):
 
-    myTPE = pd.DataFrame(json.load(open(os.path.join(path, 'input\\TiplocPublicExport_2022-12-24_10-37.json'))).get('Tiplocs')).set_index('Tiploc')
+    myTPE = pd.DataFrame(json.load(open(tiploc_file)).get('Tiplocs')).set_index('Tiploc')
     myTPE = myTPE[[len(aTiploc) <= 7 for aTiploc in myTPE.index.values]]
     myTPE['CRS'] = [row['Details'].get('CRS') for _, row in myTPE.iterrows()]
     myTPE.drop(['DisplayName', 'NodeId', 'Codes', 'Details', 'Elevation'], axis = 1, inplace = True)
@@ -370,7 +372,7 @@ def processBPLAN(path):
 
     myTPE.to_csv(os.path.join(path, 'cached_data\\BPLAN\\TPEs.csv'))
 
-    with open(os.path.join(path, 'input\\Geography_20221210_to_20230520_from_20221211.txt')) as f:
+    with open(bplan_file) as f:
         lines = f.readlines()
     lines = [line[:-1].split('\t') for line in lines]
 
@@ -456,7 +458,7 @@ def progressBar(myRange):
     prog = ProgWin(None, 'wx.Gauge')
     return prog
 
-def getVisumLOCs(path, TPEsUnique, myVer, myShp, reversedELRs):
+def getVisumLOCs(path, TPEsUnique, myVer, myShp, reversedELRs, tsys_path):
     Visum = com.Dispatch('Visum.Visum.230')
     projString = """
                         PROJCS[
@@ -487,7 +489,7 @@ def getVisumLOCs(path, TPEsUnique, myVer, myShp, reversedELRs):
     ImportShapeFilePara.ObjectType = 0
     ImportShapeFilePara.SetAttValue('Directed', True)
     Visum.IO.ImportShapefile(myShp, ImportShapeFilePara)
-    TSysDefs = pd.read_csv(os.path.join(path, 'input\\TSys_definitions.csv'), low_memory = False).set_index('Code')
+    TSysDefs = pd.read_csv(tsys_path, low_memory = False).set_index('Code')
     railBased = str(TSysDefs.index[TSysDefs['rail_based']].values).replace('\n', '').replace("' '", ',').replace("['", '').replace("']", '')
     PTpermitted = str(TSysDefs.index[TSysDefs['PT_permitted']].values).replace('\n', '').replace("' '", ',').replace("['", '').replace("']", '') + ',W' 
     fixDirectedNet(Visum, reversedELRs, TSysDefs, railBased, PTpermitted)
@@ -580,6 +582,101 @@ def getVisumPLTs(PLTsUnique, myPLTsVer, myLOCsVer, TPEsUnique, output):
     DF_full.to_csv(output, index = False)
     Visum.IO.SaveVersion(myPLTsVer)
 
+
+def addZonesandConnectors():
+    # Add zones on top of platform unknown locations for stops where a CRS code is defined and add a connector between this zone and the Platform Unknown 
+
+    allStopAreas = Visum.Net.StopAreas.FilteredBy(f'[NAME]="Platform Unknown"&[STOP\CRS]!=""&[STOP\CODE]=[CODE]')
+    atts = ['Code', 'NodeNo', 'XCoord', 'YCoord', 'Stop\\Name', 'Stop\\CRS']
+    allStopAreasDF = pd.DataFrame(allStopAreas.GetMultipleAttributes(atts), columns = atts).set_index('Code')
+
+    #Turn off Visum drawing to imporve performance
+    Visum.Graphic.StopDrawing = True
+
+    #Now start iterating through Zones
+    for i, row in allStopAreasDF.iterrows():
+        
+        #Add the CRS zone and define code & name, before providing the connector
+        aZone = Visum.Net.AddZone(i, row['XCoord'], row['YCoord'])
+        aZone.SetAttValue('Code', row['Stop\\CRS'])
+        aZone.SetAttValue('Name', row['Stop\\Name'])
+        Visum.Net.AddConnector(aZone, row['NodeNo'])
+
+    return allStopAreasDF
+
+def addTransferLinks(xfer_link_path, allStopAreasDF):
+    #Add a new link type for use as user defined transfer links
+    LinkType = Visum.Net.AddLinkType(3)
+    LinkType.SetAttValue('TSysSet', 'W')
+
+    #Make a DataFrame of user defined transfer links and set the index
+    myCSV = pd.read_csv(xfer_link_path, low_memory = False).set_index(['FromCRS', 'ToCRS'])
+    
+    #Iterate through the user defined transfer links
+    for i, row in myCSV.iterrows():
+
+        #We only need to create one if the from_CRS alphabetically preceeds the to_CRS, because the reverse direction will automatically be created
+        if i[0] < i[1]:
+
+            try:
+                myFromNode = allStopAreasDF[allStopAreasDF['Stop\\CRS'] == i[0]]['NodeNo'][0]
+                fromFlag = True
+            except:
+                print(f'Warning: No served node found for {i[0]}. No transfer link will be created unless you define the desired CRS-TIPLOC match in the manual override csv.')
+                fromFlag = False
+        
+            try:
+                myToNode = allStopAreasDF[allStopAreasDF['Stop\\CRS'] == i[1]]['NodeNo'][0]
+                toFlag = True
+            except:
+                print(f'Warning: No served node found for {i[1]}. No transfer link will be created unless you define the desired CRS-TIPLOC match in the manual override csv.')
+                toFlag = False
+
+            #If both from_CRS and to_CRS are found, create the user defined transfer link and apply the correct times to both directions
+            if fromFlag & toFlag:
+                myLink = Visum.Net.AddLink(-1, myFromNode, myToNode, 3)
+                myLink.SetAttValue('T_PUTSYS(W)', 60*row['TravelTime'])
+                myLink.SetAttValue('REVERSELINK\\T_PUTSYS(W)', 60*myCSV.loc[(i[1], i[0]), 'TravelTime'])
+
+    #Add another link type to be used for automatic walking speed transfer links
+    LinkType = Visum.Net.AddLinkType(4)
+    LinkType.SetAttValue('TSysSet', 'W')
+
+    #Create a list of all possible cobinations of served dummy Stop Areas
+    cc = list(combinations(allStopAreasDF[['NodeNo', 'XCoord', 'YCoord']].values, 2))
+
+    #Iterate through each possible permutation and calculate the distance, adding a link for any pair closer than 250m (N.B. This is many orders of magnitude faster then the Visum COM MapMatcher geographic search approach)
+    for pair in cc:
+        nodeFrom, xFrom, yFrom = pair[0]
+        nodeTo, xTo, yTo = pair[1]
+        distance = math.sqrt((xTo - xFrom)**2 + (yTo - yFrom)**2)
+        if (distance < 250) & (nodeFrom < nodeTo):
+            try:
+                Visum.Net.AddLink(-1, nodeFrom, nodeTo, 4)
+            except:
+                print('Warning: This link has already been been manually defined. Therefore, no link is created.')
+    
+    #We have now finished iterative slow processes, so we can turn back on drawing in Visum again
+    Visum.Graphic.StopDrawing = False
+
+
+def update_crs(crs_path):
+    df_crs = pd.read_csv(crs_path)
+
+    stops = pd.DataFrame(Visum.Net.Stops.GetMultipleAttributes(['NO', 'CODE', 'CRS']), columns=['No', 'Code', 'CRS'])
+
+    for i, row in df_crs.iterrows():
+        tiploc = row['StopCode']
+        stopno = stops.loc[stops.Code == tiploc].No.tolist()[0]
+        stop = Visum.Net.Stops.ItemByKey(stopno)
+
+        if row.NewCoordinates == 1:
+            stop.SetAttValue('CRS', row.NewCRS)
+        else:
+            stop.SetAttValue('CRS', "")
+
+
+
 def main():
 
     path = os.path.dirname(__file__)
@@ -592,7 +689,9 @@ def main():
             TPEsUnique, PLTsUnique = pickle.load(f)
     else:
         print('Reprocessed BPLAN to obtain new pickle results and saved to cache')
-        TPEsUnique, PLTsUnique = processBPLAN(path)
+        bplan_file = os.path.join(path, 'input\\Geography_20221210_to_20230520_from_20221211.txt')
+        tiploc_file = os.path.join(path, 'input\\TiplocPublicExport_2022-12-24_10-37.json')
+        TPEsUnique, PLTsUnique = processBPLAN(path, bplan_file, tiploc_file)
         with open(myPickle, 'wb') as f:
             pickle.dump([TPEsUnique, PLTsUnique], f)
     
@@ -607,13 +706,55 @@ def main():
         reversedELRsDF = pd.read_csv(os.path.join(path, 'input\\Reverse_ELR_Direction.txt'), low_memory = False)
         reversedELRs = [reversedELR[0] for reversedELR in reversedELRsDF.values]
         print('Reprocessed BPLAN to obtain new LOCs Version file and saved to cache')
-        getVisumLOCs(path, TPEsUnique, myLOCsVer, myShp, reversedELRs)
+        tsys_path = os.path.join(path, 'input\\TSys_definitions.csv')
+        getVisumLOCs(path, TPEsUnique, myLOCsVer, myShp, reversedELRs, tsys_path)
 
     if os.path.exists(myPLTsVer):
         print('Read old processed BPLAN PLTs Version file from cache')
     else:
         print('Reprocessed BPLAN to obtain new PLTs Version file and saved to cache')
         getVisumPLTs(PLTsUnique, myPLTsVer, myLOCsVer, TPEsUnique, output)
+
+    print('Done')
+
+
+
+def main2(path, myShp, tiploc_path, BPLAN_path, ELR_path, merge_path, tsys_path, xfer_link_path):
+
+    print('Reprocess BPLAN to obtain new pickle results and save to cache')
+    TPEsUnique, PLTsUnique = processBPLAN(path, BPLAN_path, tiploc_path)
+
+    myPickle = os.path.join(path, 'cached_data\\BPLAN\\uniques.p')
+    with open(myPickle, 'wb') as f:
+        pickle.dump([TPEsUnique, PLTsUnique], f)
+    
+
+    myLOCsVer = os.path.join(path, 'cached_data\\VISUM\\LOCs_Only.ver')
+    myPLTsVer = os.path.join(path, 'cached_data\\VISUM\\LOCs_and_PLTs.ver')
+    output = os.path.join(path, 'output\\GTFS\\stops.txt')
+
+    print('Reprocess BPLAN to obtain new LOCs Version file and save to cache')
+    reversedELRsDF = pd.read_csv(ELR_path, low_memory = False)
+    reversedELRs = [reversedELR[0] for reversedELR in reversedELRsDF.values]
+    getVisumLOCs(path, TPEsUnique, myLOCsVer, myShp, reversedELRs, tsys_path)
+
+
+    print('Reprocess BPLAN to obtain new PLTs Version file and save to cache')
+    getVisumPLTs(PLTsUnique, myPLTsVer, myLOCsVer, TPEsUnique, output)
+
+    #! recalulate lengths for all lines
+
+    # Update CRS codes from override file
+    merge_path = os.path.join(path, 'input\\StopsToMerge+CRSOverride.csv')
+    update_crs(merge_path)
+
+    # Create zones and connectors for CRS stops
+    allStopAreasDF = addZonesandConnectors()
+
+    # Add transfer links to the network
+    addTransferLinks(xfer_link_path, allStopAreasDF)
+
+    Visum.Net.SetAttValue("STRONGLINEROUTELENGTHSADAPTION", 1)
 
     print('Done')
 
