@@ -5,6 +5,11 @@ import numpy as np
 import datetime
 import tempfile
 
+import sys
+sys.path.append(os.path.dirname(__file__))
+
+import get_inputs as gi
+
 
 att_header = '''$VISION
 * {}
@@ -55,20 +60,13 @@ def df2visum(Visum, df, temp_path, filename):
     Visum.IO.LoadAttributeFile(f"{temp_path}\\{filename}.att")
 
 
-def main():
-    
-    path = os.getcwd()
+def merge_stops(merge_path, ver_path):
 
-    merge_name = "CIF2GTFS\\input\\StopsToMerge+CRSOverride.csv"
-    ver_name = "CIF2GTFS\\output\\VISUM\\LOCs_and_PLTs_with_GTFS_CRS.ver"
-
-    
-
-    Visum = win32com.client.gencache.EnsureDispatch('Visum.Visum')
+    Visum = win32com.client.gencache.EnsureDispatch('Visum.Visum.230')
     C = win32com.client.constants
-    Visum.LoadVersion(os.path.join(path, ver_name))
+    Visum.LoadVersion(ver_path)
 
-    MergedStops = pd.read_csv(os.path.join(path, merge_name))
+    MergedStops = pd.read_csv(merge_path)
     UniqueStops = MergedStops.drop(MergedStops[MergedStops.NewCoordinates == 0].index)
     OldStopCode = [ stop for stop in UniqueStops["StopCode"]]
     UniqueStopsdict = UniqueStops.set_index('StopCode').T.to_dict('list')
@@ -143,7 +141,25 @@ def main():
 
     df2visum(Visum, walk_time_df, tempfile.gettempdir(), "TransferWalkTime.att")
 
-    Visum.SaveVersion(os.path.join(path, ver_name.replace(".ver", "_MergeStops.ver")))
+    Visum.SaveVersion(ver_path.replace(".ver", "_MergeStops.ver"))
+
+def main(merge_path, ver_path):
+    merge_stops(merge_path, ver_path)
+
+    
+
+    
 
 if __name__ == '__main__':
-    main()
+
+    path = os.path.dirname(__file__)
+    input_path = os.path.join(path, "input\\inputs.csv")
+
+    mergeStops = gi.readMergeInputs(input_path)
+
+    if mergeStops[0] == "TRUE":
+        merge_path = mergeStops[1]
+        ver_path = os.path.join(path, "output\\VISUM\\Network+Timetable.ver")
+
+        #merge_path = "CIF2GTFS\\input\\StopsToMerge+CRSOverride.csv"
+        main(merge_path, ver_path)

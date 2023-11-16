@@ -460,6 +460,9 @@ namespace CIF2GTFS
             Console.WriteLine("Importing GTFS to Visum...");
             ExecProcess("import_GTFS.py");
 
+            Console.WriteLine("Merging Stops...");
+            ExecProcess("merge_stops.py");
+
             Console.WriteLine("Done");
         }
 

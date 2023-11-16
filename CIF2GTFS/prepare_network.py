@@ -26,6 +26,10 @@ from shapely.ops import nearest_points
 from itertools import combinations
 import math
 
+sys.path.append(os.path.dirname(__file__))
+
+import get_inputs as gi
+
 def fixDirectedNet(Visum, reversedELRs, TSysDefs, railBased, PTpermitted):
 
     '''
@@ -583,7 +587,7 @@ def getVisumPLTs(PLTsUnique, myPLTsVer, myLOCsVer, TPEsUnique, output):
     Visum.IO.SaveVersion(myPLTsVer)
 
 
-def addZonesandConnectors():
+def addZonesandConnectors(Visum):
     # Add zones on top of platform unknown locations for stops where a CRS code is defined and add a connector between this zone and the Platform Unknown 
 
     allStopAreas = Visum.Net.StopAreas.FilteredBy(f'[NAME]="Platform Unknown"&[STOP\CRS]!=""&[STOP\CODE]=[CODE]')
@@ -597,14 +601,14 @@ def addZonesandConnectors():
     for i, row in allStopAreasDF.iterrows():
         
         #Add the CRS zone and define code & name, before providing the connector
-        aZone = Visum.Net.AddZone(i, row['XCoord'], row['YCoord'])
+        aZone = Visum.Net.AddZone(-1, row['XCoord'], row['YCoord'])
         aZone.SetAttValue('Code', row['Stop\\CRS'])
         aZone.SetAttValue('Name', row['Stop\\Name'])
         Visum.Net.AddConnector(aZone, row['NodeNo'])
 
     return allStopAreasDF
 
-def addTransferLinks(xfer_link_path, allStopAreasDF):
+def addTransferLinks(Visum, xfer_link_path, allStopAreasDF):
     #Add a new link type for use as user defined transfer links
     LinkType = Visum.Net.AddLinkType(3)
     LinkType.SetAttValue('TSysSet', 'W')
@@ -660,7 +664,7 @@ def addTransferLinks(xfer_link_path, allStopAreasDF):
     Visum.Graphic.StopDrawing = False
 
 
-def update_crs(crs_path):
+def update_crs(Visum, crs_path):
     df_crs = pd.read_csv(crs_path)
 
     stops = pd.DataFrame(Visum.Net.Stops.GetMultipleAttributes(['NO', 'CODE', 'CRS']), columns=['No', 'Code', 'CRS'])
@@ -677,9 +681,28 @@ def update_crs(crs_path):
 
 
 
-def main():
+def main(path, myShp, tiploc_path, BPLAN_path, ELR_path, merge_path, tsys_path, xfer_link_path):
 
-    path = os.path.dirname(__file__)
+    '''print('Reprocess BPLAN to obtain new pickle results and save to cache')
+    TPEsUnique, PLTsUnique = processBPLAN(path, BPLAN_path, tiploc_path)
+
+    myPickle = os.path.join(path, 'cached_data\\BPLAN\\uniques.p')
+    with open(myPickle, 'wb') as f:
+        pickle.dump([TPEsUnique, PLTsUnique], f)
+    
+
+    myLOCsVer = os.path.join(path, 'cached_data\\VISUM\\LOCs_Only.ver')
+    myPLTsVer = os.path.join(path, 'cached_data\\VISUM\\LOCs_and_PLTs.ver')
+    output = os.path.join(path, 'output\\GTFS\\stops.txt')
+
+    print('Reprocess BPLAN to obtain new LOCs Version file and save to cache')
+    reversedELRsDF = pd.read_csv(ELR_path, low_memory = False)
+    reversedELRs = [reversedELR[0] for reversedELR in reversedELRsDF.values]
+    getVisumLOCs(path, TPEsUnique, myLOCsVer, myShp, reversedELRs, tsys_path)
+
+
+    print('Reprocess BPLAN to obtain new PLTs Version file and save to cache')
+    getVisumPLTs(PLTsUnique, myPLTsVer, myLOCsVer, TPEsUnique, output)'''
 
     myPickle = os.path.join(path, 'cached_data\\BPLAN\\uniques.p')
     
@@ -715,48 +738,45 @@ def main():
         print('Reprocessed BPLAN to obtain new PLTs Version file and saved to cache')
         getVisumPLTs(PLTsUnique, myPLTsVer, myLOCsVer, TPEsUnique, output)
 
-    print('Done')
-
-
-
-def main2(path, myShp, tiploc_path, BPLAN_path, ELR_path, merge_path, tsys_path, xfer_link_path):
-
-    print('Reprocess BPLAN to obtain new pickle results and save to cache')
-    TPEsUnique, PLTsUnique = processBPLAN(path, BPLAN_path, tiploc_path)
-
-    myPickle = os.path.join(path, 'cached_data\\BPLAN\\uniques.p')
-    with open(myPickle, 'wb') as f:
-        pickle.dump([TPEsUnique, PLTsUnique], f)
-    
-
-    myLOCsVer = os.path.join(path, 'cached_data\\VISUM\\LOCs_Only.ver')
-    myPLTsVer = os.path.join(path, 'cached_data\\VISUM\\LOCs_and_PLTs.ver')
-    output = os.path.join(path, 'output\\GTFS\\stops.txt')
-
-    print('Reprocess BPLAN to obtain new LOCs Version file and save to cache')
-    reversedELRsDF = pd.read_csv(ELR_path, low_memory = False)
-    reversedELRs = [reversedELR[0] for reversedELR in reversedELRsDF.values]
-    getVisumLOCs(path, TPEsUnique, myLOCsVer, myShp, reversedELRs, tsys_path)
-
-
-    print('Reprocess BPLAN to obtain new PLTs Version file and save to cache')
-    getVisumPLTs(PLTsUnique, myPLTsVer, myLOCsVer, TPEsUnique, output)
-
-    #! recalulate lengths for all lines
-
+    Visum = com.Dispatch("Visum.Visum.230")
+    Visum.LoadVersion(myPLTsVer)
     # Update CRS codes from override file
-    merge_path = os.path.join(path, 'input\\StopsToMerge+CRSOverride.csv')
-    update_crs(merge_path)
+    update_crs(Visum, merge_path)
 
     # Create zones and connectors for CRS stops
-    allStopAreasDF = addZonesandConnectors()
+    allStopAreasDF = addZonesandConnectors(Visum)
 
     # Add transfer links to the network
-    addTransferLinks(xfer_link_path, allStopAreasDF)
+    addTransferLinks(Visum, xfer_link_path, allStopAreasDF)
 
     Visum.Net.SetAttValue("STRONGLINEROUTELENGTHSADAPTION", 1)
+
+    Visum.SaveVersion(os.path.join(path, 'cached_data\\VISUM\\LOCs_and_PLTs_ZonesConnectorsXferLinks.ver'))
 
     print('Done')
 
 if __name__ == "__main__":
-    main()
+
+    path = os.path.dirname(__file__)
+    input_path = os.path.join(path, "input\\inputs.csv")
+
+    buildNetwork = gi.readNetworkInputs(input_path)
+    if buildNetwork[0] == "TRUE":
+        myShp = buildNetwork[1]
+        tiploc_path = buildNetwork[2]
+        BPLAN_path =  buildNetwork[3]
+        ELR_path = buildNetwork[4]
+        merge_path = buildNetwork[5]
+        tsys_path = buildNetwork[6]
+        xfer_link_path = buildNetwork[7]
+
+        '''
+        myShp = os.path.join(path, 'input\\Shp\\NR_Full_Network.shp')
+        tiploc_path= os.path.join(path, 'input\\TiplocPublicExport_2022-12-24_10-37.json')
+        BPLAN_path=  os.path.join(path, 'input\\Geography_20221210_to_20230520_from_20221211.txt')
+        ELR_path= os.path.join(path, 'input\\Reverse_ELR_Direction.txt')
+        merge_path = os.path.join(path, 'input\\StopsToMerge+CRSOverride.csv')
+        tsys_path = os.path.join(path, 'input\\TSys_definitions.csv')
+        xfer_link_path = os.path.join(path, 'input\\transfer_links.csv')
+        '''
+        main(path, myShp, tiploc_path, BPLAN_path, ELR_path, merge_path, tsys_path, xfer_link_path)

@@ -1,45 +1,114 @@
-
-def build_network(path, buildNetwork):
-    import prepare_network
-    shapes_path = buildNetwork[1]
-    tiploc_path = buildNetwork[2]
-    BPLAN_path = buildNetwork[3]
-    ELR_path = buildNetwork[4]
-    merge_path = buildNetwork[5]
-    tsys_path = buildNetwork[6]
-    xfer_link_path = buildNetwork[7]
-
-    prepare_network.main(path, shapes_path, tiploc_path, BPLAN_path, ELR_path, merge_path, tsys_path, xfer_link_path)
-
-def import_timetable():
-    # run c# process to import timetable
-    print("done")
-
-def merge_stops():
-    import merge_stops
-    merge_stops.main()
-
-def create_vers():
-    import create_ver
-    for i in x:
-        create_ver.main(i)
-
-def run_processes(path, buildNetwork, importTimetable, mergeStops, createVers):
-    if buildNetwork[0]:
-        build_network(path, buildNetwork)
-
-    if importTimetable[0]:
-        import_timetable()
-
-    if mergeStops[0]:
-        merge_stops()
-
-    if createVers[0]:
-        create_vers()
+import pandas as pd
 
 
+def readNetworkInputs(input_path):
+    df = pd.read_csv(input_path, header=None, names=['variable', 'value'])
+    df.set_index('variable', inplace=True)
+
+    buildNetworkBool = df.at['BuildNetwork', 'value']
+    shapes_path = df.at['NetworkShapes', 'value']
+    tiploc_path = df.at['TIPLOCs', 'value']
+    BPLAN_path = df.at['BPLAN', 'value']
+    ELR_path = df.at['ELR', 'value']
+    merge_path = df.at['MergeStopsPath', 'value']
+    tsys_path = df.at['TransportSystems', 'value']
+    xfer_path = df.at['TransferLinks', 'value']
+
+    buildNetwork = [buildNetworkBool, shapes_path, tiploc_path, BPLAN_path, ELR_path, merge_path, tsys_path, xfer_path]
+
+    return buildNetwork
 
 
+def readMergeInputs(input_path):
+    df = pd.read_csv(input_path, header=None, names=['variable', 'value'])
+    df.set_index('variable', inplace=True)
+
+    mergeStopsBool = df.at['MergeStops', 'value']
+    merge_path = df.at['MergeStopsPath', 'value']
+
+    mergeStops = [mergeStopsBool, merge_path]
+
+    return mergeStops
+
+def readTimetableInputs(input_path):
+    df = pd.read_csv(input_path, header=None, names=['variable', 'value'])
+    df.set_index('variable', inplace=True)
+
+    importTimetableBool = df.at['ImportTimetable', 'value']
+    timetable_path = df.at['TimetablePath', 'value']
+
+    importTimetable = [importTimetableBool, timetable_path]
+
+    return importTimetable
+
+
+def readVerInputs(input_path):
+    df = pd.read_csv(input_path, header=None, names=['variable', 'value'])
+    df.set_index('variable', inplace=True)
+
+    createVersBool = df.at['CreateVers', 'value']
+    ver1 = df.at['Ver1', 'value']
+    ver2 = df.at['Ver2', 'value']
+    ver3 = df.at['Ver3', 'value']
+    ver4 = df.at['Ver4', 'value']
+    ver5 = df.at['Ver5', 'value']
+
+    # verx should be of the form {TSys:[TsysCode1, TsysCode2, ...], StartDate:dd/mm/yyyy, EndDate:dd/mm/yyyy}
+
+    createVers = [createVersBool]
+
+    for v in [ver1, ver2, ver3, ver4, ver5]:
+        if v != "":
+            createVers.append(v)
+
+    return createVers
+
+
+
+def read_inputs(input_path):
+    df = pd.read_csv(input_path, header=None, names=['variable', 'value'])
+
+    df.set_index('variable', inplace=True)
+
+    workingPath = df.at['WorkingFolder', 'value']
+    buildNetworkBool = df.at['BuildNetwork', 'value']
+    shapes_path = df.at['NetworkShapes', 'value']
+    tiploc_path = df.at['TIPLOCs', 'value']
+    BPLAN_path = df.at['BPLAN', 'value']
+    ELR_path = df.at['ELR', 'value']
+    merge_path = df.at['MergeStopsPath', 'value']
+    tsys_path = df.at['TransportSystems', 'value']
+
+    buildNetwork = [buildNetworkBool, shapes_path, tiploc_path, BPLAN_path, ELR_path, merge_path, tsys_path]
+
+    importTimetableBool = df.at['ImportTimetable', 'value']
+    timetable_path = df.at['TimetablePath', 'value']
+
+    importTimetable = [importTimetableBool, timetable_path]
+
+    mergeStopsBool = df.at['MergeStops', 'value']
+
+    mergeStops = [mergeStopsBool, merge_path]
+
+    createVersBool = df.at['CreateVers', 'value']
+    ver1 = df.at['Ver1', 'value']
+    ver2 = df.at['Ver2', 'value']
+    ver3 = df.at['Ver3', 'value']
+    ver4 = df.at['Ver4', 'value']
+    ver5 = df.at['Ver5', 'value']
+
+    # verx should be of the form {TSys:[TsysCode1, TsysCode2, ...], StartDate:dd/mm/yyyy, EndDate:dd/mm/yyyy}
+
+    createVers = [createVersBool]
+
+    for v in [ver1, ver2, ver3, ver4, ver5]:
+        if v != "":
+            createVers.append(v)
+
+    return workingPath, buildNetwork, importTimetable, mergeStops, createVers
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 import wx
 
 
