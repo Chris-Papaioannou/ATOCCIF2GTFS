@@ -1,0 +1,18 @@
+WorkingFolder,C:\Users\david.aspital\PTV Group\Team Network Model T2BAU - General\07 Model Files\08 Dec19 Timetable Reimport\ATOCCIF2GTFS\CIF2GTFS
+BuildNetwork,TRUE
+NetworkShapes,C:\Users\david.aspital\PTV Group\Team Network Model T2BAU - General\07 Model Files\08 Dec19 Timetable Reimport\ATOCCIF2GTFS\CIF2GTFS\input\Shp\NR_Full_Network.shp
+TIPLOCs,C:\Users\david.aspital\PTV Group\Team Network Model T2BAU - General\07 Model Files\08 Dec19 Timetable Reimport\ATOCCIF2GTFS\CIF2GTFS\input\TiplocPublicExport_2022-12-24_10-37.json
+BPLAN,C:\Users\david.aspital\PTV Group\Team Network Model T2BAU - General\07 Model Files\08 Dec19 Timetable Reimport\ATOCCIF2GTFS\CIF2GTFS\input\Geography_20221210_to_20230520_from_20221211.txt
+ELR,C:\Users\david.aspital\PTV Group\Team Network Model T2BAU - General\07 Model Files\08 Dec19 Timetable Reimport\ATOCCIF2GTFS\CIF2GTFS\input\Reverse_ELR_Direction.txt
+MergeStopsPath,C:\Users\david.aspital\PTV Group\Team Network Model T2BAU - General\07 Model Files\08 Dec19 Timetable Reimport\ATOCCIF2GTFS\CIF2GTFS\input\StopsToMerge+CRSOverride.csv
+TransportSystems,C:\Users\david.aspital\PTV Group\Team Network Model T2BAU - General\07 Model Files\08 Dec19 Timetable Reimport\ATOCCIF2GTFS\CIF2GTFS\input\TSys_definitions.csv
+TransferLinks,C:\Users\david.aspital\PTV Group\Team Network Model T2BAU - General\07 Model Files\08 Dec19 Timetable Reimport\ATOCCIF2GTFS\CIF2GTFS\input\transfer_links.csv
+ImportTimetable,TRUE
+TimetablePath,C:\Users\david.aspital\PTV Group\Team Network Model T2BAU - General\07 Model Files\08 Dec19 Timetable Reimport\ATOCCIF2GTFS\CIF2GTFS\input\Winter19_Weekday.CIF
+MergeStops,TRUE
+CreateVers,FALSE
+Ver1,
+Ver2,
+Ver3,
+Ver4,
+Ver5,

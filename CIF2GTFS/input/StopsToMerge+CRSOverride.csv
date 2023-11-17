@@ -1,0 +1,115 @@
+﻿StopCode,NewName,NewCode,NewCRS,NewCoordinates
+GLGC,Glasgow Central,GLGC,GLC,1
+GLGCLL,Glasgow Central,GLGC,GLC,0
+GLGQHL,Glasgow Queen Street,GLGQHL,GLQ,1
+GLGQLL,Glasgow Queen Street,GLGQHL,GLQ,0
+SHOTTHL,Shotton,SHOTTON,SHT,0
+SHOTTON,Shotton,SHOTTON,SHT,1
+MORFLDS,Moorfields,MORFLDS,MRF,1
+MORFNL,Moorfields,MORFLDS,MRF,0
+LVRPLCH,Liverpool Central,LVRPLCH,LVC,1
+LVRPLCL,Liverpool Central,LVRPLCH,LVC,0
+LVRPLSH,Liverpool Lime Street,LVRPLSH,LIV,1
+LVRPLSL,Liverpool Lime Street,LVRPLSH,LIV,0
+ALERTN,Liverpool South Parkway,LVRPSPY,LPY,0
+LVRPSPY,Liverpool South Parkway,LVRPSPY,LPY,1
+WORCPHL,Worcestershire Parkway,WORCPWY,WOP,0
+WORCPWY,Worcestershire Parkway,WORCPWY,WOP,1
+STRBDG1,Stourbridge Junction,STRBDGJ,WBJ,0
+STRBDGJ,Stourbridge Junction,STRBDGJ,WBJ,1
+GALTILL,Smethwick Galton Bridge,GALTINT,SGB,0
+GALTINT,Smethwick Galton Bridge,GALTINT,SGB,1
+LCHTTVH,Lichfield Trent Valley,LCHTTVL,LTV,0
+LCHTTVL,Lichfield Trent Valley,LCHTTVL,LTV,1
+TMWTHHL,Tamworth,TMWTHHL,TAM,1
+TMWTHLL,Tamworth,TMWTHHL,TAM,0
+NWCSTLE,Newcastle,NWCSTLE,NCL,1
+NWCSTLL,Newcastle,NWCSTLE,NCL,0
+HEWOMTR,Heworth,HEWORTH,HEW,0
+HEWORTH,Heworth,HEWORTH,HEW,1
+RTFD,Retford,RTFD,RET,1
+RTFDLL,Retford,RTFD,RET,0
+RDNG4AB,Reading,RDNGSTN,RDG,0
+RDNGSTN,Reading,RDNGSTN,RDG,1
+GROSMNT,Grosmont,GROSMNT,GMT,1
+GROSNYM,Grosmont,GROSMNT,GMT,0
+WEYBDGB,Weybridge,WEYBDGE,WYB,0
+WEYBDGE,Weybridge,WEYBDGE,WYB,1
+WATFDJ,Watford Junction,WATFDJ,WFJ,1
+WATFJDC,Watford Junction,WATFDJ,WFJ,0
+BUSHEY,Bushey,BUSHEY,BSH,1
+BUSHYDC,Bushey,BUSHEY,BSH,0
+HROW,Harrow & Wealdstone,HROW,HRW,1
+HROWDC,Harrow & Wealdstone,HROW,HRW,0
+RICHMND,Richmond,RICHMND,RMD,1
+RICHNLL,Richmond,RICHMND,RMD,0
+WMBY,Wembley Central,WMBY,WMB,1
+WMBYDC,Wembley Central,WMBY,WMB,0
+WLSDJHL,Willesden Junction,WLSDJHL,WIJ,1
+WLSDLUC,Willesden Junction,WLSDJHL,WIJ,0
+WLSDNJL,Willesden Junction,WLSDJHL,WIJ,0
+WDON,Wimbledon,WDON,WIM,1
+WIMBLDN,Wimbledon,WDON,WIM,0
+PADTLL,London Paddington,PADTON,PAD,0
+PADTON,London Paddington,PADTON,PAD,1
+CLPHMJ1,Clapham Junction,CLPHMJN,CLJ,0
+CLPHMJC,Clapham Junction,CLPHMJN,CLJ,0
+CLPHMJM,Clapham Junction,CLPHMJN,CLJ,0
+CLPHMJW,Clapham Junction,CLPHMJN,CLJ,0
+VICTRIC,London Victoria,VICTRIA,VIC,0
+VICTRIE,London Victoria,VICTRIA,VIC,0
+STPANCI,London St Pancras,STPX,STP,0
+STPX,London St Pancras,STPX,STP,1
+STPXBOX,London St Pancras,STPX,STP,0
+HGHI,Highbury & Islington,HGHI,HHY,1
+HIGHBYA,Highbury & Islington,HGHI,HHY,0
+HIGHBYE,Highbury & Islington,HGHI,HHY,0
+FRNDNLT,Farringdon,FRNDNLT,ZFD,1
+FRNDXR,Farringdon,FRNDNLT,ZFD,0
+CNNB,Canonbury,CNNB,CNN,1
+CNNBELL,Canonbury,CNNB,CNN,0
+LNDNBDC,London Bridge,LNDNBDG,LBG,0
+LNDNBDE,London Bridge,LNDNBDG,LBG,0
+LIVST,London Liverpool Street,LIVST,LST,1
+LIVSTLL,London Liverpool Street,LIVST,LST,0
+PCKHMRY,Peckham Rye,PCKHMRY,PMR,1
+PKHMRYC,Peckham Rye,PCKHMRY,PMR,0
+WCHAPEL,Whitechapel,WCHAPEL,ZLW,1
+WCHAPXR,Whitechapel,WCHAPEL,ZLW,0
+NEWXGEL,New Cross Gate,NEWXGTE,NXG,0
+NEWXGTE,New Cross Gate,NEWXGTE,NXG,1
+NWCRELL,New Cross,NWCROSS,NWX,0
+NWCROSS,New Cross,NWCROSS,NWX,1
+BCKNHMJ,Beckenham Junction,BCKNHMJ,BKJ,1
+BCKNMJC,Beckenham Junction,BCKNHMJ,BKJ,0
+BARKGLT,Barking,BARKING,BKG,0
+BARKING,Barking,BARKING,BKG,1
+ABWD,Abbey Wood,ABWD,ABW,1
+ABWDXR,Abbey Wood,ABWD,ABW,0
+UPMNLT,Upminster,UPMNSTR,UPM,0
+UPMNSP6,Upminster,UPMNSTR,UPM,0
+UPMNSTR,Upminster,UPMNSTR,UPM,1
+EBSFLTI,Ebbsfleet International,EBSFDOM,EBD,0
+EBSFDOM,Ebbsfleet International,EBSFDOM,EBD,1
+STFORDI,Stratford International,STFODOM,SFA,1
+STFODOM,Stratford Intl (domestic),STFODOM,SFA,0
+ANERLEY,Anerley,,ANY,1
+PENYCHN,Penychain,,BPC,1
+BARLSOP,Barlaston Orchard Place,,BRT,1
+CNDAW,Canada Water,,CAW,1
+EBWVTN,Ebbw Vale Town,,EBW,1
+FAMBDGE,North Fambridge,,FAM,1
+HTRBUS3,Heathrow Terminal 3 Bus,,HWA,1
+HTRWTM2,Heathrow Terminal 2 Bus,,,0
+LRDGFD,London Road (Guildford),,LON,1
+STFORDI,Stratford International,,SFA,1
+VAUXHLM,Vauxhall,,VXH,1
+VAUXHAL,Vauxhall,,,0
+WATRLMN,London Waterloo,,WAT,1
+WATRLOO,London Waterloo,,,0
+HRGYSTD,Harringay Green Lanes,,,0
+EBWVALE,Ebbw Vale (metro),,,0
+STANSTD,Stansted,,,0
+AYRRTMD,Ayr Depot,,,0
+WDHAMFR,South Woodham Ferrers,,WDF,1
+WEDGORD,Wedgwood Entrance Old Road,,WED,1

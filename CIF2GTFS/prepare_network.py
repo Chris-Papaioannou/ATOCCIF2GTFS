@@ -683,7 +683,7 @@ def update_crs(Visum, crs_path):
 
 def main(path, myShp, tiploc_path, BPLAN_path, ELR_path, merge_path, tsys_path, xfer_link_path):
 
-    '''print('Reprocess BPLAN to obtain new pickle results and save to cache')
+    print('Reprocess BPLAN to obtain new pickle results and save to cache')
     TPEsUnique, PLTsUnique = processBPLAN(path, BPLAN_path, tiploc_path)
 
     myPickle = os.path.join(path, 'cached_data\\BPLAN\\uniques.p')
@@ -702,41 +702,8 @@ def main(path, myShp, tiploc_path, BPLAN_path, ELR_path, merge_path, tsys_path, 
 
 
     print('Reprocess BPLAN to obtain new PLTs Version file and save to cache')
-    getVisumPLTs(PLTsUnique, myPLTsVer, myLOCsVer, TPEsUnique, output)'''
+    getVisumPLTs(PLTsUnique, myPLTsVer, myLOCsVer, TPEsUnique, output)
 
-    myPickle = os.path.join(path, 'cached_data\\BPLAN\\uniques.p')
-    
-    if os.path.exists(myPickle):
-        print('Read old already processed BPLAN pickle results from cache')
-        with open(myPickle, 'rb') as f:
-            TPEsUnique, PLTsUnique = pickle.load(f)
-    else:
-        print('Reprocessed BPLAN to obtain new pickle results and saved to cache')
-        bplan_file = os.path.join(path, 'input\\Geography_20221210_to_20230520_from_20221211.txt')
-        tiploc_file = os.path.join(path, 'input\\TiplocPublicExport_2022-12-24_10-37.json')
-        TPEsUnique, PLTsUnique = processBPLAN(path, bplan_file, tiploc_file)
-        with open(myPickle, 'wb') as f:
-            pickle.dump([TPEsUnique, PLTsUnique], f)
-    
-    myShp = os.path.join(path, 'input\\Shp\\NR_Full_Network.shp')
-    myLOCsVer = os.path.join(path, 'cached_data\\VISUM\\LOCs_Only.ver')
-    myPLTsVer = os.path.join(path, 'cached_data\\VISUM\\LOCs_and_PLTs.ver')
-    output = os.path.join(path, 'output\\GTFS\\stops.txt')
-
-    if os.path.exists(myLOCsVer):
-        print('Read old processed BPLAN LOCs Version file from cache')
-    else: 
-        reversedELRsDF = pd.read_csv(os.path.join(path, 'input\\Reverse_ELR_Direction.txt'), low_memory = False)
-        reversedELRs = [reversedELR[0] for reversedELR in reversedELRsDF.values]
-        print('Reprocessed BPLAN to obtain new LOCs Version file and saved to cache')
-        tsys_path = os.path.join(path, 'input\\TSys_definitions.csv')
-        getVisumLOCs(path, TPEsUnique, myLOCsVer, myShp, reversedELRs, tsys_path)
-
-    if os.path.exists(myPLTsVer):
-        print('Read old processed BPLAN PLTs Version file from cache')
-    else:
-        print('Reprocessed BPLAN to obtain new PLTs Version file and saved to cache')
-        getVisumPLTs(PLTsUnique, myPLTsVer, myLOCsVer, TPEsUnique, output)
 
     Visum = com.Dispatch("Visum.Visum.230")
     Visum.LoadVersion(myPLTsVer)

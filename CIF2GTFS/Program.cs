@@ -74,9 +74,18 @@ namespace CIF2GTFS
                     GTFS_TPEsList.Add(gTFSattStop);
                 }
             }
-
+            Console.WriteLine("Getting the timetable path...");
+            List<string> InputLines = new List<string>(File.ReadAllLines("input/inputs.csv"));
+            string TimetablePath = "";
+            foreach (string InputLine in InputLines)
+            {
+                if (InputLine.StartsWith("TimetablePath"))
+                {
+                    TimetablePath = InputLine.Replace("TimetablePath,","");
+                }
+            }
             Console.WriteLine("Reading the timetable file...");
-            List<string> TimetableFileLines = new List<string>(File.ReadAllLines("input/Winter19_Weekday.CIF"));
+            List<string> TimetableFileLines = new List<string>(File.ReadAllLines(TimetablePath));
             Dictionary<string, List<StationStop>> StopTimesForJourneyIDDictionary = new Dictionary<string, List<StationStop>>();
             Dictionary<string, JourneyDetail> JourneyDetailsForJourneyIDDictionary = new Dictionary<string, JourneyDetail>();
             string CurrentJourneyID = "";
