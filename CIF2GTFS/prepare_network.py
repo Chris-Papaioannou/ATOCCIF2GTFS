@@ -609,10 +609,25 @@ def addZonesandConnectors(Visum):
     return allStopAreasDF
 
 def addTransferLinks(Visum, xfer_link_path, allStopAreasDF):
-    #Add a new link type for use as user defined transfer links
+    #Add a new link type for use with walk transfer links
     LinkType = Visum.Net.AddLinkType(3)
     LinkType.SetAttValue('TSysSet', 'W')
+    LinkType.SetAttValue('Name', 'WalkTransferLink')
 
+    #Add another link type to be used for automatic walking speed transfer links
+    LinkType = Visum.Net.AddLinkType(4)
+    LinkType.SetAttValue('TSysSet', 'W')
+    LinkType.SetAttValue('Name', 'WalkProximityLink')
+
+    # Add the PuT-Aux transport system
+    Tsys = Visum.Net.AddTSystem('PuTAux', 'PUTAUX')
+    Tsys.SetAttValue("Name", "PuTAux")
+
+    # Add a new link type for use with PuT-Aux transfer links
+    LinkType = Visum.Net.AddLinkType(5)
+    LinkType.SetAttValue("TSysSet", "PuTAux")
+    LinkType.SetAttValue("Name", "PuTAuxTransferLink")
+    
     #Make a DataFrame of user defined transfer links and set the index
     myCSV = pd.read_csv(xfer_link_path, low_memory = False).set_index(['FromCRS', 'ToCRS'])
     
@@ -638,13 +653,17 @@ def addTransferLinks(Visum, xfer_link_path, allStopAreasDF):
 
             #If both from_CRS and to_CRS are found, create the user defined transfer link and apply the correct times to both directions
             if fromFlag & toFlag:
-                myLink = Visum.Net.AddLink(-1, myFromNode, myToNode, 3)
-                myLink.SetAttValue('T_PUTSYS(W)', 60*row['TravelTime'])
-                myLink.SetAttValue('REVERSELINK\\T_PUTSYS(W)', 60*myCSV.loc[(i[1], i[0]), 'TravelTime'])
+                if row.TSys == "Walk":
+                    myLink = Visum.Net.AddLink(-1, myFromNode, myToNode, 3)
+                    myLink.SetAttValue('T_PUTSYS(W)', 60*row['TravelTime'])
+                    myLink.SetAttValue('REVERSELINK\\T_PUTSYS(W)', 60*myCSV.loc[(i[1], i[0]), 'TravelTime'])
+                elif row.TSys == "PuT-Aux":
+                    myLink = Visum.Net.AddLink(-1, myFromNode, myToNode, 5)
+                    myLink.SetAttValue('T_PUTSYS(PuTAux)', 60*row['TravelTime'])
+                    myLink.SetAttValue('REVERSELINK\\T_PUTSYS(PuTAux)', 60*myCSV.loc[(i[1], i[0]), 'TravelTime'])
+                else:
+                    print(f'Warning: Tsys {row.TSys} does not exist in the network. No transfer link between {i[0]} and {i[1]} created.')
 
-    #Add another link type to be used for automatic walking speed transfer links
-    LinkType = Visum.Net.AddLinkType(4)
-    LinkType.SetAttValue('TSysSet', 'W')
 
     #Create a list of all possible cobinations of served dummy Stop Areas
     cc = list(combinations(allStopAreasDF[['NodeNo', 'XCoord', 'YCoord']].values, 2))
@@ -682,7 +701,7 @@ def update_crs(Visum, crs_path):
 
 
 def main(path, myShp, tiploc_path, BPLAN_path, ELR_path, merge_path, tsys_path, xfer_link_path):
-
+    
     print('Reprocess BPLAN to obtain new pickle results and save to cache')
     TPEsUnique, PLTsUnique = processBPLAN(path, BPLAN_path, tiploc_path)
 
@@ -690,11 +709,11 @@ def main(path, myShp, tiploc_path, BPLAN_path, ELR_path, merge_path, tsys_path, 
     with open(myPickle, 'wb') as f:
         pickle.dump([TPEsUnique, PLTsUnique], f)
     
-
+    
     myLOCsVer = os.path.join(path, 'cached_data\\VISUM\\LOCs_Only.ver')
     myPLTsVer = os.path.join(path, 'cached_data\\VISUM\\LOCs_and_PLTs.ver')
     output = os.path.join(path, 'output\\GTFS\\stops.txt')
-
+    
     print('Reprocess BPLAN to obtain new LOCs Version file and save to cache')
     reversedELRsDF = pd.read_csv(ELR_path, low_memory = False)
     reversedELRs = [reversedELR[0] for reversedELR in reversedELRsDF.values]
@@ -703,7 +722,7 @@ def main(path, myShp, tiploc_path, BPLAN_path, ELR_path, merge_path, tsys_path, 
 
     print('Reprocess BPLAN to obtain new PLTs Version file and save to cache')
     getVisumPLTs(PLTsUnique, myPLTsVer, myLOCsVer, TPEsUnique, output)
-
+    
 
     Visum = com.Dispatch("Visum.Visum.230")
     Visum.LoadVersion(myPLTsVer)

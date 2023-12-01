@@ -128,7 +128,7 @@ def merge_stops(merge_path, ver_path):
     filter = ["AccessEgress", "Platform Unknown"]
 
     walk_time_df["TIME(W)"] = np.where((walk_time_df["FROMSTOPAREA\\NAME"].str.startswith("Platform")) 
-                                    & (walk_time_df["TOSTOPAREA\\NAME"].str.startswith("Platform")),"10min",walk_time_df["TIME(W)"])
+                                    & (walk_time_df["TOSTOPAREA\\NAME"].str.startswith("Platform")),"5min",walk_time_df["TIME(W)"])
 
     walk_time_df["TIME(W)"] = np.where(((~walk_time_df["FROMSTOPAREA\\NAME"].isin(filter)) | (~walk_time_df["TOSTOPAREA\\NAME"].isin(filter))) 
                                     & (walk_time_df["FROMSTOPAREA\\NAME"] == walk_time_df["TOSTOPAREA\\NAME"]),"0min", walk_time_df["TIME(W)"])

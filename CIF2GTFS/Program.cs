@@ -210,7 +210,7 @@ namespace CIF2GTFS
                         string ACT5 = TimetableLine.Substring(50,2).Trim();
                         string ACT6 = TimetableLine.Substring(52,2).Trim();
                         
-                        if (SAT != "" && SDT != "" && (ACT1 == "T" || ACT2 == "T" || ACT3 == "T" || ACT4 == "T" || ACT5 == "T" || ACT6 == "T")) 
+                        if (SAT != "" && SDT != "" && (ACT1 == "T" || ACT2 == "T" || ACT3 == "T" || ACT4 == "T" || ACT5 == "T" || ACT6 == "T" || ACT1 == "R" || ACT2 == "R" || ACT3 == "R" || ACT4 == "R" || ACT5 == "R" || ACT6 == "R")) 
                         {
                             stationStop.ScheduledArrivalTime = stringToTimeSpan(SAT);
                             stationStop.ScheduledDepartureTime = stringToTimeSpan(SDT);
