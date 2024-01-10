@@ -1,5 +1,5 @@
 WorkingFolder,C:\Users\david.aspital\PTV Group\Team Network Model T2BAU - General\07 Model Files\07 May23 Timetable Reimport\ATOCCIF2GTFS\CIF2GTFS
-BuildNetwork,FALSE
+BuildNetwork,TRUE
 NetworkShapes,C:\Users\david.aspital\PTV Group\Team Network Model T2BAU - General\07 Model Files\07 May23 Timetable Reimport\ATOCCIF2GTFS\CIF2GTFS\input\Shp\NR_Full_Network.shp
 TIPLOCs,C:\Users\david.aspital\PTV Group\Team Network Model T2BAU - General\07 Model Files\07 May23 Timetable Reimport\ATOCCIF2GTFS\CIF2GTFS\input\TiplocPublicExport_2022-12-24_10-37.json
 BPLAN,C:\Users\david.aspital\PTV Group\Team Network Model T2BAU - General\07 Model Files\07 May23 Timetable Reimport\ATOCCIF2GTFS\CIF2GTFS\input\Geography_20221210_to_20230520_from_20221211.txt
@@ -10,8 +10,8 @@ TransferLinks,C:\Users\david.aspital\PTV Group\Team Network Model T2BAU - Genera
 ImportTimetable,TRUE
 TimetablePath,C:\Users\david.aspital\PTV Group\Team Network Model T2BAU - General\07 Model Files\07 May23 Timetable Reimport\ATOCCIF2GTFS\CIF2GTFS\input\May23 Full CIF 230413.CIF
 MergeStops,TRUE
-CreateVers,FALSE
-Ver1,
+CreateVers,TRUE
+Ver1,{"Name":"31May23", "TSysSet":"","Date":"31.05.2023"}
 Ver2,
 Ver3,
 Ver4,

@@ -16,9 +16,9 @@ def main():
     path = os.path.dirname(__file__)
     input_path = os.path.join(path, "input\\inputs.csv")
 
-    #vers = gi.readVerInputs(input_path)
+    vers = gi.readVerInputs(input_path)
 
-    vers=['{"Name":"31May23", "TSysSet":"","Date":"31.05.2023"}']
+    #vers=['{"Name":"31May23", "TSysSet":"","Date":"31.05.2023"}']
     for ver in vers:
 
         #Launch Visum and load in the final supply network version
