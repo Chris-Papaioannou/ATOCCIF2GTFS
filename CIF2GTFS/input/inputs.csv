@@ -11,7 +11,7 @@ ImportTimetable,TRUE
 TimetablePath,C:\Users\david.aspital\PTV Group\Team Network Model T2BAU - General\07 Model Files\10 Master Timetable Import\ATOCCIF2GTFS\CIF2GTFS\input\May23 Full CIF 230413.CIF
 MergeStops,TRUE
 CreateVers,TRUE
-Ver1,{"Name":"31May23", "TSysSet":"","Date":"31.05.2023"}
+Ver1,{"Name":"31May23"; "TSysSet":"";"Date":"31.05.2023"}
 Ver2,
 Ver3,
 Ver4,
