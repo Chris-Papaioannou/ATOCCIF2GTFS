@@ -88,6 +88,11 @@ def fixDirectedNet(Visum, reversedELRs, TSysDefs, railBased, PTpermitted):
     for i, row in TSysDefs.iterrows():
         myTSys = Visum.Net.AddTSystem(i, 'PUT')
         myTSys.SetAttValue('Name', row['Name'])
+
+    # Add the PuT-Aux transport system
+    Tsys = Visum.Net.AddTSystem('PuTAux', 'PUTAUX')
+    Tsys.SetAttValue("Name", "PuTAux")
+
     Visum.Net.Modes.ItemByKey('X').SetAttValue('TSysSet', PTpermitted)
     Visum.Net.Links.GetFilteredSet('[is_CLOSED]').SetAllAttValues('TypeNo', 0)
     Visum.Net.Links.GetFilteredSet('[TypeNo]=1').SetAllAttValues('TSysSet', railBased)
@@ -298,6 +303,8 @@ def addStopPoint(Visum, i, row, bound, TPEsUnique):
     else:
         sa_Node = sp_Link.Link.AttValue('ToNodeNo')
 
+    #! above does not take account of links that are then split and therefore SP node number != SA node number. When nodes are split, SA numbers should be updated to reflect this
+
     #Add a new stop area for the platform and populate attributes
     sa = Visum.Net.AddStopArea(i, row['index_TIPLOC'], sa_Node, sp_Link.XPosOnLink, sp_Link.YPosOnLink)
     sa.SetAttValue('Code', f"{aTPE['Tiploc']}_{row['PlatformID']}")
@@ -315,11 +322,11 @@ def addStopPoint(Visum, i, row, bound, TPEsUnique):
         sp_Link = MyMapMatcher.GetNearestLink(row['Easting'], row['Northing'], bound, True, True)
         sp = Visum.Net.AddStopPointOnLink(i, sa, sp_Link.Link.AttValue('FromNodeNo'), sp_Link.Link.AttValue('ToNodeNo'), is_dir)
     
-    #While the stop point has not yet been added, the RelPos is shifted according to areas of potential conflict to ensure other stop points can be added to the same link
+    #After the stop point has been added, the RelPos is shifted according to areas of potential conflict to ensure other stop points can be added to the same link
     while unsatis:
         RelPos = interp1d([0, 0.5, 0.5, 1],[0 + alt[0], 0.5 - alt[1], 0.5 + alt[2], 1 - alt[3]])
         NewRelPos = float(RelPos(sp_Link.RelPos))
-        shiftBool = [NewRelPos < 0.001, (NewRelPos > 0.499) & (NewRelPos <= 0.500), (NewRelPos >= 0.500) & (NewRelPos < 0.501), NewRelPos > 0.999]
+        shiftBool = [NewRelPos < 0.001, (NewRelPos > 0.497) & (NewRelPos <= 0.500), (NewRelPos >= 0.500) & (NewRelPos < 0.503), NewRelPos > 0.999]
         if np.any(shiftBool):
             alt = [altN + 0.001 if boolN else altN for altN, boolN in zip(alt, shiftBool)]
         else:
@@ -375,7 +382,7 @@ def processBPLAN(path, bplan_file, tiploc_file):
     myTPE = myTPE.reset_index().merge(TPEsUnique.reset_index(), 'left', ['Easting', 'Northing']).set_index('Tiploc_x')
 
     myTPE.to_csv(os.path.join(path, 'cached_data\\BPLAN\\TPEs.csv'))
-
+    
     with open(bplan_file) as f:
         lines = f.readlines()
     lines = [line[:-1].split('\t') for line in lines]
@@ -429,7 +436,8 @@ def processBPLAN(path, bplan_file, tiploc_file):
     
     PLTs = PLTs[PLTs['Quality'] > 0]
     PLTs.to_csv(os.path.join(path, 'cached_data\\BPLAN\\PLTs.csv'))
-
+    
+    PLTs= pd.read_csv(os.path.join(path, 'cached_data\\BPLAN\\PLTs.csv'),index_col=0)
     PLTsUnique = pd.pivot_table(PLTs.reset_index(), ['PlatformID', 'StartDate', 'PlatformLength', 'PassengerDOO', 'NonPassengerDOO',
                                                      'index_TIPLOC', 'index_PlatformID', 'Easting', 'Northing', 'Quality'],
                                 ['index'],
@@ -495,7 +503,7 @@ def getVisumLOCs(path, TPEsUnique, myVer, myShp, reversedELRs, tsys_path):
     Visum.IO.ImportShapefile(myShp, ImportShapeFilePara)
     TSysDefs = pd.read_csv(tsys_path, low_memory = False).set_index('Code')
     railBased = str(TSysDefs.index[TSysDefs['rail_based']].values).replace('\n', '').replace("' '", ',').replace("['", '').replace("']", '')
-    PTpermitted = str(TSysDefs.index[TSysDefs['PT_permitted']].values).replace('\n', '').replace("' '", ',').replace("['", '').replace("']", '') + ',W' 
+    PTpermitted = str(TSysDefs.index[TSysDefs['PT_permitted']].values).replace('\n', '').replace("' '", ',').replace("['", '').replace("']", '') + ',W,PuTAux' 
     fixDirectedNet(Visum, reversedELRs, TSysDefs, railBased, PTpermitted)
     MyMapMatcher = Visum.Net.CreateMapMatcher()
     LinkType = Visum.Net.AddLinkType(2)
@@ -619,9 +627,6 @@ def addTransferLinks(Visum, xfer_link_path, allStopAreasDF):
     LinkType.SetAttValue('TSysSet', 'W')
     LinkType.SetAttValue('Name', 'WalkProximityLink')
 
-    # Add the PuT-Aux transport system
-    Tsys = Visum.Net.AddTSystem('PuTAux', 'PUTAUX')
-    Tsys.SetAttValue("Name", "PuTAux")
 
     # Add a new link type for use with PuT-Aux transfer links
     LinkType = Visum.Net.AddLinkType(5)
@@ -656,11 +661,17 @@ def addTransferLinks(Visum, xfer_link_path, allStopAreasDF):
                 if row.TSys == "Walk":
                     myLink = Visum.Net.AddLink(-1, myFromNode, myToNode, 3)
                     myLink.SetAttValue('T_PUTSYS(W)', 60*row['TravelTime'])
-                    myLink.SetAttValue('REVERSELINK\\T_PUTSYS(W)', 60*myCSV.loc[(i[1], i[0]), 'TravelTime'])
+                    try:
+                        myLink.SetAttValue('REVERSELINK\\T_PUTSYS(W)', 60*myCSV.loc[(i[1], i[0]), 'TravelTime'])
+                    except:
+                        myLink.SetAttValue('REVERSELINK\\T_PUTSYS(W)', 60*myCSV.loc[(i[0], i[1]), 'TravelTime'])
                 elif row.TSys == "PuT-Aux":
                     myLink = Visum.Net.AddLink(-1, myFromNode, myToNode, 5)
                     myLink.SetAttValue('T_PUTSYS(PuTAux)', 60*row['TravelTime'])
-                    myLink.SetAttValue('REVERSELINK\\T_PUTSYS(PuTAux)', 60*myCSV.loc[(i[1], i[0]), 'TravelTime'])
+                    try:
+                        myLink.SetAttValue('REVERSELINK\\T_PUTSYS(PuTAux)', 60*myCSV.loc[(i[1], i[0]), 'TravelTime'])
+                    except:
+                        myLink.SetAttValue('REVERSELINK\\T_PUTSYS(PuTAux)', 60*myCSV.loc[(i[0], i[1]), 'TravelTime'])
                 else:
                     print(f'Warning: Tsys {row.TSys} does not exist in the network. No transfer link between {i[0]} and {i[1]} created.')
 
@@ -723,7 +734,7 @@ def main(path, myShp, tiploc_path, BPLAN_path, ELR_path, merge_path, tsys_path, 
     print('Reprocess BPLAN to obtain new PLTs Version file and save to cache')
     getVisumPLTs(PLTsUnique, myPLTsVer, myLOCsVer, TPEsUnique, output)
     
-
+    
     Visum = com.Dispatch("Visum.Visum.230")
     Visum.LoadVersion(myPLTsVer)
     # Update CRS codes from override file

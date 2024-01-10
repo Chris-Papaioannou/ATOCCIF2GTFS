@@ -91,30 +91,37 @@ def merge_stops(merge_path, ver_path):
         oldStopArea = [stop.StopAreas.GetAll for stop in oldStopKey] # list of all stops area with the stop numbers
         oldStopAreaNo = [StopArea.AttValue("NO") for item in oldStopArea for StopArea in item]
 
-        NewStop = Visum.Net.AddStop(-1, key, value)
+        if Code != "":
+            NewStop = Visum.Net.AddStop(-1, key, value)
 
 
-        NewStop.SetAttValue("CODE", Code)
-        NewStop.SetAttValue("NAME", Name)
-        NewStop.SetAttValue("CRS", CRS)
-        NewStopNo = NewStop.AttValue("NO")
+            NewStop.SetAttValue("CODE", Code)
+            NewStop.SetAttValue("NAME", Name)
+            NewStop.SetAttValue("CRS", CRS)
+            NewStopNo = NewStop.AttValue("NO")
 
-        AEMoved = False
+            AEMoved = False
 
-        for i in oldStopAreaNo:# loop through all stops areas 
-            Newstoparea = Visum.Net.StopAreas.ItemByKey(i)
+            for i in oldStopAreaNo:# loop through all stops areas 
+                Newstoparea = Visum.Net.StopAreas.ItemByKey(i)
 
-            if Newstoparea.AttValue("Name") == "AccessEgress":
-                if not AEMoved:
-                    Newstoparea.SetAttValue("StopNo", NewStopNo) # change stop number to the new stop no
-                    AEMoved = True
+                if Newstoparea.AttValue("Name") == "AccessEgress":
+                    if not AEMoved:
+                        Newstoparea.SetAttValue("StopNo", NewStopNo) # change stop number to the new stop no
+                        PlatUnknownSAs = Visum.Net.StopAreas.GetFilteredSet(f'[Name]="Platform Unknown" & [StopNo]={NewStopNo} & [CODE]=[STOP\CODE]')
+                        if PlatUnknownSAs.Count > 1:
+                            raise Exception(f"More than 1 Platform Unknown for Stop {NewStopNo}")
+                        if PlatUnknownSAs.Count == 1:
+                            NewNodeNo = PlatUnknownSAs.GetMultipleAttributes(['NodeNo'])[0][0]
+                            Newstoparea.SetAttValue("NodeNo", NewNodeNo)
+                        AEMoved = True
+                    else:
+                        Visum.Net.RemoveStopArea(Visum.Net.StopAreas.ItemByKey(i))
                 else:
-                    Visum.Net.RemoveStopArea(Visum.Net.StopAreas.ItemByKey(i))
-            else:
-                Newstoparea.SetAttValue("StopNo", NewStopNo)
+                    Newstoparea.SetAttValue("StopNo", NewStopNo)
 
-        for i in oldStopNum: # delete the old stops  
-            Visum.Net.RemoveStop(Visum.Net.Stops.ItemByKey(i))
+            for i in oldStopNum: # delete the old stops  
+                Visum.Net.RemoveStop(Visum.Net.Stops.ItemByKey(i))
 
     #read transfer walk time table from Visum
     walkTimeList = Visum.Lists.CreateStopTransferWalkTimeList
