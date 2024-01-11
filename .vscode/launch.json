@@ -6,7 +6,7 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${workspaceFolder}/CIF2GTFS/bin/Debug/netcoreapp3.1/CIF2GTFS.dll",
+            "program": "${workspaceFolder}/CIF2GTFS/bin/Debug/netcoreapp7.0/CIF2GTFS.dll",
             "args": [],
             "cwd": "${workspaceFolder}/CIF2GTFS",
             "console": "internalConsole",
