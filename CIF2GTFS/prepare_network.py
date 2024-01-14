@@ -454,22 +454,6 @@ def processBPLAN(path, bplan_file, tiploc_file):
 
     return TPEsUnique, PLTsUnique
 
-def progressBar(myRange):
-    class ProgWin(wx.Frame):
-        def __init__(self, parent, title): 
-            super(ProgWin, self).__init__(parent, title = title,size = (300, 200))  
-            self.InitUI()
-        def InitUI(self):    
-            self.count = 0 
-            pnl = wx.Panel(self)
-            self.gauge = wx.Gauge(pnl, range = myRange, size = (300, 25), style =  wx.GA_HORIZONTAL)
-            self.SetSize((300, 100)) 
-            self.Centre() 
-            self.Show(True)
-    
-    prog = ProgWin(None, 'wx.Gauge')
-    return prog
-
 def getVisumLOCs(path, TPEsUnique, myVer, myShp, reversedELRs, tsys_path):
     Visum = com.Dispatch('Visum.Visum.230')
     projString = """
@@ -513,7 +497,9 @@ def getVisumLOCs(path, TPEsUnique, myVer, myShp, reversedELRs, tsys_path):
     Visum.Graphic.StopDrawing = True
     ex = wx.App()
     TPEoffset = TPEsUnique.index.min()
-    prog = progressBar(TPEsUnique.index.max() - TPEoffset)
+    prog = wx.ProgressDialog("TIPLOCs", "Generating TIPLOC objects...",
+                                         TPEsUnique.index.max() - TPEoffset,
+                                         style=wx.PD_APP_MODAL | wx.PD_SMOOTH | wx.PD_AUTO_HIDE)
     for i, row in TPEsUnique.iterrows():
         Node = Visum.Net.AddNode(i, row['Easting'], row['Northing'])
         Node.SetAttValue('Code', row['Tiploc'])
@@ -563,7 +549,8 @@ def getVisumLOCs(path, TPEsUnique, myVer, myShp, reversedELRs, tsys_path):
                     Visum.Net.AddLink(split_no, split_no, i, 2)
                 fil_string += f"&[TRID]!=\"{split_TRID}\""
                 nTRID += 1
-        prog.gauge.SetValue(i - TPEoffset)
+        prog.Update(i- TPEoffset, f"Generating TIPLOC objects... ({int(i- TPEoffset)}/{int(TPEsUnique.index.max() - TPEoffset)})")
+    prog.Destroy()
     Visum.Graphic.StopDrawing = False
     Visum.Net.Turns.GetFilteredSet('[FromLink\\TypeNo]=2&[ToLink\\TypeNo]=2&[FromLink\\No]!=[ToLink\\No]').SetAllAttValues('TSysSet', '')
     Visum.IO.SaveVersion(myVer)
@@ -576,10 +563,13 @@ def getVisumPLTs(PLTsUnique, myPLTsVer, myLOCsVer, TPEsUnique, output):
     Visum.Graphic.StopDrawing = True
     ex = wx.App()
     PLToffset = PLTsUnique.index.min()
-    prog = progressBar(PLTsUnique.index.max() - PLToffset)
+    prog = wx.ProgressDialog("Platforms", "Generating platform objects...",
+                                         PLTsUnique.index.max() - PLToffset,
+                                         style=wx.PD_APP_MODAL | wx.PD_SMOOTH | wx.PD_AUTO_HIDE)
     for i, row in PLTsUnique.iterrows():
         addStopPoint(Visum, i, row, 250, TPEsUnique)
-        prog.gauge.SetValue(i - PLToffset)
+        prog.Update(i- PLToffset, f"Generating platform objects... ({int(i- PLToffset)}/{int(PLTsUnique.index.max() - PLToffset)})")
+    prog.Destroy()
     Visum.Graphic.StopDrawing = False
     Visum.Net.Links.SetMultipleAttributes(['Length'], Visum.Net.Links.GetMultipleAttributes(['LengthPoly']))
     DFcols_Visum = ['No', 'Code', 'Name', 'YCoord', 'XCoord']
