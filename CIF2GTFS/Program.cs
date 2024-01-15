@@ -496,20 +496,21 @@ namespace CIF2GTFS
             psi.RedirectStandardError = true;
 
             // 4) Execute process and get output
-            var errors = "";
-            var results = "";
+            //var errors = "";
+            //var results = "";
 
             using(var process = Process.Start(psi))
             {
-                errors = process.StandardError.ReadToEnd();
-                results = process.StandardOutput.ReadToEnd();
+                StreamReader readerErrors = process.StandardError;
+                string errors = readerErrors.ReadToEnd();
+                Console.WriteLine("ERRORS:");
+                Console.WriteLine(errors);
+                StreamReader readerResults = process.StandardOutput;
+                string results = readerResults.ReadToEnd();
+                Console.WriteLine("Results:");
+                Console.WriteLine(results);
+                
             }
-
-            // 5) Display output
-            Console.WriteLine("ERRORS:");
-            Console.WriteLine(errors);
-            Console.WriteLine("Results:");
-            Console.WriteLine(results);
 
         }
 
