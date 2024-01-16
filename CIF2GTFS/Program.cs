@@ -472,6 +472,9 @@ namespace CIF2GTFS
             Console.WriteLine("Merging Stops...");
             ExecProcess("merge_stops.py");
 
+            Console.WriteLine("Creating version file(s)...");
+            ExecProcess("create_ver.py");
+
             Console.WriteLine("Done");
         }
 

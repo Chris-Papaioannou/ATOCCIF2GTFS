@@ -4,6 +4,10 @@ import numpy as np
 import pandas as pd
 import win32com.client as com
 import json
+
+import sys
+sys.path.append(os.path.dirname(__file__))
+
 import get_inputs as gi
 
 # Format of createVer string: {'Name':'xyz', 'TSysSet':'PO,PX,PE','Date':'31/05/2023'}
