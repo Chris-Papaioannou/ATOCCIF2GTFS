@@ -25,6 +25,8 @@ from shapely.geometry import Point, LineString, Polygon
 from shapely.ops import nearest_points
 from itertools import combinations
 import math
+import datetime
+import traceback
 
 sys.path.append(os.path.dirname(__file__))
 
@@ -295,7 +297,7 @@ def addStopPoint(Visum, i, row, bound, TPEsUnique):
     try:
         is_dir = sp_Link.Link.AttValue('ReverseLink\\TypeNo') == 0
     except:
-        print(f"ERROR: No link within {bound}m for {row['index_TIPLOC']}: {aTPE['Tiploc']}: {aTPE['Name']} - Platform {row['PlatformID']}.")
+        Visum.Log(12288, f"No link within {bound}m for {row['index_TIPLOC']}: {aTPE['Tiploc']}: {aTPE['Name']} - Platform {row['PlatformID']}.")
 
     #Define the access node depending on the Relative Position calculated
     if sp_Link.RelPos < 0.5:
@@ -456,6 +458,7 @@ def processBPLAN(path, bplan_file, tiploc_file):
 
 def getVisumLOCs(path, TPEsUnique, myVer, myShp, reversedELRs, tsys_path):
     Visum = com.Dispatch('Visum.Visum.230')
+    Visum.SetPath(57, os.path.join(path,f"cached_data\\Log_LOCs_{datetime.datetime.now().strftime(r'%d-%m-%Y_%H-%M-%S')}.txt"))
     projString = """
                         PROJCS[
                             "British_National_Grid_TOWGS",
@@ -478,112 +481,119 @@ def getVisumLOCs(path, TPEsUnique, myVer, myShp, reversedELRs, tsys_path):
                             UNIT["Meter",1]
                         ]
                     """
-    Visum.Net.SetProjection(projString, False)
-    Visum.Net.SetAttValue('LeftHandTraffic', 1)
-    ImportShapeFilePara = Visum.IO.CreateImportShapeFilePara()
-    ImportShapeFilePara.CreateUserDefinedAttributes = True
-    ImportShapeFilePara.ObjectType = 0
-    ImportShapeFilePara.SetAttValue('Directed', True)
-    Visum.IO.ImportShapefile(myShp, ImportShapeFilePara)
-    TSysDefs = pd.read_csv(tsys_path, low_memory = False).set_index('Code')
-    railBased = str(TSysDefs.index[TSysDefs['rail_based']].values).replace('\n', '').replace("' '", ',').replace("['", '').replace("']", '')
-    PTpermitted = str(TSysDefs.index[TSysDefs['PT_permitted']].values).replace('\n', '').replace("' '", ',').replace("['", '').replace("']", '') + ',W,PuTAux' 
-    fixDirectedNet(Visum, reversedELRs, TSysDefs, railBased, PTpermitted)
-    MyMapMatcher = Visum.Net.CreateMapMatcher()
-    LinkType = Visum.Net.AddLinkType(2)
-    LinkType.SetAttValue('TSysSet', railBased)
-    for uda, dtype in [['CRS', 5],['InBPlan', 2],['InTPS', 2],['Stanox', 5]]:
-        Visum.Net.Stops.AddUserDefinedAttribute(uda, uda, uda, dtype)
-    Visum.Graphic.StopDrawing = True
-    ex = wx.App()
-    TPEoffset = TPEsUnique.index.min()
-    prog = wx.ProgressDialog("TIPLOCs", "Generating TIPLOC objects...",
-                                         TPEsUnique.index.max() - TPEoffset,
-                                         style=wx.PD_APP_MODAL | wx.PD_SMOOTH | wx.PD_AUTO_HIDE)
-    for i, row in TPEsUnique.iterrows():
-        Node = Visum.Net.AddNode(i, row['Easting'], row['Northing'])
-        Node.SetAttValue('Code', row['Tiploc'])
-        Node.SetAttValue('Name', row['Name'])
-        Stop = Visum.Net.AddStop(i, row['Easting'], row['Northing'])
-        Stop.SetAttValue('Code', row['Tiploc'])
-        Stop.SetAttValue('Name', row['Name'])
-        Stop.SetAttValue('CRS', row['CRS'])
-        Stop.SetAttValue('InBPlan', row['InBPlan'])
-        Stop.SetAttValue('InTPS', str(row['InTPS']))
-        Stop.SetAttValue('Stanox', row['Stanox'])
-        StopArea = Visum.Net.AddStopArea(1000*i, i, i, row['Easting'], row['Northing'])
-        StopArea.SetAttValue('Code', row['Tiploc'])
-        StopArea.SetAttValue('Name', 'Platform Unknown')
-        StopPoint = Visum.Net.AddStopPointOnNode(1000*i, StopArea, i)
-        StopPoint.SetAttValue('Code', row['Tiploc'])
-        StopPoint.SetAttValue('Name', 'Platform Unknown')
-        StopArea = Visum.Net.AddStopArea(1000*i+999, i, i, row['Easting'], row['Northing'])
-        StopArea.SetAttValue('Code', row['Tiploc'])
-        StopArea.SetAttValue('Name', 'AccessEgress')
-        unsatis = True
-        fil_string = '[TYPENO]=1'
-        nTRID = 0
-        while unsatis & (nTRID < 10):
-            Visum.Net.Links.SetPassive()
-            Visum.Net.Links.GetFilteredSet(fil_string).SetActive()
-            split_Link = MyMapMatcher.GetNearestLink(row['Easting'], row['Northing'], 250, True, True)
-            unsatis = split_Link.Success
-            if unsatis:
-                split_TRID = split_Link.Link.AttValue('TRID')
-                split_no = 10*i + nTRID
-                if split_Link.RelPos == 0:
-                    try:
-                        Visum.Net.AddLink(split_no, split_Link.Link.AttValue('FromNodeNo'), i, 2)
-                    except:
-                        pass
-                elif split_Link.RelPos == 1:
-                    try:
-                        Visum.Net.AddLink(split_no, split_Link.Link.AttValue('ToNodeNo'), i, 2)
-                    except:
-                        pass
-                else:
-                    split_Node = Visum.Net.AddNode(split_no, split_Link.XPosOnLink, split_Link.YPosOnLink)
-                    split_Link.Link.SplitViaNode(split_Node)
-                    Visum.Net.Links.ItemByKey(split_Link.Link.AttValue('FromNodeNo'), split_no).SetNo(split_no + 10*TPEoffset)
-                    Visum.Net.Links.ItemByKey(split_no, split_Link.Link.AttValue('ToNodeNo')).SetNo(split_no + 20*TPEoffset)
-                    Visum.Net.AddLink(split_no, split_no, i, 2)
-                fil_string += f"&[TRID]!=\"{split_TRID}\""
-                nTRID += 1
-        prog.Update(i- TPEoffset, f"Generating TIPLOC objects... ({int(i- TPEoffset)}/{int(TPEsUnique.index.max() - TPEoffset)})")
-    prog.Destroy()
-    Visum.Graphic.StopDrawing = False
-    Visum.Net.Turns.GetFilteredSet('[FromLink\\TypeNo]=2&[ToLink\\TypeNo]=2&[FromLink\\No]!=[ToLink\\No]').SetAllAttValues('TSysSet', '')
-    Visum.IO.SaveVersion(myVer)
+    try:
+        Visum.Net.SetProjection(projString, False)
+        Visum.Net.SetAttValue('LeftHandTraffic', 1)
+        ImportShapeFilePara = Visum.IO.CreateImportShapeFilePara()
+        ImportShapeFilePara.CreateUserDefinedAttributes = True
+        ImportShapeFilePara.ObjectType = 0
+        ImportShapeFilePara.SetAttValue('Directed', True)
+        Visum.IO.ImportShapefile(myShp, ImportShapeFilePara)
+        TSysDefs = pd.read_csv(tsys_path, low_memory = False).set_index('Code')
+        railBased = str(TSysDefs.index[TSysDefs['rail_based']].values).replace('\n', '').replace("' '", ',').replace("['", '').replace("']", '')
+        PTpermitted = str(TSysDefs.index[TSysDefs['PT_permitted']].values).replace('\n', '').replace("' '", ',').replace("['", '').replace("']", '') + ',W,PuTAux' 
+        fixDirectedNet(Visum, reversedELRs, TSysDefs, railBased, PTpermitted)
+        MyMapMatcher = Visum.Net.CreateMapMatcher()
+        LinkType = Visum.Net.AddLinkType(2)
+        LinkType.SetAttValue('TSysSet', railBased)
+        for uda, dtype in [['CRS', 5],['InBPlan', 2],['InTPS', 2],['Stanox', 5]]:
+            Visum.Net.Stops.AddUserDefinedAttribute(uda, uda, uda, dtype)
+        Visum.Graphic.StopDrawing = True
+        ex = wx.App()
+        TPEoffset = TPEsUnique.index.min()
+        prog = wx.ProgressDialog("TIPLOCs", "Generating TIPLOC objects...",
+                                            TPEsUnique.index.max() - TPEoffset,
+                                            style=wx.PD_APP_MODAL | wx.PD_SMOOTH | wx.PD_AUTO_HIDE)
+        for i, row in TPEsUnique.iterrows():
+            Node = Visum.Net.AddNode(i, row['Easting'], row['Northing'])
+            Node.SetAttValue('Code', row['Tiploc'])
+            Node.SetAttValue('Name', row['Name'])
+            Stop = Visum.Net.AddStop(i, row['Easting'], row['Northing'])
+            Stop.SetAttValue('Code', row['Tiploc'])
+            Stop.SetAttValue('Name', row['Name'])
+            Stop.SetAttValue('CRS', row['CRS'])
+            Stop.SetAttValue('InBPlan', row['InBPlan'])
+            Stop.SetAttValue('InTPS', str(row['InTPS']))
+            Stop.SetAttValue('Stanox', row['Stanox'])
+            StopArea = Visum.Net.AddStopArea(1000*i, i, i, row['Easting'], row['Northing'])
+            StopArea.SetAttValue('Code', row['Tiploc'])
+            StopArea.SetAttValue('Name', 'Platform Unknown')
+            StopPoint = Visum.Net.AddStopPointOnNode(1000*i, StopArea, i)
+            StopPoint.SetAttValue('Code', row['Tiploc'])
+            StopPoint.SetAttValue('Name', 'Platform Unknown')
+            StopArea = Visum.Net.AddStopArea(1000*i+999, i, i, row['Easting'], row['Northing'])
+            StopArea.SetAttValue('Code', row['Tiploc'])
+            StopArea.SetAttValue('Name', 'AccessEgress')
+            unsatis = True
+            fil_string = '[TYPENO]=1'
+            nTRID = 0
+            while unsatis & (nTRID < 10):
+                Visum.Net.Links.SetPassive()
+                Visum.Net.Links.GetFilteredSet(fil_string).SetActive()
+                split_Link = MyMapMatcher.GetNearestLink(row['Easting'], row['Northing'], 250, True, True)
+                unsatis = split_Link.Success
+                if unsatis:
+                    split_TRID = split_Link.Link.AttValue('TRID')
+                    split_no = 10*i + nTRID
+                    if split_Link.RelPos == 0:
+                        try:
+                            Visum.Net.AddLink(split_no, split_Link.Link.AttValue('FromNodeNo'), i, 2)
+                        except:
+                            pass
+                    elif split_Link.RelPos == 1:
+                        try:
+                            Visum.Net.AddLink(split_no, split_Link.Link.AttValue('ToNodeNo'), i, 2)
+                        except:
+                            pass
+                    else:
+                        split_Node = Visum.Net.AddNode(split_no, split_Link.XPosOnLink, split_Link.YPosOnLink)
+                        split_Link.Link.SplitViaNode(split_Node)
+                        Visum.Net.Links.ItemByKey(split_Link.Link.AttValue('FromNodeNo'), split_no).SetNo(split_no + 10*TPEoffset)
+                        Visum.Net.Links.ItemByKey(split_no, split_Link.Link.AttValue('ToNodeNo')).SetNo(split_no + 20*TPEoffset)
+                        Visum.Net.AddLink(split_no, split_no, i, 2)
+                    fil_string += f"&[TRID]!=\"{split_TRID}\""
+                    nTRID += 1
+            prog.Update(i- TPEoffset, f"Generating TIPLOC objects... ({int(i- TPEoffset)}/{int(TPEsUnique.index.max() - TPEoffset)})")
+        prog.Destroy()
+        Visum.Graphic.StopDrawing = False
+        Visum.Net.Turns.GetFilteredSet('[FromLink\\TypeNo]=2&[ToLink\\TypeNo]=2&[FromLink\\No]!=[ToLink\\No]').SetAllAttValues('TSysSet', '')
+        Visum.IO.SaveVersion(myVer)
+    except:
+        Visum.Log(12288, traceback.format_exc())
+
 
 
 def getVisumPLTs(PLTsUnique, myPLTsVer, myLOCsVer, TPEsUnique, output):
     Visum = com.Dispatch('Visum.Visum.230')
-    Visum.IO.LoadVersion(myLOCsVer)
-    Visum.Net.Links.GetFilteredSet('[TypeNo]=1').SetActive()
-    Visum.Graphic.StopDrawing = True
-    ex = wx.App()
-    PLToffset = PLTsUnique.index.min()
-    prog = wx.ProgressDialog("Platforms", "Generating platform objects...",
-                                         PLTsUnique.index.max() - PLToffset,
-                                         style=wx.PD_APP_MODAL | wx.PD_SMOOTH | wx.PD_AUTO_HIDE)
-    for i, row in PLTsUnique.iterrows():
-        addStopPoint(Visum, i, row, 250, TPEsUnique)
-        prog.Update(i- PLToffset, f"Generating platform objects... ({int(i- PLToffset)}/{int(PLTsUnique.index.max() - PLToffset)})")
-    prog.Destroy()
-    Visum.Graphic.StopDrawing = False
-    Visum.Net.Links.SetMultipleAttributes(['Length'], Visum.Net.Links.GetMultipleAttributes(['LengthPoly']))
-    DFcols_Visum = ['No', 'Code', 'Name', 'YCoord', 'XCoord']
-    DFcols_GTFS = ['stop_id', 'stop_code', 'stop_name', 'stop_lat', 'stop_lon']
-    DF_s = pd.DataFrame(Visum.Net.Stops.GetMultipleAttributes(DFcols_Visum), columns = DFcols_GTFS)
-    DF_s['location_type'] = 1
-    DF_sp = pd.DataFrame(Visum.Net.StopPoints.GetMultipleAttributes(DFcols_Visum + ['StopArea\\StopNo']), columns = DFcols_GTFS + ['parent_station'])
-    DF_sp['location_type'] = 0
-    DF_full = pd.concat([DF_s, DF_sp], axis = 0)
-    DF_full['stop_id'] = pd.to_numeric(DF_full['stop_id'],errors='coerce').astype('Int64')
-    DF_full['parent_station'] = pd.to_numeric(DF_full['parent_station'], errors = 'coerce').astype('Int64')
-    DF_full.to_csv(output, index = False)
-    Visum.IO.SaveVersion(myPLTsVer)
-
+    Visum.SetPath(57, os.path.join(path,f"cached_data\\Log_PLTs_{datetime.datetime.now().strftime(r'%d-%m-%Y_%H-%M-%S')}.txt"))
+    try:
+        Visum.IO.LoadVersion(myLOCsVer)
+        Visum.Net.Links.GetFilteredSet('[TypeNo]=1').SetActive()
+        Visum.Graphic.StopDrawing = True
+        ex = wx.App()
+        PLToffset = PLTsUnique.index.min()
+        prog = wx.ProgressDialog("Platforms", "Generating platform objects...",
+                                            PLTsUnique.index.max() - PLToffset,
+                                            style=wx.PD_APP_MODAL | wx.PD_SMOOTH | wx.PD_AUTO_HIDE)
+        for i, row in PLTsUnique.iterrows():
+            addStopPoint(Visum, i, row, 250, TPEsUnique)
+            prog.Update(i- PLToffset, f"Generating platform objects... ({int(i- PLToffset)}/{int(PLTsUnique.index.max() - PLToffset)})")
+        prog.Destroy()
+        Visum.Graphic.StopDrawing = False
+        Visum.Net.Links.SetMultipleAttributes(['Length'], Visum.Net.Links.GetMultipleAttributes(['LengthPoly']))
+        DFcols_Visum = ['No', 'Code', 'Name', 'YCoord', 'XCoord']
+        DFcols_GTFS = ['stop_id', 'stop_code', 'stop_name', 'stop_lat', 'stop_lon']
+        DF_s = pd.DataFrame(Visum.Net.Stops.GetMultipleAttributes(DFcols_Visum), columns = DFcols_GTFS)
+        DF_s['location_type'] = 1
+        DF_sp = pd.DataFrame(Visum.Net.StopPoints.GetMultipleAttributes(DFcols_Visum + ['StopArea\\StopNo']), columns = DFcols_GTFS + ['parent_station'])
+        DF_sp['location_type'] = 0
+        DF_full = pd.concat([DF_s, DF_sp], axis = 0)
+        DF_full['stop_id'] = pd.to_numeric(DF_full['stop_id'],errors='coerce').astype('Int64')
+        DF_full['parent_station'] = pd.to_numeric(DF_full['parent_station'], errors = 'coerce').astype('Int64')
+        DF_full.to_csv(output, index = False)
+        Visum.IO.SaveVersion(myPLTsVer)
+    except:
+        Visum.Log(12288, traceback.format_exc())
 
 def addZonesandConnectors(Visum):
     # Add zones on top of platform unknown locations for stops where a CRS code is defined and add a connector between this zone and the Platform Unknown 
@@ -636,14 +646,14 @@ def addTransferLinks(Visum, xfer_link_path, allStopAreasDF):
                 myFromNode = allStopAreasDF[allStopAreasDF['Stop\\CRS'] == i[0]]['NodeNo'][0]
                 fromFlag = True
             except:
-                print(f'Warning: No served node found for {i[0]}. No transfer link will be created unless you define the desired CRS-TIPLOC match in the manual override csv.')
+                Visum.Log(16384, f'No served node found for {i[0]}. No transfer link will be created unless you define the desired CRS-TIPLOC match in the manual override csv.')
                 fromFlag = False
         
             try:
                 myToNode = allStopAreasDF[allStopAreasDF['Stop\\CRS'] == i[1]]['NodeNo'][0]
                 toFlag = True
             except:
-                print(f'Warning: No served node found for {i[1]}. No transfer link will be created unless you define the desired CRS-TIPLOC match in the manual override csv.')
+                Visum.Log(16384, f'No served node found for {i[1]}. No transfer link will be created unless you define the desired CRS-TIPLOC match in the manual override csv.')
                 toFlag = False
 
             #If both from_CRS and to_CRS are found, create the user defined transfer link and apply the correct times to both directions
@@ -663,7 +673,7 @@ def addTransferLinks(Visum, xfer_link_path, allStopAreasDF):
                     except:
                         myLink.SetAttValue('REVERSELINK\\T_PUTSYS(PuTAux)', 60*myCSV.loc[(i[0], i[1]), 'TravelTime'])
                 else:
-                    print(f'Warning: Tsys {row.TSys} does not exist in the network. No transfer link between {i[0]} and {i[1]} created.')
+                    Visum.Log(16384, f'Tsys {row.TSys} does not exist in the network. No transfer link between {i[0]} and {i[1]} created.')
 
 
     #Create a list of all possible cobinations of served dummy Stop Areas
@@ -678,7 +688,7 @@ def addTransferLinks(Visum, xfer_link_path, allStopAreasDF):
             try:
                 Visum.Net.AddLink(-1, nodeFrom, nodeTo, 4)
             except:
-                print('Warning: This link has already been been manually defined. Therefore, no link is created.')
+                Visum.Log(16384, "This link has already been been manually defined. Therefore, no link is created.")
     
     #We have now finished iterative slow processes, so we can turn back on drawing in Visum again
     Visum.Graphic.StopDrawing = False
@@ -703,7 +713,7 @@ def update_crs(Visum, crs_path):
 
 def main(path, myShp, tiploc_path, BPLAN_path, ELR_path, merge_path, tsys_path, xfer_link_path):
     
-    print('Reprocess BPLAN to obtain new pickle results and save to cache')
+    # Reprocess BPLAN to obtain new pickle results and save to cache
     TPEsUnique, PLTsUnique = processBPLAN(path, BPLAN_path, tiploc_path)
 
     myPickle = os.path.join(path, 'cached_data\\BPLAN\\uniques.p')
@@ -715,32 +725,36 @@ def main(path, myShp, tiploc_path, BPLAN_path, ELR_path, merge_path, tsys_path, 
     myPLTsVer = os.path.join(path, 'cached_data\\VISUM\\LOCs_and_PLTs.ver')
     output = os.path.join(path, 'output\\GTFS\\stops.txt')
     
-    print('Reprocess BPLAN to obtain new LOCs Version file and save to cache')
+    # Reprocess BPLAN to obtain new LOCs Version file and save to cache
     reversedELRsDF = pd.read_csv(ELR_path, low_memory = False)
     reversedELRs = [reversedELR[0] for reversedELR in reversedELRsDF.values]
     getVisumLOCs(path, TPEsUnique, myLOCsVer, myShp, reversedELRs, tsys_path)
 
 
-    print('Reprocess BPLAN to obtain new PLTs Version file and save to cache')
+    # Reprocess BPLAN to obtain new PLTs Version file and save to cache
     getVisumPLTs(PLTsUnique, myPLTsVer, myLOCsVer, TPEsUnique, output)
     
     
     Visum = com.Dispatch("Visum.Visum.230")
-    Visum.LoadVersion(myPLTsVer)
-    # Update CRS codes from override file
-    update_crs(Visum, merge_path)
+    Visum.SetPath(57, os.path.join(path,f"cached_data\\Log_LOCs_and_PLTs_{datetime.datetime.now().strftime(r'%d-%m-%Y_%H-%M-%S')}.txt"))
+    try:
+        Visum.LoadVersion(myPLTsVer)
+        # Update CRS codes from override file
+        update_crs(Visum, merge_path)
 
-    # Create zones and connectors for CRS stops
-    allStopAreasDF = addZonesandConnectors(Visum)
+        # Create zones and connectors for CRS stops
+        allStopAreasDF = addZonesandConnectors(Visum)
 
-    # Add transfer links to the network
-    addTransferLinks(Visum, xfer_link_path, allStopAreasDF)
+        # Add transfer links to the network
+        addTransferLinks(Visum, xfer_link_path, allStopAreasDF)
 
-    Visum.Net.SetAttValue("STRONGLINEROUTELENGTHSADAPTION", 1)
+        Visum.Net.SetAttValue("STRONGLINEROUTELENGTHSADAPTION", 1)
 
-    Visum.SaveVersion(os.path.join(path, 'cached_data\\VISUM\\LOCs_and_PLTs_ZonesConnectorsXferLinks.ver'))
+        Visum.SaveVersion(os.path.join(path, 'cached_data\\VISUM\\LOCs_and_PLTs_ZonesConnectorsXferLinks.ver'))
+    except:
+        Visum.Log(12288, traceback.format_exc())
 
-    print('Done')
+
 
 if __name__ == "__main__":
 
