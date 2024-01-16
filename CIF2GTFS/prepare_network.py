@@ -458,7 +458,8 @@ def processBPLAN(path, bplan_file, tiploc_file):
 
 def getVisumLOCs(path, TPEsUnique, myVer, myShp, reversedELRs, tsys_path):
     Visum = com.Dispatch('Visum.Visum.230')
-    Visum.SetPath(57, os.path.join(path,f"cached_data\\Log_LOCs_{datetime.datetime.now().strftime(r'%d-%m-%Y_%H-%M-%S')}.txt"))
+    Visum.SetPath(57, os.path.join(path,f"cached_data"))
+    Visum.SetLogFileName(f"Log_LOCs_{datetime.datetime.now().strftime(r'%d-%m-%Y_%H-%M-%S')}.txt")
     projString = """
                         PROJCS[
                             "British_National_Grid_TOWGS",
@@ -565,7 +566,8 @@ def getVisumLOCs(path, TPEsUnique, myVer, myShp, reversedELRs, tsys_path):
 
 def getVisumPLTs(PLTsUnique, myPLTsVer, myLOCsVer, TPEsUnique, output):
     Visum = com.Dispatch('Visum.Visum.230')
-    Visum.SetPath(57, os.path.join(path,f"cached_data\\Log_PLTs_{datetime.datetime.now().strftime(r'%d-%m-%Y_%H-%M-%S')}.txt"))
+    Visum.SetPath(57, os.path.join(path,f"cached_data"))
+    Visum.SetLogFileName(f"Log_PLTs_{datetime.datetime.now().strftime(r'%d-%m-%Y_%H-%M-%S')}.txt")
     try:
         Visum.IO.LoadVersion(myLOCsVer)
         Visum.Net.Links.GetFilteredSet('[TypeNo]=1').SetActive()
@@ -736,7 +738,8 @@ def main(path, myShp, tiploc_path, BPLAN_path, ELR_path, merge_path, tsys_path, 
     
     
     Visum = com.Dispatch("Visum.Visum.230")
-    Visum.SetPath(57, os.path.join(path,f"cached_data\\Log_LOCs_and_PLTs_{datetime.datetime.now().strftime(r'%d-%m-%Y_%H-%M-%S')}.txt"))
+    Visum.SetPath(57, os.path.join(path,f"cached_data"))
+    Visum.SetLogFileName(f"Log_LOCs_and_PLTs_{datetime.datetime.now().strftime(r'%d-%m-%Y_%H-%M-%S')}.txt")
     try:
         Visum.LoadVersion(myPLTsVer)
         # Update CRS codes from override file

@@ -64,7 +64,8 @@ def df2visum(Visum, df, temp_path, filename):
 def merge_stops(merge_path, ver_path):
 
     Visum = win32com.client.gencache.EnsureDispatch('Visum.Visum.230')
-    Visum.SetPath(57, os.path.join(path,f"cached_data\\Log_MergeStops_{datetime.datetime.now().strftime(r'%d-%m-%Y_%H-%M-%S')}.txt"))
+    Visum.SetPath(57, os.path.join(path,f"cached_data"))
+    Visum.SetLogFileName(f"Log_MergeStops_{datetime.datetime.now().strftime(r'%d-%m-%Y_%H-%M-%S')}.txt")
     C = win32com.client.constants
     Visum.LoadVersion(ver_path)
 

@@ -29,7 +29,8 @@ def main():
 
         #Launch Visum and load in the final supply network version
         Visum = com.Dispatch('Visum.Visum.230')
-        Visum.SetPath(57, os.path.join(path,f"cached_data\\Log_CreateVers_{datetime.datetime.now().strftime(r'%d-%m-%Y_%H-%M-%S')}.txt"))
+        Visum.SetPath(57, os.path.join(path,f"cached_data"))
+        Visum.SetLogFileName(f"Log_CreateVers_{datetime.datetime.now().strftime(r'%d-%m-%Y_%H-%M-%S')}.txt")
         try:
             Visum.IO.LoadVersion(os.path.join(path, 'output\\VISUM\\Network+Timetable_MergeStops.ver'))
 

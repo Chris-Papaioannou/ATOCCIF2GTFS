@@ -502,18 +502,20 @@ namespace CIF2GTFS
             //var errors = "";
             //var results = "";
 
-            using(var process = Process.Start(psi))
+            var process = Process.Start(psi);
+            while (!process.StandardError.EndOfStream)
             {
-                StreamReader readerErrors = process.StandardError;
-                string errors = readerErrors.ReadToEnd();
-                Console.WriteLine("ERRORS:");
-                Console.WriteLine(errors);
-                StreamReader readerResults = process.StandardOutput;
-                string results = readerResults.ReadToEnd();
-                Console.WriteLine("Results:");
-                Console.WriteLine(results);
-                
+                Console.WriteLine(process.StandardError.ReadLine());
             }
+            //StreamReader readerErrors = process.StandardError;
+            //string errors = readerErrors.ReadToEnd();
+            //Console.WriteLine("ERRORS:");
+            //Console.WriteLine(errors);
+            //StreamReader readerResults = process.StandardOutput;
+            //string results = readerResults.ReadToEnd();
+            //Console.WriteLine("Results:");
+            //Console.WriteLine(results);
+                
 
         }
 
