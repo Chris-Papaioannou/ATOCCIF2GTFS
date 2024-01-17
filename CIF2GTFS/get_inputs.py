@@ -47,18 +47,18 @@ def readVerInputs(input_path):
     df.set_index('variable', inplace=True)
 
     createVersBool = df.at['CreateVers', 'value']
-    ver1 = df.at['Ver1', 'value'].replace(";",",")
-    ver2 = df.at['Ver2', 'value'].replace(";",",")
-    ver3 = df.at['Ver3', 'value'].replace(";",",")
-    ver4 = df.at['Ver4', 'value'].replace(";",",")
-    ver5 = df.at['Ver5', 'value'].replace(";",",")
+    ver1 = str(df.at['Ver1', 'value']).replace(";",",")
+    ver2 = str(df.at['Ver2', 'value']).replace(";",",")
+    ver3 = str(df.at['Ver3', 'value']).replace(";",",")
+    ver4 = str(df.at['Ver4', 'value']).replace(";",",")
+    ver5 = str(df.at['Ver5', 'value']).replace(";",",")
 
     # verx should be of the form {TSys:[TsysCode1, TsysCode2, ...], StartDate:dd/mm/yyyy, EndDate:dd/mm/yyyy}
 
     createVers = [createVersBool]
 
     for v in [ver1, ver2, ver3, ver4, ver5]:
-        if v != "":
+        if v[0]=="{":
             createVers.append(v)
 
     return createVers

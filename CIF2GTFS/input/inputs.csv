@@ -12,7 +12,7 @@ TimetablePath,C:\Users\david.aspital\PTV Group\Team Network Model T2BAU - Genera
 MergeStops,TRUE
 CreateVers,TRUE
 Ver1,{"Name":"31May23"; "TSysSet":"";"Date":"31.05.2023"}
-Ver2,''
-Ver3,''
-Ver4,''
-Ver5,''
+Ver2,
+Ver3,
+Ver4,
+Ver5,
