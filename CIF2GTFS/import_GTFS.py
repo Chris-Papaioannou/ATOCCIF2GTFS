@@ -6,6 +6,7 @@ import sys
 sys.path.append(os.path.dirname(__file__))
 
 import get_inputs as gi
+import create_O00 as O00
 
 
 def createGTFSPuti(gtfsPath, putiFolder):
@@ -146,6 +147,8 @@ def main():
     for col in journeyDetails.columns.values:
         Visum.Net.VehicleJourneys.AddUserDefinedAttribute(col, col, col, 5)
     Visum.Net.VehicleJourneys.SetMultipleAttributes(journeyDetails.columns.values, journeyDetails.values)
+
+    O00.main()
 
     Visum.IO.SaveVersion(os.path.join(path, 'output\\VISUM\\Network+Timetable.ver'))
 

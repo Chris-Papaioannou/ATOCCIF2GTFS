@@ -61,7 +61,7 @@ def main():
 
                 for i in range(24):
                     myVisumMatrix = Visum.Net.AddMatrixWithFormula(i+1, "1", 2, 3)
-                    myVisumMatrix.SetAttValue("CODE", f"Demand {i-1}")
+                    myVisumMatrix.SetAttValue("CODE", f"Demand {i}-{i+1}")
                     myVisumMatrix.SetAttValue("FromTime", i*60*60)
                     myVisumMatrix.SetAttValue("ToTime", (i+1)*60*60)
                     myTimeSeriesItem = myTimeSeries.AddTimeSeriesItem(3600*i, 3600*(i + 1))
@@ -73,6 +73,9 @@ def main():
                 TI_Set = myTimeSeries.CreateTimeIntervalSetAndConnect()
                 
                 Visum.Net.CalendarPeriod.SetAttValue('AnalysisTimeIntervalSetNo',1)
+
+                # Create Total_Demand attribute
+                Visum.Net.ODPairs.AddUserDefinedAttribute("Total_Demand", "Total_Demand", 'Total_Demand', 2, 2, Formula='[MATVALUE(1)]+[MATVALUE(2)]+[MATVALUE(3)]+[MATVALUE(4)]+[MATVALUE(5)]+[MATVALUE(6)]+[MATVALUE(7)]+[MATVALUE(8)]+[MATVALUE(9)]+[MATVALUE(10)]+[MATVALUE(11)]+[MATVALUE(12)]+[MATVALUE(13)]+[MATVALUE(14)]+[MATVALUE(15)]+[MATVALUE(16)]+[MATVALUE(17)]+[MATVALUE(18)]+[MATVALUE(19)]+[MATVALUE(20)]+[MATVALUE(21)]+[MATVALUE(22)]+[MATVALUE(23)]+[MATVALUE(24)]')
 
                 #Finally save the ver file to assign 
                 Visum.IO.SaveVersion(os.path.join(path, f'output\\VISUM\\{verName}.ver'))
