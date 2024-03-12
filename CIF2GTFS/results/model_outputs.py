@@ -173,6 +173,7 @@ def createO02(dfPathLegs):
     #    Start with origin boards
     dfOB['ToPlatform'] = dfOB['FromPlatform']
     dfOB['FromPlatform'] = 'Entry'
+    dfOB['ToCRS'] = dfOB.FromCRS
     dfOB = dfOB[['FromCRS', 'FromPlatform', 'ToCRS', 'ToPlatform', 'Hour', 'ODTRIPS']]
 
     #    Then destination alights. This needs the times recalculating as passengers will appear in the station at the end of the leg
