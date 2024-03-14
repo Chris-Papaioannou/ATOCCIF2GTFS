@@ -56,7 +56,7 @@ def getPathLegs(cols, tempPath, flowBundle, quitVisum):
         routes = 1
     else:
         routes = 0
-    PuTPathLegList.SetObjects(0,"X",routes, ListFormat=1)
+    PuTPathLegList.SetObjects(0,"X",routes, ListFormat=2)
 
     timecode = datetime.datetime.now().strftime(r'%d-%m-%Y_%H-%M-%S')
     PuTPathLegList.SaveToSQLiteDatabase(f"{tempPath}\\PuTPathLegs_{timecode}.sqlite3", "PathLegs")
@@ -105,7 +105,8 @@ def getPathLegs(cols, tempPath, flowBundle, quitVisum):
                                         )
                                          
     
-    dfPathLegs.drop(['NumLegs', 'TIMEPROFILEKEYSTRING', 'PATHLEGINDEX'], axis=1, inplace=True)
+    dfPathLegs.drop(['NumLegs', 'TIMEPROFILEKEYSTRING'], axis=1, inplace=True)
+
 
     dfPathLegs['TOSTOPPOINTNO'] = np.where((dfPathLegs.MovementType=='TubeTransfer') & (dfPathLegs.PATHINDEX == dfPathLegs.PATHINDEX.shift(-1)),
                                             dfPathLegs.TOSTOPPOINTNO.shift(-1),
@@ -120,7 +121,13 @@ def getPathLegs(cols, tempPath, flowBundle, quitVisum):
                                     dfPathLegs[col]+dfPathLegs[col].shift(-1),
                                     dfPathLegs[col])
     
-    dfPathLegs = dfPathLegs.loc[dfPathLegs.MovementType!='TransferFromTube'].copy()
+    dfPathLegs = dfPathLegs.loc[(dfPathLegs.MovementType!='TransferFromTube')|(dfPathLegs.PATHLEGINDEX==3)].copy()
+
+    dfPathLegs.drop(['PATHLEGINDEX'], axis=1, inplace=True)
+
+    dfPathLegs['MovementType'] = np.where(dfPathLegs.MovementType=='TransferFromTube',
+                                          'TubeTransfer',
+                                          dfPathLegs.MovementType)
 
     con = None
     
@@ -225,7 +232,7 @@ def create_O03(dfPathLegs):
     dfDemand.rename({'FromCRS':'CRS_Chain', 'ATOC':'ATOC_Chain'}, axis=1, inplace=True)
     dfDemand.CRS_Chain = dfDemand.CRS_Chain + "," + dfDemand.DestCRS
 
-    dfHighLevel = dfDemand.groupby(['OrigCRS', 'DestCRS', 'StartHour', 'EndHour', 'CRS_Chain', 'ATOC_Chain'], as_index=False).agg(Demand=('Demand', np.sum), InVehicleTime=('Time', np.sum), WaitTime=('WaitTime', np.sum))
+    dfHighLevel = dfDemand.groupby(['OrigCRS', 'DestCRS', 'StartHour', 'EndHour', 'CRS_Chain', 'ATOC_Chain'], as_index=False).agg(Demand=('Demand', np.sum), InVehicleTime=('Time', np.mean), WaitTime=('WaitTime', np.mean))
     dfHighLevel.to_parquet('O03_ODHourlyRoutes.parquet', index=False, compression=parquetCompression)
 
 
@@ -324,6 +331,7 @@ def main():
     del dfStopPoints
 
     dfPathLegs.ToCRS.fillna(dfPathLegs.DestCRS, inplace=True)
+    dfPathLegs.FromCRS.fillna(dfPathLegs.OrigCRS, inplace=True)
     dfPathLegs.ToCode.fillna(dfPathLegs.DestCRS, inplace=True)
     dfPathLegs.ToPlatform.fillna("Tube", inplace=True)
 
