@@ -168,7 +168,7 @@ def runFlowBundle(CRS):
     FlowBundle.CreateConditionWithRestrictedSupply(stop, NetElementContainer, False, ActivityTypeSet1)
     FlowBundle.ExecuteCurrentConditions()
 
-def createO02(dfPathLegs):
+def createO02(dfPathLegs, runID):
     # Split the data out by movement type for station summaries before Tube data is overwritten
     dfOB = dfPathLegs.loc[(dfPathLegs.MovementType == 'FirstRailLeg')].copy()
     dfDA = dfPathLegs.loc[(dfPathLegs.MovementType == 'LastRailLeg') | ((dfPathLegs.MovementType == 'FirstRailLeg') & (dfPathLegs.PATHINDEX != dfPathLegs.PATHINDEX.shift(-1)))].copy()
@@ -217,12 +217,12 @@ def createO02(dfPathLegs):
 
     dfStations = dfStations.groupby(['FromCRS', 'FromPlatform', 'ToCRS', 'ToPlatform', 'Hour'], as_index=False).ODTRIPS.sum()
 
-    dfStations.to_parquet('O02_StationMovements.parquet', index=False, compression=parquetCompression)
+    dfStations.to_parquet(f'{runID}_O02_StationMovements.parquet', index=False, compression=parquetCompression)
 
     del dfStations
 
 
-def create_O03(dfPathLegs):
+def create_O03(dfPathLegs, runID):
     dfPathLegs.FromCRS = dfPathLegs.FromCRS.astype(str)
 
     dfDemand = dfPathLegs.groupby(['OrigCRS', 'DestCRS', 'PATHINDEX'], as_index=False).agg(Demand=('ODTRIPS', np.mean),FromCRS=('FromCRS',",".join), ATOC=('ATOC',','.join), StartHour=('Hour',np.min), EndHour=('Hour',np.max), Time=('TIME', np.sum), WaitTime=('WAITTIME', np.sum))
@@ -233,10 +233,10 @@ def create_O03(dfPathLegs):
     dfDemand.CRS_Chain = dfDemand.CRS_Chain + "," + dfDemand.DestCRS
 
     dfHighLevel = dfDemand.groupby(['OrigCRS', 'DestCRS', 'StartHour', 'EndHour', 'CRS_Chain', 'ATOC_Chain'], as_index=False).agg(Demand=('Demand', np.sum), InVehicleTime=('Time', np.mean), WaitTime=('WaitTime', np.mean))
-    dfHighLevel.to_parquet('O03_ODHourlyRoutes.parquet', index=False, compression=parquetCompression)
+    dfHighLevel.to_parquet(f'{runID}_O03_ODHourlyRoutes.parquet', index=False, compression=parquetCompression)
 
 
-def create_O04():
+def create_O04(runID):
 
     VJI_list = Visum.Workbench.Lists.CreateVehJourneyItemList
     for col in ["VEHJOURNEYNO", "INDEX", r"VEHJOURNEY\TRAINUID", r"VEHJOURNEY\ATOC", r"VEHJOURNEY\TRAINSERVICECODE", r"TIMEPROFILEITEM\LINEROUTEITEM\STOPPOINT\STOPAREA\STOP\CRS", r"TIMEPROFILEITEM\LINEROUTEITEM\STOPPOINT\STOPAREA\STOP\NAME", r"TIMEPROFILEITEM\LINEROUTEITEM\STOPPOINT\NAME", r"EXTARRIVAL", r"EXTDEPARTURE", r"TIMEPROFILEITEM\ALIGHT", r"TIMEPROFILEITEM\BOARD", r"VEHJOURNEY\FROMSTOPPOINT\STOPAREA\STOP\CRS", r"VEHJOURNEY\TOSTOPPOINT\STOPAREA\STOP\CRS", "PASSBOARD(AP)", "PASSALIGHT(AP)", "PASSTHROUGH(AP)"]:
@@ -247,11 +247,11 @@ def create_O04():
     VJI_list.SetObjects(False, VJs)
 
     dfVJIs = pd.DataFrame(VJI_list.SaveToArray(), columns=["VehicleJourneyNo", "Index", "TrainUID", "ATOC", "TrainServiceCode", "CRS", "Stop", "Platform", "Arrival", "Departure", "AlightAllowed", "BoardAllowed", "OriginCRS", "DestinationCRS", "Board", "Alight", "Through"])
-    dfVJIs.to_parquet("O04_StopsAndPasses.parquet", index=False, compression=parquetCompression)
+    dfVJIs.to_parquet(f"{runID}_O04_StopsAndPasses.parquet", index=False, compression=parquetCompression)
 
 
     
-def create_O05(tempPath):
+def create_O05(tempPath, runID):
 
     Visum.Filters.VolumeAttributeValueFilter().FilterByActiveODPairsAndPuTPaths = False
     cond = Visum.Filters.ODPairFilter().AddCondition("OP_NONE", False, "TOTAL_DEMAND", 3, 0)
@@ -276,7 +276,7 @@ def create_O05(tempPath):
 
     dfODs.rename({"FROMZONE\CODE":'FromCRS', 'TOZONE\CODE':'ToCRS', 'MATVALUE(8)':'Demand_7-8', 'MATVALUE(9)':'Demand_8-9', 'MATVALUE(10)':'Demand_9-10', 'MATVALUE(17)':'Demand_16-17', 'MATVALUE(18)':'Demand_17-18', 'MATVALUE(19)':'Demand_18-19', 'MATVALUE(25)':'JRT_24hr', 'MATVALUE(50)':'PJT_24hr', 'MATVALUE(33)':'JRT_7-8', 'MATVALUE(34)':'JRT_8-9', 'MATVALUE(35)':'JRT_9-10', 'MATVALUE(42)':'JRT_16-17', 'MATVALUE(43)':'JRT_17-18', 'MATVALUE(44)':'JRT_18-19', 'MATVALUE(58)':'PJT_7-8', 'MATVALUE(59)':'PJT_8-9', 'MATVALUE(60)':'PJT_9-10', 'MATVALUE(67)':'PJT_16-17', 'MATVALUE(68)':'PJT_17-18', 'MATVALUE(69)':'PJT_18-19'})
 
-    dfODs.to_parquet("O05_DemandAndSkims.parquet", index=False, compression=parquetCompression)
+    dfODs.to_parquet(f"{runID}_O05_DemandAndSkims.parquet", index=False, compression=parquetCompression)
 
     Path.unlink(Path(f"{tempPath}\\OD_Pairs_{timecode}.sqlite3"))    
 
@@ -314,8 +314,11 @@ def main():
     if flowBundle:
         runFlowBundle(CRS)
 
-    create_O04()
-    create_O05(tempPath)
+
+    runID = os.path.split(Visum.IO.CurrentVersionFile)[1][:3]
+
+    create_O04(runID)
+    create_O05(tempPath, runID)
         
     dfStopPoints = getStopPoints(stopPointCols)
     dfPathLegs, timecode = getPathLegs(pathLegCols, tempPath, flowBundle, quitVisum)
@@ -337,7 +340,7 @@ def main():
 
     dfPathLegs['Hour'] = dfPathLegs.DEPTIME.dt.hour
 
-    createO02(dfPathLegs)
+    createO02(dfPathLegs, runID)
 
     for col in ['FromCode', 'ToCode']:
         dfPathLegs[col] = np.where(dfPathLegs.MovementType=='TubeTransfer',
@@ -369,9 +372,9 @@ def main():
                             'ATOC'
                             ]]
 
-    dfPathLegs.to_parquet("O01_PathLegs.parquet", index=False, compression=parquetCompression)
+    dfPathLegs.to_parquet(f"{runID}_O01_PathLegs.parquet", index=False, compression=parquetCompression)
 
-    create_O03(dfPathLegs)
+    create_O03(dfPathLegs, runID)
     
     Path.unlink(Path(f"{tempPath}\\PuTPathLegs_{timecode}.sqlite3"))
     print("Done")
