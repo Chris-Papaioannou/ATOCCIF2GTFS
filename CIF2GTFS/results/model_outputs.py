@@ -64,7 +64,7 @@ def getPathLegs(cols, tempPath, flowBundle, quitVisum):
     if quitVisum:
         Visum = None
 
-    SQL_Query = 'SELECT PATHINDEX, PATHLEGINDEX, "PATH\PUTRELATION\ODPAIR\FROMZONE\CODE", "PATH\PUTRELATION\ODPAIR\TOZONE\CODE", "PATH\COUNT:PUTPATHLEGSWITHWALK", ODTRIPS, FROMSTOPPOINTNO, TOSTOPPOINTNO, TIMEPROFILEKEYSTRING, TIME, WAITTIME, "STARTVEHJOURNEYITEM\VEHJOURNEY\ATOC", "STARTVEHJOURNEYITEM\VEHJOURNEY\TRAINUID", "STARTVEHJOURNEYITEM\VEHJOURNEY\TRAINSERVICECODE", DEPTIME FROM PathLegs WHERE TIMEPROFILEKEYSTRING NOT IN ("Origin connector", "Destination connector", "PuT Aux PuTAux") AND PATHLEGINDEX != 0'
+    SQL_Query = 'SELECT PATHINDEX, PATHLEGINDEX, "PATH\PUTRELATION\ODPAIR\FROMZONE\CODE", "PATH\PUTRELATION\ODPAIR\TOZONE\CODE", "PATH\COUNT:PUTPATHLEGSWITHWALK", ODTRIPS, FROMSTOPPOINTNO, TOSTOPPOINTNO, TIMEPROFILEKEYSTRING, TIME, WAITTIME, "STARTVEHJOURNEYITEM\VEHJOURNEY\ATOC", "STARTVEHJOURNEYITEM\VEHJOURNEY\TRAINUID", "STARTVEHJOURNEYITEM\VEHJOURNEY\TRAINSERVICECODE", DEPTIME FROM PathLegs WHERE TIMEPROFILEKEYSTRING NOT IN ("Origin connector", "Destination connector") AND PATHLEGINDEX != 0'
 
     con = sqlite3.connect(f"{tempPath}\\PuTPathLegs_{timecode}.sqlite3") 
     dfPathLegs = pd.read_sql_query(SQL_Query, con, dtype=cols)# , chunksize=10000
@@ -75,6 +75,16 @@ def getPathLegs(cols, tempPath, flowBundle, quitVisum):
         dfPathLegs[col].fillna(-1, inplace=True)
         dfPathLegs[col] = dfPathLegs[col].astype(int)
 
+
+    dfPathLegs['TIME'] = np.where((dfPathLegs.TIMEPROFILEKEYSTRING == 'Transfer') & ( dfPathLegs.TIMEPROFILEKEYSTRING.shift(-1) == 'PuT Aux PuTAux'),
+                                  dfPathLegs.TIME+dfPathLegs.TIME.shift(-1),
+                                  dfPathLegs.TIME)
+    
+    dfPathLegs['TIME'] = np.where((dfPathLegs.TIMEPROFILEKEYSTRING == 'Transfer') & ( dfPathLegs.TIMEPROFILEKEYSTRING.shift(1) == 'PuT Aux PuTAux'),
+                                  dfPathLegs.TIME+dfPathLegs.TIME.shift(1),
+                                  dfPathLegs.TIME)
+
+    dfPathLegs = dfPathLegs.drop(dfPathLegs[dfPathLegs.TIMEPROFILEKEYSTRING=='PuT Aux PuTAux'].index)
 
     for col in ['TrainUID', 'TrainServiceCode', 'ATOC']:
         dfPathLegs[col].fillna("", inplace=True)
@@ -89,45 +99,37 @@ def getPathLegs(cols, tempPath, flowBundle, quitVisum):
     dfPathLegs['NumLegs'] = dfPathLegs.NumLegs.astype(int)
     dfPathLegs['MovementType'] = np.where(dfPathLegs.PATHLEGINDEX == 2,
                                           'FirstRailLeg',
-                                          np.where(dfPathLegs.PATHLEGINDEX == dfPathLegs.NumLegs-1,
-                                                   'LastRailLeg',
-                                                   np.where(dfPathLegs.TIMEPROFILEKEYSTRING == "Transfer",
-                                                            np.where(dfPathLegs.TOSTOPPOINTNO==-1,
-                                                                     "TubeTransfer",
-                                                                     np.where(dfPathLegs.FROMSTOPPOINTNO==-1,
-                                                                             "TransferFromTube",
-                                                                             "RailTransfer"
-                                                                            )
+                                          np.where(dfPathLegs.TIMEPROFILEKEYSTRING == "Transfer",
+                                                   np.where((dfPathLegs.PATHLEGINDEX==3)&(dfPathLegs.FROMSTOPPOINTNO==-1),
+                                                            'OriginTubeTransfer',
+                                                            np.where((dfPathLegs.PATHLEGINDEX==dfPathLegs.NumLegs-2)&(dfPathLegs.TOSTOPPOINTNO==-1),
+                                                                     'DestinationTubeTransfer',
+                                                                     np.where(dfPathLegs.TOSTOPPOINTNO==-1,
+                                                                              'ToTubeTransfer',
+                                                                              np.where(dfPathLegs.FROMSTOPPOINTNO==-1,
+                                                                                       'FromTubeTransfer',
+                                                                                       'RailTransfer'
+                                                                                       )
+                                                                              ),
                                                                     ),
-                                                            "IntermediateRailLeg"
-                                                        )
-                                                )
-                                        )
+                                                            ),
+                                                   np.where(dfPathLegs.PATHLEGINDEX==dfPathLegs.NumLegs-1,
+                                                            'LastRailLeg',
+                                                            'IntermediateRailLeg'
+                                                            )
+                                                   )
+                                          )
                                          
     
     dfPathLegs.drop(['NumLegs', 'TIMEPROFILEKEYSTRING'], axis=1, inplace=True)
-
-
-    dfPathLegs['TOSTOPPOINTNO'] = np.where((dfPathLegs.MovementType=='TubeTransfer') & (dfPathLegs.PATHINDEX == dfPathLegs.PATHINDEX.shift(-1)),
-                                            dfPathLegs.TOSTOPPOINTNO.shift(-1),
-                                            dfPathLegs.TOSTOPPOINTNO)
     
-    dfPathLegs['ATOC'] = np.where(dfPathLegs.MovementType == 'TubeTransfer',
+    tubeMovements = ['FromTubeTransfer', 'ToTubeTransfer', 'OriginTubeTransfer', 'DestinationTubeTransfer']
+
+    dfPathLegs['ATOC'] = np.where(dfPathLegs.MovementType.isin(tubeMovements),
                                   'Tube',
                                   dfPathLegs.ATOC)
 
-    for col in ['TIME', 'WAITTIME']:
-        dfPathLegs[col] = np.where((dfPathLegs.MovementType=='TubeTransfer') &(dfPathLegs.PATHINDEX == dfPathLegs.PATHINDEX.shift(-1)),
-                                    dfPathLegs[col]+dfPathLegs[col].shift(-1),
-                                    dfPathLegs[col])
-    
-    dfPathLegs = dfPathLegs.loc[(dfPathLegs.MovementType!='TransferFromTube')|(dfPathLegs.PATHLEGINDEX==3)].copy()
-
     dfPathLegs.drop(['PATHLEGINDEX'], axis=1, inplace=True)
-
-    dfPathLegs['MovementType'] = np.where(dfPathLegs.MovementType=='TransferFromTube',
-                                          'TubeTransfer',
-                                          dfPathLegs.MovementType)
 
     con = None
     
@@ -173,9 +175,11 @@ def createO02(dfPathLegs, runID):
     dfOB = dfPathLegs.loc[(dfPathLegs.MovementType == 'FirstRailLeg')].copy()
     dfDA = dfPathLegs.loc[(dfPathLegs.MovementType == 'LastRailLeg') | ((dfPathLegs.MovementType == 'FirstRailLeg') & (dfPathLegs.PATHINDEX != dfPathLegs.PATHINDEX.shift(-1)))].copy()
     dfRT = dfPathLegs.loc[dfPathLegs.MovementType == 'RailTransfer'].copy()
-    dfTT= dfPathLegs.loc[dfPathLegs.MovementType == 'TubeTransfer'].copy()
+    dfFT = dfPathLegs.loc[dfPathLegs.MovementType == 'FromTubeTransfer'].copy()
+    dfTT = dfPathLegs.loc[dfPathLegs.MovementType == 'ToTubeTransfer'].copy()
+    dfOT = dfPathLegs.loc[dfPathLegs.MovementType == 'OriginTubeTransfer'].copy()
+    dfDT = dfPathLegs.loc[dfPathLegs.MovementType == 'DestinationTubeTransfer'].copy()
 
-    # Next work on station summaries
 
     #    Start with origin boards
     dfOB['ToPlatform'] = dfOB['FromPlatform']
@@ -194,26 +198,59 @@ def createO02(dfPathLegs, runID):
     #   Then rail transfers
     dfRT = dfRT[['FromCRS', 'FromPlatform', 'ToCRS', 'ToPlatform', 'Hour', 'ODTRIPS']]
 
-    #   And finally the tube transfers, first the start station movement 
-    dfTTFrom = dfTT.copy()
-    dfTTFrom['ToPlatform'] = 'Tube'
-    dfTTFrom = dfTTFrom[['FromCRS', 'FromPlatform', 'ToCRS', 'ToPlatform', 'Hour', 'ODTRIPS']]
+    #   And finally the tube transfers, starting with the to tube movements
+    dfTT['ToCRS'] = dfTT['FromCRS']
+    dfTT = dfTT[['FromCRS', 'FromPlatform', 'ToCRS', 'ToPlatform', 'Hour', 'ODTRIPS']]
+    
+    # Origin transfers, to tube movement. So FromPlatform is station entry, ToPlatform is Tube, set ToCRS to FromCRS
+    dfOT_To = dfOT.copy()
+    dfOT_To['FromPlatform'] = 'Entry'
+    dfOT_To['ToCRS'] = dfOT_To['FromCRS']
+    dfOT_To['ToPlatform'] = 'Tube'
+    dfOT_To = dfOT_To[['FromCRS', 'FromPlatform', 'ToCRS', 'ToPlatform', 'Hour', 'ODTRIPS']]
+    
+    # Destination transfers, to tube movement. So FromPlatform is the same, set ToPlatform to Tube, set ToCRS to FromCRS
+    dfDT_To = dfDT.copy()
+    dfDT_To['ToCRS'] = dfDT_To['FromCRS']
+    dfDT_To['ToPlatform'] = 'Tube'
+    dfDT_To = dfDT_To[['FromCRS', 'FromPlatform', 'ToCRS', 'ToPlatform', 'Hour', 'ODTRIPS']]
 
-    #   And then the end station movement, which again needs the times recalculating
-    dfTTTo = dfTT.copy()
-    dfTTTo['FromPlatform'] = 'Tube'
-    dfTTTo['DEPTIME'] = dfTTTo.DEPTIME + pd.to_timedelta(dfTTTo.TIME, "min")
-    dfTTTo['Hour'] = dfTTTo.DEPTIME.dt.hour
-    dfTTTo = dfTTTo[['FromCRS', 'FromPlatform', 'ToCRS', 'ToPlatform', 'Hour', 'ODTRIPS']]
+    #   And then the from tube movements, which again needs the times recalculating
+    dfFT['FromCRS'] = dfFT['ToCRS']
+    dfFT['DEPTIME'] = dfFT.DEPTIME + pd.to_timedelta(dfFT.TIME, "min")
+    dfFT['Hour'] = dfFT.DEPTIME.dt.hour
+    dfFT = dfFT[['FromCRS', 'FromPlatform', 'ToCRS', 'ToPlatform', 'Hour', 'ODTRIPS']]
 
-    dfStations = pd.concat([dfOB, dfDA, dfRT, dfTTFrom, dfTTTo], ignore_index=True)
+    # Origin transfers, from tube movement. So FromPlatform is Tube, ToPlatform is the same, set FromCRS to ToCRS. Recalculate DepartureTime and Hour
+    dfOT_From = dfOT.copy()
+    del dfOT
+    dfOT_From['FromCRS'] = dfOT_From['ToCRS'] 
+    dfOT_From['DEPTIME'] = dfOT_From.DEPTIME + pd.to_timedelta(dfOT_From.TIME, "min")
+    dfOT_From['Hour'] = dfOT_From.DEPTIME.dt.hour
+    dfOT_From = dfOT_From[['FromCRS', 'FromPlatform', 'ToCRS', 'ToPlatform', 'Hour', 'ODTRIPS']]
+    
+    # Destination transfers, from tube movement. FromPlatform is tube, ToPlatform is Exit. Set FromCRS to ToCRS. Recalculate DepartureTime and Hour
+    dfDT_From = dfDT.copy()
+    del dfDT
+    dfDT_From['FromCRS'] = dfDT_From['ToCRS'] 
+    dfDT_From['FromPlatform'] = 'Tube'
+    dfDT_From['ToPlatform'] = 'Exit'
+    dfDT_From['DEPTIME'] = dfDT_From.DEPTIME + pd.to_timedelta(dfDT_From.TIME, "min")
+    dfDT_From['Hour'] = dfDT_From.DEPTIME.dt.hour
+    dfDT_From = dfDT_From[['FromCRS', 'FromPlatform', 'ToCRS', 'ToPlatform', 'Hour', 'ODTRIPS']]
+
+
+    dfStations = pd.concat([dfOB, dfDA, dfRT, dfFT, dfTT, dfOT_To, dfOT_From, dfDT_From, dfDT_To], ignore_index=True)
 
     del dfOB
     del dfDA
     del dfRT
-    del dfTTFrom
-    del dfTTTo
+    del dfFT
     del dfTT
+    del dfOT_To
+    del dfOT_From
+    del dfDT_From
+    del dfDT_To
 
     dfStations = dfStations.groupby(['FromCRS', 'FromPlatform', 'ToCRS', 'ToPlatform', 'Hour'], as_index=False).ODTRIPS.sum()
 
@@ -224,6 +261,8 @@ def createO02(dfPathLegs, runID):
 
 def create_O03(dfPathLegs, runID):
     dfPathLegs.FromCRS = dfPathLegs.FromCRS.astype(str)
+
+    dfPathLegs.drop(dfPathLegs[dfPathLegs.MovementType=='FromTubeTransfer'].index, inplace=True)
 
     dfDemand = dfPathLegs.groupby(['OrigCRS', 'DestCRS', 'PATHINDEX'], as_index=False).agg(Demand=('ODTRIPS', np.mean),FromCRS=('FromCRS',",".join), ATOC=('ATOC',','.join), StartHour=('Hour',np.min), EndHour=('Hour',np.max), Time=('TIME', np.sum), WaitTime=('WAITTIME', np.sum))
 
@@ -298,7 +337,7 @@ def main():
         
         global Visum
         Visum = com.Dispatch("Visum.Visum.230")
-        Visum.LoadVersion(r"C:\Users\david.aspital\PTV Group\Team Network Model T2BAU - General\07 Model Files\19 M16 May23\M16_31May23NC_Assigned.ver")
+        Visum.LoadVersion(r"C:\Users\david.aspital\PTV Group\Team Network Model T2BAU - General\07 Model Files\32 M42\M42_31May23_Assigned.ver")
 
         quitVisum = True
 
@@ -309,7 +348,7 @@ def main():
 
     flowBundle = False
     #* Change this for station of interest if flowBundle = True
-    CRS = 'SRA'
+    CRS = 'LBG'
 
     if flowBundle:
         runFlowBundle(CRS)
@@ -326,31 +365,30 @@ def main():
     dfPathLegs = dfPathLegs.merge(dfStopPoints, left_on='FROMSTOPPOINTNO', right_on='NO', how='left')
     dfPathLegs.drop(['NO', 'FROMSTOPPOINTNO'], axis=1, inplace=True)
     dfPathLegs.rename({'CODE':'FromCode', 'NAME':'FromPlatform', 'CRS':'FromCRS'}, axis=1, inplace=True)
+    dfPathLegs.FromCode.fillna('Tube', inplace=True)
+    dfPathLegs.FromPlatform.fillna('Tube', inplace=True)
+    dfPathLegs.FromCRS.fillna(dfPathLegs.OrigCRS, inplace=True)
 
     dfPathLegs = dfPathLegs.merge(dfStopPoints, left_on='TOSTOPPOINTNO', right_on='NO', how='left')
     dfPathLegs.drop(['NO', 'TOSTOPPOINTNO'], axis=1, inplace=True)
     dfPathLegs.rename({'CODE':'ToCode', 'NAME':'ToPlatform', 'CRS':'ToCRS'}, axis=1, inplace=True)
+    dfPathLegs.ToCode.fillna('Tube', inplace=True)
+    dfPathLegs.ToPlatform.fillna('Tube', inplace=True)
+    dfPathLegs.ToCRS.fillna(dfPathLegs.DestCRS, inplace=True)
 
     del dfStopPoints
-
-    dfPathLegs.ToCRS.fillna(dfPathLegs.DestCRS, inplace=True)
-    dfPathLegs.FromCRS.fillna(dfPathLegs.OrigCRS, inplace=True)
-    dfPathLegs.ToCode.fillna(dfPathLegs.DestCRS, inplace=True)
-    dfPathLegs.ToPlatform.fillna("Tube", inplace=True)
 
     dfPathLegs['Hour'] = dfPathLegs.DEPTIME.dt.hour
 
     createO02(dfPathLegs, runID)
 
+    tubeMovements = ['FromTubeTransfer', 'ToTubeTransfer', 'OriginTubeTransfer', 'DestinationTubeTransfer']
+
     for col in ['FromCode', 'ToCode']:
-        dfPathLegs[col] = np.where(dfPathLegs.MovementType=='TubeTransfer',
+        dfPathLegs[col] = np.where(dfPathLegs.MovementType.isin(tubeMovements),
                                 dfPathLegs[col].str.split("_").str[0],
                                 dfPathLegs[col])
     
-    for col in ['FromPlatform', 'ToPlatform']:
-        dfPathLegs[col] = np.where(dfPathLegs.MovementType=='TubeTransfer',
-                                'Tube',
-                                dfPathLegs[col])
 
     dfPathLegs = dfPathLegs[['OrigCRS', 
                             'DestCRS', 
