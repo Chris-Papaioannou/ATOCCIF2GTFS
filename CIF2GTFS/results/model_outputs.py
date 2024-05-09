@@ -319,6 +319,29 @@ def create_O05(tempPath, runID):
 
     Path.unlink(Path(f"{tempPath}\\OD_Pairs_{timecode}.sqlite3"))    
 
+def create_O06(tempPath, runID):
+    OD_list = Visum.Workbench.Lists.CreateODPairList
+    OD_list.SetObjects(True)
+
+    for col in ["FROMZONE\CODE", "TOZONE\CODE", "MATVALUE(26)", "MATVALUE(27)", "MATVALUE(28)", "MATVALUE(29)", "MATVALUE(30)", "MATVALUE(31)", "MATVALUE(32)", "MATVALUE(33)", "MATVALUE(34)", "MATVALUE(35)", "MATVALUE(36)", "MATVALUE(37)", "MATVALUE(38)", "MATVALUE(39)", "MATVALUE(40)", "MATVALUE(41)", "MATVALUE(42)", "MATVALUE(43)", "MATVALUE(44)", "MATVALUE(45)", "MATVALUE(46)", "MATVALUE(47)", "MATVALUE(48)", "MATVALUE(49)"]:
+        OD_list.AddColumn(col)
+
+    timecode = datetime.datetime.now().strftime(r'%d-%m-%Y_%H-%M-%S')
+
+    OD_list.SaveToSQLiteDatabase(f"{tempPath}\\OD_Pairs_{timecode}.sqlite3", "OD_Pairs")
+
+    SQL_Query = 'SELECT "FROMZONE\CODE", "TOZONE\CODE", "MATVALUE(26)", "MATVALUE(27)", "MATVALUE(28)", "MATVALUE(29)", "MATVALUE(30)", "MATVALUE(31)", "MATVALUE(32)", "MATVALUE(33)", "MATVALUE(34)", "MATVALUE(35)", "MATVALUE(36)", "MATVALUE(37)", "MATVALUE(38)", "MATVALUE(39)", "MATVALUE(40)", "MATVALUE(41)", "MATVALUE(42)", "MATVALUE(43)", "MATVALUE(44)", "MATVALUE(45)", "MATVALUE(46)", "MATVALUE(47)", "MATVALUE(48)", "MATVALUE(49)" FROM OD_Pairs'
+
+    con = sqlite3.connect(f"{tempPath}\\OD_Pairs_{timecode}.sqlite3") 
+    dfODs = pd.read_sql_query(SQL_Query, con)# , chunksize=10000
+
+    con = None
+
+    dfODs.rename({"FROMZONE\CODE":'FromCRS', 'TOZONE\CODE':'ToCRS', "MATVALUE(26)":'JRT_0-1', "MATVALUE(27)":'JRT_1-2', "MATVALUE(28)":'JRT_2-3', "MATVALUE(29)":'JRT_3-4', "MATVALUE(30)":'JRT_4-5', "MATVALUE(31)":'JRT_5-6', "MATVALUE(32)":'JRT_6-7', "MATVALUE(33)":'JRT_7-8', "MATVALUE(34)":'JRT_8-9', "MATVALUE(35)":'JRT_9-10', "MATVALUE(36)":'JRT_10-11', "MATVALUE(37)":'JRT_11-12', "MATVALUE(38)":'JRT_12-13', "MATVALUE(39)":'JRT_13-14', "MATVALUE(40)":'JRT_14-15', "MATVALUE(41)":'JRT_15-16', "MATVALUE(42)":'JRT_16-17', "MATVALUE(43)":'JRT_17-18', "MATVALUE(44)":'JRT_18-19', "MATVALUE(45)":'JRT_19-20', "MATVALUE(46)":'JRT_20-21', "MATVALUE(47)":'JRT_21-22', "MATVALUE(48)":'JRT_22-23', "MATVALUE(49)":'JRT_23-24'})
+
+    dfODs.to_parquet(f"{runID}_O06_JRTSkims.parquet", index=False, compression=parquetCompression)
+
+    Path.unlink(Path(f"{tempPath}\\OD_Pairs_{timecode}.sqlite3"))  
 
 
 def main():
@@ -358,6 +381,7 @@ def main():
 
     create_O04(runID)
     create_O05(tempPath, runID)
+    create_O06(tempPath, runID)
         
     dfStopPoints = getStopPoints(stopPointCols)
     dfPathLegs, timecode = getPathLegs(pathLegCols, tempPath, flowBundle, quitVisum)
