@@ -359,7 +359,7 @@ def main():
         app = wx.App()
         
         global Visum
-        Visum = com.Dispatch("Visum.Visum.230")
+        Visum = com.Dispatch("Visum.Visum.240")
         Visum.LoadVersion(r"C:\Users\david.aspital\PTV Group\Team Network Model T2BAU - General\07 Model Files\32 M42\M42_31May23_Assigned.ver")
 
         quitVisum = True

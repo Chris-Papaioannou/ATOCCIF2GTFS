@@ -106,7 +106,7 @@ def main():
     createPutSupplyPuti(putSupplyPath, putiPath, tsysPath)
 
     print('Importing GTFS to new Visum Version File...')
-    Visum = com.Dispatch('Visum.Visum.230')
+    Visum = com.Dispatch('Visum.Visum.240')
     Visum.IO.ImportPuTProject(os.path.join(path, 'puti\\import_GTFS_to_Visum_23.puti'))
     Visum.Net.SetProjection(proj_string, False)
     Visum.Net.Stops.SetMultipleAttributes(['No'], Visum.Net.Stops.GetMultipleAttributes(['GTFS_stop_id']))

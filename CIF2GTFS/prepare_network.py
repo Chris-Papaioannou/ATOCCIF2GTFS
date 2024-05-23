@@ -457,7 +457,7 @@ def processBPLAN(path, bplan_file, tiploc_file):
     return TPEsUnique, PLTsUnique
 
 def getVisumLOCs(path, TPEsUnique, myVer, myShp, reversedELRs, tsys_path):
-    Visum = com.Dispatch('Visum.Visum.230')
+    Visum = com.Dispatch('Visum.Visum.240')
     Visum.SetPath(57, os.path.join(path,f"cached_data"))
     Visum.SetLogFileName(f"Log_LOCs_{datetime.datetime.now().strftime(r'%d-%m-%Y_%H-%M-%S')}.txt")
     projString = """
@@ -565,7 +565,7 @@ def getVisumLOCs(path, TPEsUnique, myVer, myShp, reversedELRs, tsys_path):
 
 
 def getVisumPLTs(PLTsUnique, myPLTsVer, myLOCsVer, TPEsUnique, output):
-    Visum = com.Dispatch('Visum.Visum.230')
+    Visum = com.Dispatch('Visum.Visum.240')
     Visum.SetPath(57, os.path.join(path,f"cached_data"))
     Visum.SetLogFileName(f"Log_PLTs_{datetime.datetime.now().strftime(r'%d-%m-%Y_%H-%M-%S')}.txt")
     try:
@@ -737,7 +737,7 @@ def main(path, myShp, tiploc_path, BPLAN_path, ELR_path, merge_path, tsys_path, 
     getVisumPLTs(PLTsUnique, myPLTsVer, myLOCsVer, TPEsUnique, output)
     
     
-    Visum = com.Dispatch("Visum.Visum.230")
+    Visum = com.Dispatch("Visum.Visum.240")
     Visum.SetPath(57, os.path.join(path,f"cached_data"))
     Visum.SetLogFileName(f"Log_LOCs_and_PLTs_{datetime.datetime.now().strftime(r'%d-%m-%Y_%H-%M-%S')}.txt")
     try:

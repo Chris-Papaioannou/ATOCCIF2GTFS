@@ -128,7 +128,7 @@ def merge_stops(merge_path, ver_path):
                     Visum.Net.RemoveStop(Visum.Net.Stops.ItemByKey(i))
 
         #read transfer walk time table from Visum
-        walkTimeList = Visum.Lists.CreateStopTransferWalkTimeList
+        walkTimeList = Visum.Workbench.Lists.CreateStopTransferWalkTimeList
         for col in ['TIME(W)', 'FROMSTOPAREANO', 'TOSTOPAREANO', r'FROMSTOPAREA\NO', r'FROMSTOPAREA\NAME', r'TOSTOPAREA\NAME']:
             walkTimeList.AddColumn(col)
         walkTimeList.SaveToAttributeFile(os.path.join(tempfile.gettempdir(), "WalkTime.att"), 9)
