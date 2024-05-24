@@ -6,7 +6,7 @@ import sys
 sys.path.append(os.path.dirname(__file__))
 
 import get_inputs as gi
-import CIF2GTFS.results.create_O00 as O00
+import results.create_O00 as O00
 
 
 def createGTFSPuti(gtfsPath, putiFolder):
