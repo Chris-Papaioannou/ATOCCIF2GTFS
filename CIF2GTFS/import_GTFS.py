@@ -136,7 +136,7 @@ def main():
     LinkType.SetAttValue('TSysSet', '')
     LinkType = None
     Visum.IO.ImportPuTProject(os.path.join(path, 'puti\\import_PuT_supply_from_Visum_23.puti'))
-    Visum.Net.TimeProfileItems.AddUserDefinedAttribute('Speed', 'Speed', 'Speed', 15, formula = '3600*[Sum:UsedLineRouteItems\\PostLinkLength]/[PostRunTime]')
+    Visum.Net.TimeProfileItems.AddUserDefinedAttribute('Speed', 'Speed', 'Speed', 15, Formula = '3600*[Sum:UsedLineRouteItems\\PostLinkLength]/[PostRunTime]')
     journeyDetails = pd.read_csv(os.path.join(path, 'cached_data\\JourneyDetails.txt'), low_memory = False)
     journeyDetails.drop(['Key', 'JourneyID', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday', 'start_date', 'end_date'], axis = 1, inplace = True)
     VJs = pd.DataFrame(Visum.Net.VehicleJourneys.GetMultiAttValues('Name'), columns = ['No', 'service_id'])
@@ -149,7 +149,7 @@ def main():
     Visum.Net.VehicleJourneys.SetMultipleAttributes(journeyDetails.columns.values, journeyDetails.values)
 
     O00.Visum = Visum
-    O00.main()
+    O00.create_O00()
 
     Visum.IO.SaveVersion(os.path.join(path, 'output\\VISUM\\Network+Timetable.ver'))
 
