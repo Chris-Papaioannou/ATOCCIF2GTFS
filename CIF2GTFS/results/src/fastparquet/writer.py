@@ -11,19 +11,17 @@ from pandas.core.arrays.masked import BaseMaskedDtype
 
 from fastparquet.util import join_path
 
-from . import parquet_thrift
-from .api import ParquetFile, partitions, part_ids
-from .compression import compress_data
-from .converted_types import tobson
-from .json import json_encoder
-from .util import (default_open, default_mkdirs, check_column_names,
+from fastparquet import parquet_thrift, __version__, cencoding
+from fastparquet.api import ParquetFile, partitions, part_ids
+from fastparquet.compression import compress_data
+from fastparquet.converted_types import tobson
+from fastparquet.json import json_encoder
+from fastparquet.util import (default_open, default_mkdirs, check_column_names,
                    created_by, get_column_metadata,
                    norm_col_name, path_string, reset_row_idx, get_fs,
                    update_custom_metadata)
-from . import __version__
-from .speedups import array_encode_utf8, pack_byte_array
-from . import cencoding
-from .cencoding import NumpyIO, ThriftObject, from_buffer
+from fastparquet.speedups import array_encode_utf8, pack_byte_array
+from fastparquet.cencoding import NumpyIO, ThriftObject, from_buffer
 from decimal import Decimal
 
 MARKER = b'PAR1'
@@ -243,7 +241,7 @@ def convert(data, se):
         elif type == parquet_thrift.Type.BOOLEAN:
             # TODO: with our own bitpack writer, no need to copy for
             #  the padding
-            padded = np.lib.pad(data.values, (0, 8 - (len(data) % 8)),
+            padded = np.pad(data.values, (0, 8 - (len(data) % 8)),
                                 'constant', constant_values=(0, 0))
             out = np.packbits(padded.reshape(-1, 8)[:, ::-1].ravel())
         elif dtype.name in typemap:
@@ -265,7 +263,7 @@ def convert(data, se):
                 elif type == parquet_thrift.Type.BOOLEAN:
                     # TODO: with our own bitpack writer, no need to copy for
                     #  the padding
-                    padded = np.lib.pad(data.values, (0, 8 - (len(data) % 8)),
+                    padded = np.pad(data.values, (0, 8 - (len(data) % 8)),
                                         'constant', constant_values=(0, 0))
                     out = np.packbits(padded.reshape(-1, 8)[:, ::-1].ravel())
                 else:
@@ -1243,6 +1241,9 @@ def write(filename, data, row_group_offsets=None,
     --------
     >>> fastparquet.write('myfile.parquet', df)  # doctest: +SKIP
     """
+    custom_metadata = custom_metadata or {}
+    if getattr(data, "attrs", None):
+        custom_metadata["PANDAS_ATTRS"] = json.dumps(data.attrs)
     if file_scheme not in ('simple', 'hive', 'drill'):
         raise ValueError( 'File scheme should be simple|hive|drill, not '
                          f'{file_scheme}.')
@@ -1305,7 +1306,7 @@ def write(filename, data, row_group_offsets=None,
                             object_encoding=object_encoding,
                             times=times, index_cols=index_cols,
                             partition_cols=partition_on, cols_dtype=cols_dtype)
-        if custom_metadata is not None:
+        if custom_metadata:
             kvm = fmd.key_value_metadata or []
             kvm.extend(
                 [
@@ -1608,6 +1609,7 @@ def update_file_custom_metadata(path: str, custom_metadata: dict,
         Local path to file.
     custom_metadata : dict
         Key-value metadata to update in thrift object.
+        The values must be strings or binary. To pass a dictionary, serialize it as json string then encode it in binary.
     is_metadata_file : bool, default None
         Define if target file is a pure metadata file, or is a parquet data
         file. If `None`, is set depending file name.

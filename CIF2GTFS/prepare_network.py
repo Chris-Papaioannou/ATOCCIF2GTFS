@@ -413,7 +413,12 @@ def processBPLAN(path, bplan_file, tiploc_file):
     for col in ['Easting', 'Northing', 'Quality']:
         PLTs[col] = 0
 
-    for i, row in PLTs.iterrows():
+    ex = wx.App()
+
+    prog = wx.ProgressDialog("Platforms", "Getting OSM platform locations...",
+                                            len(PLTs),
+                                            style=wx.PD_APP_MODAL | wx.PD_SMOOTH | wx.PD_AUTO_HIDE)
+    for j, (i, row) in enumerate(PLTs.iterrows()):
         myPlatformNum = re.sub('[^0-9]', '', row['PlatformID'])
         aTPE = myTPE.loc[row['TIPLOC']]
         OSMpltData = get_OSM_platform_data(path, row['index_TIPLOC'], f"{aTPE['Tiploc_y']}: {aTPE['Name_y']}", aTPE['Easting'], aTPE['Northing'], 250)
@@ -435,6 +440,8 @@ def processBPLAN(path, bplan_file, tiploc_file):
                 PLTs.loc[i, 'Shape'] = OSMpltDataFil['Shape'].iloc[0]
                 PLTs.loc[i, 'Quality'] = 1
                 PLTs.loc[i, 'index'] += row['index_PlatformID']
+        prog.Update(j, f"Getting OSM platform locations... ({int(j)}/{len(PLTs)})")
+    prog.Destroy()
     
     PLTs = PLTs[PLTs['Quality'] > 0]
     PLTs.to_csv(os.path.join(path, 'cached_data\\BPLAN\\PLTs.csv'))
@@ -502,29 +509,69 @@ def getVisumLOCs(path, TPEsUnique, myVer, myShp, reversedELRs, tsys_path):
         Visum.Graphic.StopDrawing = True
         ex = wx.App()
         TPEoffset = TPEsUnique.index.min()
+
+
+        dfNodes = TPEsUnique[['Easting', 'Northing', 'Tiploc', 'Name']].copy()
+        dfNodes.reset_index(inplace=True)
+        dfNodes.rename({'index':'$NODE:NO', 'Easting':'XCOORD', 'Northing':'YCOORD', 'Tiploc':'Code'}, axis=1, inplace=True)
+        
+        dfStops = TPEsUnique[['Easting', 'Northing', 'Tiploc', 'Name', 'CRS', 'InBPlan', 'InTPS', 'Stanox']].copy()
+        dfStops.reset_index(inplace=True)
+        dfStops.rename({'index':'$STOP:NO', 'Easting':'XCOORD', 'Northing':'YCOORD', 'Tiploc':'Code'}, axis=1, inplace=True)
+
+        dfStopAreasPU = TPEsUnique[['Easting', 'Northing']].copy()
+        dfStopAreasPU.reset_index(inplace=True)
+        dfStopAreasPU['NodeNo'] = dfStopAreasPU['index']
+        dfStopAreasPU['$STOPAREA:NO'] = dfStopAreasPU['index']*1000
+        dfStopAreasPU['Name'] = 'Platform Unknown'
+        dfStopAreasPU.rename({'index':'StopNo', 'Easting':'XCOORD', 'Northing':'YCOORD'}, axis=1, inplace=True)
+        dfStopAreasPU = dfStopAreasPU[['$STOPAREA:NO', 'NodeNo', 'StopNo', 'XCOORD', 'YCOORD', 'Name']]
+
+        dfStopAreasAE = TPEsUnique[['Easting', 'Northing']].copy()
+        dfStopAreasAE.reset_index(inplace=True)
+        dfStopAreasAE['NodeNo'] = dfStopAreasAE['index']
+        dfStopAreasAE['$STOPAREA:NO'] = dfStopAreasAE['index']*1000+999
+        dfStopAreasAE['Name'] = 'AccessEgress'
+        dfStopAreasAE.rename({'index':'StopNo', 'Easting':'XCOORD', 'Northing':'YCOORD'}, axis=1, inplace=True)
+        dfStopAreasAE = dfStopAreasAE[['$STOPAREA:NO', 'NodeNo', 'StopNo', 'XCOORD', 'YCOORD', 'Name']]
+
+        dfStopAreas = pd.concat([dfStopAreasPU, dfStopAreasAE])
+
+        dfStopPoints = TPEsUnique[['Tiploc']].copy()
+        dfStopPoints.reset_index(inplace=True)
+        dfStopPoints['$STOPPOINT:NO'] = dfStopPoints['index']*1000
+        dfStopPoints['StopAreaNo'] = dfStopPoints['index']*1000
+        dfStopPoints['Name'] = 'Platform Unknown'
+        dfStopPoints.rename({'index':'NodeNo', 'Tiploc':'Code'}, axis=1, inplace=True)
+        dfStopPoints = dfStopPoints[['$STOPPOINT:NO', 'StopAreaNo', 'NodeNo', 'Name', 'Code']]
+        
+        # write .net file
+        header = '''$VISION
+
+$VERSION:VERSNR;FILETYPE;LANGUAGE;UNIT
+15;Net;ENG;KM
+
+'''
+
+        with open(os.path.join(path, 'cached_data\\VISUM\\LOCS.net'), 'w') as f:
+            f.write(header)
+            dfNodes.to_csv(f, mode='a', sep=';', index=False, line_terminator='\n')
+            f.write('\n')
+            dfStops.to_csv(f, mode='a', sep=';', index=False, line_terminator='\n')
+            f.write('\n')
+            dfStopAreas.to_csv(f, mode='a', sep=';', index=False, line_terminator='\n')
+            f.write('\n')
+            dfStopPoints.to_csv(f, mode='a', sep=';', index=False, line_terminator='\n')
+
+        Visum.IO.SaveVersion(myVer)
+        Visum.IO.LoadNet(os.path.join(path,'cached_data\\VISUM\\LOCS.net'), True)
+
+
         prog = wx.ProgressDialog("TIPLOCs", "Generating TIPLOC objects...",
                                             TPEsUnique.index.max() - TPEoffset,
                                             style=wx.PD_APP_MODAL | wx.PD_SMOOTH | wx.PD_AUTO_HIDE)
+
         for i, row in TPEsUnique.iterrows():
-            Node = Visum.Net.AddNode(i, row['Easting'], row['Northing'])
-            Node.SetAttValue('Code', row['Tiploc'])
-            Node.SetAttValue('Name', row['Name'])
-            Stop = Visum.Net.AddStop(i, row['Easting'], row['Northing'])
-            Stop.SetAttValue('Code', row['Tiploc'])
-            Stop.SetAttValue('Name', row['Name'])
-            Stop.SetAttValue('CRS', row['CRS'])
-            Stop.SetAttValue('InBPlan', row['InBPlan'])
-            Stop.SetAttValue('InTPS', str(row['InTPS']))
-            Stop.SetAttValue('Stanox', row['Stanox'])
-            StopArea = Visum.Net.AddStopArea(1000*i, i, i, row['Easting'], row['Northing'])
-            StopArea.SetAttValue('Code', row['Tiploc'])
-            StopArea.SetAttValue('Name', 'Platform Unknown')
-            StopPoint = Visum.Net.AddStopPointOnNode(1000*i, StopArea, i)
-            StopPoint.SetAttValue('Code', row['Tiploc'])
-            StopPoint.SetAttValue('Name', 'Platform Unknown')
-            StopArea = Visum.Net.AddStopArea(1000*i+999, i, i, row['Easting'], row['Northing'])
-            StopArea.SetAttValue('Code', row['Tiploc'])
-            StopArea.SetAttValue('Name', 'AccessEgress')
             unsatis = True
             fil_string = '[TYPENO]=1'
             nTRID = 0

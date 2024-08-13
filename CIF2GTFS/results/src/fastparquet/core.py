@@ -1,17 +1,16 @@
-import warnings
 import numpy as np
 import pandas as pd
 
-from . import encoding
-from . encoding import read_plain
+from fastparquet import encoding
+from fastparquet.encoding import read_plain
 import fastparquet.cencoding as encoding
-from .compression import decompress_data, rev_map, decom_into
-from .converted_types import convert, simple, converts_inplace
-from .schema import _is_list_like, _is_map_like
-from .speedups import unpack_byte_array
-from . import parquet_thrift
-from .cencoding import ThriftObject, read_thrift
-from .util import val_to_num, ex_from_sep
+from fastparquet.compression import decompress_data, rev_map, decom_into
+from fastparquet.converted_types import convert, simple, converts_inplace
+from fastparquet.schema import _is_list_like, _is_map_like
+from fastparquet.speedups import unpack_byte_array
+from fastparquet import parquet_thrift
+from fastparquet.cencoding import ThriftObject
+from fastparquet.util import val_to_num
 
 
 def _read_page(file_obj, page_header, column_metadata):
@@ -126,8 +125,7 @@ def read_data_page(f, helper, header, metadata, skip_nulls=False,
     nval = daph.num_values - num_nulls
     se = helper.schema_element(metadata.path_in_schema)
     if daph.encoding == parquet_thrift.Encoding.PLAIN:
-
-        width = helper.schema_element(metadata.path_in_schema).type_length
+        width = se.type_length
         values = read_plain(io_obj.read(),
                             metadata.type,
                             int(daph.num_values - num_nulls),
@@ -137,7 +135,9 @@ def read_data_page(f, helper, header, metadata, skip_nulls=False,
                            parquet_thrift.Encoding.RLE_DICTIONARY,
                            parquet_thrift.Encoding.RLE]:
         # bit_width is stored as single byte.
-        if daph.encoding == parquet_thrift.Encoding.RLE:
+        if metadata.type == parquet_thrift.Type.BOOLEAN:
+            bit_width = 1
+        elif daph.encoding == parquet_thrift.Encoding.RLE:
             bit_width = se.type_length
         else:
             bit_width = io_obj.read_byte()
@@ -156,9 +156,17 @@ def read_data_page(f, helper, header, metadata, skip_nulls=False,
                 o = encoding.NumpyIO(values)
                 encoding.read_rle_bit_packed_hybrid(
                     io_obj, bit_width, io_obj.len-io_obj.tell(), o=o, itemsize=1)
-            values = values.data[:nval]
+            if isinstance(values, np.ndarray):
+                values = values[:nval]
+            else:
+                values = values.data[:nval]
         else:
             values = np.zeros(nval, dtype=np.int8)
+    elif daph.encoding == parquet_thrift.Encoding.DELTA_BINARY_PACKED:
+        values = np.empty(daph.num_values - num_nulls,
+                          dtype=np.int64 if metadata.type == 2 else np.int32)
+        o = encoding.NumpyIO(values.view('uint8'))
+        encoding.delta_binary_unpack(io_obj, o, longval=metadata.type == 2)
     else:
         raise NotImplementedError('Encoding %s' % daph.encoding)
     return definition_levels, repetition_levels, values[:nval]
@@ -441,7 +449,12 @@ def read_col(column, schema_helper, infile, use_cat=False,
         column.
     """
     cmd = column.meta_data
-    se = schema_helper.schema_element(cmd.path_in_schema)
+    try:
+        se = schema_helper.schema_element(cmd.path_in_schema)
+    except KeyError:
+        # column not present in this row group
+        assign[:] = None
+        return
     off = min((cmd.dictionary_page_offset or cmd.data_page_offset,
                cmd.data_page_offset))
 

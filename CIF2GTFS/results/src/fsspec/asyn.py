@@ -11,11 +11,11 @@ from contextlib import contextmanager
 from glob import has_magic
 from typing import TYPE_CHECKING, Iterable
 
-from .callbacks import _DEFAULT_CALLBACK
+from .callbacks import DEFAULT_CALLBACK
 from .exceptions import FSTimeoutError
 from .implementations.local import LocalFileSystem, make_path_posix, trailing_sep
 from .spec import AbstractBufferedFile, AbstractFileSystem
-from .utils import is_exception, other_paths
+from .utils import glob_translate, is_exception, other_paths
 
 private = re.compile("_[^_]")
 iothread = [None]  # dedicated fsspec IO thread
@@ -106,7 +106,7 @@ def sync(loop, func, *args, timeout=None, **kwargs):
 
 
 def sync_wrapper(func, obj=None):
-    """Given a function, make so can be called in async or blocking contexts
+    """Given a function, make so can be called in blocking contexts
 
     Leave obj=None if defining within a class. Pass the instance if attaching
     as an attribute of the instance.
@@ -205,7 +205,7 @@ def running_async() -> bool:
 async def _run_coros_in_chunks(
     coros,
     batch_size=None,
-    callback=_DEFAULT_CALLBACK,
+    callback=DEFAULT_CALLBACK,
     timeout=None,
     return_exceptions=False,
     nofiles=False,
@@ -239,20 +239,35 @@ async def _run_coros_in_chunks(
         batch_size = len(coros)
 
     assert batch_size > 0
-    results = []
-    for start in range(0, len(coros), batch_size):
-        chunk = [
-            asyncio.Task(asyncio.wait_for(c, timeout=timeout))
-            for c in coros[start : start + batch_size]
-        ]
-        if callback is not _DEFAULT_CALLBACK:
-            [
-                t.add_done_callback(lambda *_, **__: callback.relative_update(1))
-                for t in chunk
-            ]
-        results.extend(
-            await asyncio.gather(*chunk, return_exceptions=return_exceptions),
-        )
+
+    async def _run_coro(coro, i):
+        try:
+            return await asyncio.wait_for(coro, timeout=timeout), i
+        except Exception as e:
+            if not return_exceptions:
+                raise
+            return e, i
+        finally:
+            callback.relative_update(1)
+
+    i = 0
+    n = len(coros)
+    results = [None] * n
+    pending = set()
+
+    while pending or i < n:
+        while len(pending) < batch_size and i < n:
+            pending.add(asyncio.ensure_future(_run_coro(coros[i], i)))
+            i += 1
+
+        if not pending:
+            break
+
+        done, pending = await asyncio.wait(pending, return_when=asyncio.FIRST_COMPLETED)
+        while done:
+            result, k = await done.pop()
+            results[k] = result
+
     return results
 
 
@@ -467,6 +482,16 @@ class AsyncFileSystem(AbstractFileSystem):
         on_error="return",
         **kwargs,
     ):
+        """Get the contents of byte ranges from one or more files
+
+        Parameters
+        ----------
+        paths: list
+            A list of of filepaths on this filesystems
+        starts, ends: int or list
+            Bytes limits of the read. If using a single int, the same value will be
+            used to read all the specified files.
+        """
         # TODO: on_error
         if max_gap is not None:
             # use utils.merge_offset_ranges
@@ -476,7 +501,7 @@ class AsyncFileSystem(AbstractFileSystem):
         if not isinstance(starts, Iterable):
             starts = [starts] * len(paths)
         if not isinstance(ends, Iterable):
-            ends = [starts] * len(paths)
+            ends = [ends] * len(paths)
         if len(starts) != len(paths) or len(ends) != len(paths):
             raise ValueError
         coros = [
@@ -496,7 +521,7 @@ class AsyncFileSystem(AbstractFileSystem):
         lpath,
         rpath,
         recursive=False,
-        callback=_DEFAULT_CALLBACK,
+        callback=DEFAULT_CALLBACK,
         batch_size=None,
         maxdepth=None,
         **kwargs,
@@ -558,8 +583,8 @@ class AsyncFileSystem(AbstractFileSystem):
         coros = []
         callback.set_size(len(file_pairs))
         for lfile, rfile in file_pairs:
-            callback.branch(lfile, rfile, kwargs)
-            coros.append(self._put_file(lfile, rfile, **kwargs))
+            put_file = callback.branch_coro(self._put_file)
+            coros.append(put_file(lfile, rfile, **kwargs))
 
         return await _run_coros_in_chunks(
             coros, batch_size=batch_size, callback=callback
@@ -573,7 +598,7 @@ class AsyncFileSystem(AbstractFileSystem):
         rpath,
         lpath,
         recursive=False,
-        callback=_DEFAULT_CALLBACK,
+        callback=DEFAULT_CALLBACK,
         maxdepth=None,
         **kwargs,
     ):
@@ -635,8 +660,8 @@ class AsyncFileSystem(AbstractFileSystem):
         coros = []
         callback.set_size(len(lpaths))
         for lpath, rpath in zip(lpaths, rpaths):
-            callback.branch(rpath, lpath, kwargs)
-            coros.append(self._get_file(rpath, lpath, **kwargs))
+            get_file = callback.branch_coro(self._get_file)
+            coros.append(get_file(rpath, lpath, **kwargs))
         return await _run_coros_in_chunks(
             coros, batch_size=batch_size, callback=callback
         )
@@ -662,9 +687,9 @@ class AsyncFileSystem(AbstractFileSystem):
             [self._size(p) for p in paths], batch_size=batch_size
         )
 
-    async def _exists(self, path):
+    async def _exists(self, path, **kwargs):
         try:
-            await self._info(path)
+            await self._info(path, **kwargs)
             return True
         except FileNotFoundError:
             return False
@@ -735,8 +760,12 @@ class AsyncFileSystem(AbstractFileSystem):
 
         import re
 
-        ends = path.endswith("/")
+        seps = (os.path.sep, os.path.altsep) if os.path.altsep else (os.path.sep,)
+        ends_with_sep = path.endswith(seps)  # _strip_protocol strips trailing slash
         path = self._strip_protocol(path)
+        append_slash_to_dirname = ends_with_sep or path.endswith(
+            tuple(sep + "**" for sep in seps)
+        )
         idx_star = path.find("*") if path.find("*") >= 0 else len(path)
         idx_qmark = path.find("?") if path.find("?") >= 0 else len(path)
         idx_brace = path.find("[") if path.find("[") >= 0 else len(path)
@@ -746,11 +775,11 @@ class AsyncFileSystem(AbstractFileSystem):
         detail = kwargs.pop("detail", False)
 
         if not has_magic(path):
-            if await self._exists(path):
+            if await self._exists(path, **kwargs):
                 if not detail:
                     return [path]
                 else:
-                    return {path: await self._info(path)}
+                    return {path: await self._info(path, **kwargs)}
             else:
                 if not detail:
                     return []  # glob of non-existent returns empty
@@ -775,45 +804,21 @@ class AsyncFileSystem(AbstractFileSystem):
         allpaths = await self._find(
             root, maxdepth=depth, withdirs=True, detail=True, **kwargs
         )
-        # Escape characters special to python regex, leaving our supported
-        # special characters in place.
-        # See https://www.gnu.org/software/bash/manual/html_node/Pattern-Matching.html
-        # for shell globbing details.
-        pattern = (
-            "^"
-            + (
-                path.replace("\\", r"\\")
-                .replace(".", r"\.")
-                .replace("+", r"\+")
-                .replace("//", "/")
-                .replace("(", r"\(")
-                .replace(")", r"\)")
-                .replace("|", r"\|")
-                .replace("^", r"\^")
-                .replace("$", r"\$")
-                .replace("{", r"\{")
-                .replace("}", r"\}")
-                .rstrip("/")
-                .replace("?", ".")
-            )
-            + "$"
-        )
-        pattern = re.sub("/[*]{2}", "=SLASH_DOUBLE_STARS=", pattern)
-        pattern = re.sub("[*]{2}/?", "=DOUBLE_STARS=", pattern)
-        pattern = re.sub("[*]", "[^/]*", pattern)
-        pattern = re.sub("=SLASH_DOUBLE_STARS=", "(|/.*)", pattern)
-        pattern = re.sub("=DOUBLE_STARS=", ".*", pattern)
-        pattern = re.compile(pattern)
-        out = {
-            p: allpaths[p]
-            for p in sorted(allpaths)
-            if pattern.match(p.replace("//", "/").rstrip("/"))
-        }
 
-        # Return directories only when the glob end by a slash
-        # This is needed for posix glob compliance
-        if ends:
-            out = {k: v for k, v in out.items() if v["type"] == "directory"}
+        pattern = glob_translate(path + ("/" if ends_with_sep else ""))
+        pattern = re.compile(pattern)
+
+        out = {
+            p: info
+            for p, info in sorted(allpaths.items())
+            if pattern.match(
+                (
+                    p + "/"
+                    if append_slash_to_dirname and info["type"] == "directory"
+                    else p
+                )
+            )
+        }
 
         if detail:
             return out

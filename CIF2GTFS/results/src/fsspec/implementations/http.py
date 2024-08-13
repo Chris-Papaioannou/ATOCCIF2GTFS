@@ -7,14 +7,19 @@ from copy import copy
 from urllib.parse import urlparse
 
 import aiohttp
-import requests
 import yarl
 
 from fsspec.asyn import AbstractAsyncStreamedFile, AsyncFileSystem, sync, sync_wrapper
-from fsspec.callbacks import _DEFAULT_CALLBACK
+from fsspec.callbacks import DEFAULT_CALLBACK
 from fsspec.exceptions import FSTimeoutError
 from fsspec.spec import AbstractBufferedFile
-from fsspec.utils import DEFAULT_BLOCK_SIZE, isfilelike, nullcontext, tokenize
+from fsspec.utils import (
+    DEFAULT_BLOCK_SIZE,
+    glob_translate,
+    isfilelike,
+    nullcontext,
+    tokenize,
+)
 
 from ..caching import AllBytes
 
@@ -118,7 +123,7 @@ class HTTPFileSystem(AsyncFileSystem):
             try:
                 sync(loop, session.close, timeout=0.1)
                 return
-            except (TimeoutError, FSTimeoutError):
+            except (TimeoutError, FSTimeoutError, NotImplementedError):
                 pass
         connector = getattr(session, "_connector", None)
         if connector is not None:
@@ -153,11 +158,14 @@ class HTTPFileSystem(AsyncFileSystem):
         session = await self.set_session()
         async with session.get(self.encode_url(url), **self.kwargs) as r:
             self._raise_not_found_for_status(r, url)
-            text = await r.text()
-        if self.simple_links:
-            links = ex2.findall(text) + [u[2] for u in ex.findall(text)]
-        else:
-            links = [u[2] for u in ex.findall(text)]
+            try:
+                text = await r.text()
+                if self.simple_links:
+                    links = ex2.findall(text) + [u[2] for u in ex.findall(text)]
+                else:
+                    links = [u[2] for u in ex.findall(text)]
+            except UnicodeDecodeError:
+                links = []  # binary, not HTML
         out = set()
         parts = urlparse(url)
         for l in links:
@@ -229,7 +237,7 @@ class HTTPFileSystem(AsyncFileSystem):
         return out
 
     async def _get_file(
-        self, rpath, lpath, chunk_size=5 * 2**20, callback=_DEFAULT_CALLBACK, **kwargs
+        self, rpath, lpath, chunk_size=5 * 2**20, callback=DEFAULT_CALLBACK, **kwargs
     ):
         kw = self.kwargs.copy()
         kw.update(kwargs)
@@ -246,7 +254,7 @@ class HTTPFileSystem(AsyncFileSystem):
             if isfilelike(lpath):
                 outfile = lpath
             else:
-                outfile = open(lpath, "wb")
+                outfile = open(lpath, "wb")  # noqa: ASYNC101
 
             try:
                 chunk = True
@@ -263,7 +271,7 @@ class HTTPFileSystem(AsyncFileSystem):
         lpath,
         rpath,
         chunk_size=5 * 2**20,
-        callback=_DEFAULT_CALLBACK,
+        callback=DEFAULT_CALLBACK,
         method="post",
         **kwargs,
     ):
@@ -274,7 +282,7 @@ class HTTPFileSystem(AsyncFileSystem):
                 context = nullcontext(lpath)
                 use_seek = False  # might not support seeking
             else:
-                context = open(lpath, "rb")
+                context = open(lpath, "rb")  # noqa: ASYNC101
                 use_seek = True
 
             with context as f:
@@ -301,7 +309,7 @@ class HTTPFileSystem(AsyncFileSystem):
             )
 
         meth = getattr(session, method)
-        async with meth(rpath, data=gen_chunks(), **kw) as resp:
+        async with meth(self.encode_url(rpath), data=gen_chunks(), **kw) as resp:
             self._raise_not_found_for_status(resp, rpath)
 
     async def _exists(self, path, **kwargs):
@@ -313,7 +321,7 @@ class HTTPFileSystem(AsyncFileSystem):
             r = await session.get(self.encode_url(path), **kw)
             async with r:
                 return r.status < 400
-        except (requests.HTTPError, aiohttp.ClientError):
+        except aiohttp.ClientError:
             return False
 
     async def _isfile(self, path, **kwargs):
@@ -425,7 +433,7 @@ class HTTPFileSystem(AsyncFileSystem):
                 if policy == "get":
                     # If get failed, then raise a FileNotFoundError
                     raise FileNotFoundError(url) from exc
-                logger.debug(str(exc))
+                logger.debug("", exc_info=exc)
 
         return {"name": url, "size": None, **info, "type": "file"}
 
@@ -441,8 +449,9 @@ class HTTPFileSystem(AsyncFileSystem):
             raise ValueError("maxdepth must be at least 1")
         import re
 
-        ends = path.endswith("/")
+        ends_with_slash = path.endswith("/")  # _strip_protocol strips trailing slash
         path = self._strip_protocol(path)
+        append_slash_to_dirname = ends_with_slash or path.endswith("/**")
         idx_star = path.find("*") if path.find("*") >= 0 else len(path)
         idx_brace = path.find("[") if path.find("[") >= 0 else len(path)
 
@@ -451,11 +460,11 @@ class HTTPFileSystem(AsyncFileSystem):
         detail = kwargs.pop("detail", False)
 
         if not has_magic(path):
-            if await self._exists(path):
+            if await self._exists(path, **kwargs):
                 if not detail:
                     return [path]
                 else:
-                    return {path: await self._info(path)}
+                    return {path: await self._info(path, **kwargs)}
             else:
                 if not detail:
                     return []  # glob of non-existent returns empty
@@ -480,44 +489,21 @@ class HTTPFileSystem(AsyncFileSystem):
         allpaths = await self._find(
             root, maxdepth=depth, withdirs=True, detail=True, **kwargs
         )
-        # Escape characters special to python regex, leaving our supported
-        # special characters in place.
-        # See https://www.gnu.org/software/bash/manual/html_node/Pattern-Matching.html
-        # for shell globbing details.
-        pattern = (
-            "^"
-            + (
-                path.replace("\\", r"\\")
-                .replace(".", r"\.")
-                .replace("+", r"\+")
-                .replace("//", "/")
-                .replace("(", r"\(")
-                .replace(")", r"\)")
-                .replace("|", r"\|")
-                .replace("^", r"\^")
-                .replace("$", r"\$")
-                .replace("{", r"\{")
-                .replace("}", r"\}")
-                .rstrip("/")
-            )
-            + "$"
-        )
-        pattern = re.sub("/[*]{2}", "=SLASH_DOUBLE_STARS=", pattern)
-        pattern = re.sub("[*]{2}/?", "=DOUBLE_STARS=", pattern)
-        pattern = re.sub("[*]", "[^/]*", pattern)
-        pattern = re.sub("=SLASH_DOUBLE_STARS=", "(|/.*)", pattern)
-        pattern = re.sub("=DOUBLE_STARS=", ".*", pattern)
-        pattern = re.compile(pattern)
-        out = {
-            p: allpaths[p]
-            for p in sorted(allpaths)
-            if pattern.match(p.replace("//", "/").rstrip("/"))
-        }
 
-        # Return directories only when the glob end by a slash
-        # This is needed for posix glob compliance
-        if ends:
-            out = {k: v for k, v in out.items() if v["type"] == "directory"}
+        pattern = glob_translate(path + ("/" if ends_with_slash else ""))
+        pattern = re.compile(pattern)
+
+        out = {
+            p: info
+            for p, info in sorted(allpaths.items())
+            if pattern.match(
+                (
+                    p + "/"
+                    if append_slash_to_dirname and info["type"] == "directory"
+                    else p
+                )
+            )
+        }
 
         if detail:
             return out
@@ -545,7 +531,7 @@ class HTTPFile(AbstractBufferedFile):
     ----------
     url: str
         Full URL of the remote resource, including the protocol
-    session: requests.Session or None
+    session: aiohttp.ClientSession or None
         All calls will be made within this session, to avoid restarting
         connections where the server allows this
     block_size: int or None
@@ -818,7 +804,7 @@ async def get_range(session, url, start, end, file=None, **kwargs):
     async with r:
         out = await r.read()
     if file:
-        with open(file, "rb+") as f:
+        with open(file, "r+b") as f:  # noqa: ASYNC101
             f.seek(start)
             f.write(out)
     else:
@@ -855,10 +841,18 @@ async def _file_info(url, session, size_policy="head", **kwargs):
         if "Content-Length" in r.headers:
             # Some servers may choose to ignore Accept-Encoding and return
             # compressed content, in which case the returned size is unreliable.
-            if r.headers.get("Content-Encoding", "identity") == "identity":
+            if "Content-Encoding" not in r.headers or r.headers["Content-Encoding"] in [
+                "identity",
+                "",
+            ]:
                 info["size"] = int(r.headers["Content-Length"])
         elif "Content-Range" in r.headers:
             info["size"] = int(r.headers["Content-Range"].split("/")[1])
+
+        if "Content-Type" in r.headers:
+            info["mimetype"] = r.headers["Content-Type"].partition(";")[0]
+
+        info["url"] = str(r.url)
 
         for checksum_field in ["ETag", "Content-MD5", "Digest"]:
             if r.headers.get(checksum_field):

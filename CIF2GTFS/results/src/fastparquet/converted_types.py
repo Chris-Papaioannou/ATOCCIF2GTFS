@@ -10,9 +10,9 @@ import logging
 import numpy as np
 import pandas as pd
 
-from . import parquet_thrift
-from .cencoding import time_shift
-from .json import json_decoder
+from fastparquet import parquet_thrift
+from fastparquet.cencoding import time_shift
+from fastparquet.json import json_decoder
 
 logger = logging.getLogger('parquet')  # pylint: disable=invalid-name
 
@@ -142,8 +142,6 @@ def converts_inplace(se):
     if getattr(se.logicalType, "TIMESTAMP", None) is not None:
         # this will be nanos, since micro and milli hit block above
         return True
-    if se.type == parquet_thrift.Type.FIXED_LEN_BYTE_ARRAY:
-        return ctype != parquet_thrift.ConvertedType.UTF8
     return False
 
 

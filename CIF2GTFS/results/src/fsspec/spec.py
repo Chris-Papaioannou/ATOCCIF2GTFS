@@ -11,12 +11,13 @@ from glob import has_magic
 from hashlib import sha256
 from typing import ClassVar
 
-from .callbacks import _DEFAULT_CALLBACK
+from .callbacks import DEFAULT_CALLBACK
 from .config import apply_config, conf
 from .dircache import DirCache
 from .transaction import Transaction
 from .utils import (
     _unstrip_protocol,
+    glob_translate,
     isfilelike,
     other_paths,
     read_block,
@@ -109,6 +110,7 @@ class AbstractFileSystem(metaclass=_Cached):
     async_impl = False
     mirror_sync_methods = False
     root_marker = ""  # For some FSs, may require leading '/' or other character
+    transaction_type = Transaction
 
     #: Extra *class attributes* that should be considered when hashing.
     _extra_tokenize_attributes = ()
@@ -235,20 +237,20 @@ class AbstractFileSystem(metaclass=_Cached):
         for the normal and exception cases.
         """
         if self._transaction is None:
-            self._transaction = Transaction(self)
+            self._transaction = self.transaction_type(self)
         return self._transaction
 
     def start_transaction(self):
         """Begin write transaction for deferring files, non-context version"""
         self._intrans = True
-        self._transaction = Transaction(self)
+        self._transaction = self.transaction_type(self)
         return self.transaction
 
     def end_transaction(self):
         """Finish write transaction, non-context version"""
         self.transaction.complete()
         self._transaction = None
-        # The invalid cache must be cleared after the transcation is completed.
+        # The invalid cache must be cleared after the transaction is completed.
         for path in self._invalidated_caches_in_transaction:
             self.invalidate_cache(path)
         self._invalidated_caches_in_transaction.clear()
@@ -551,10 +553,6 @@ class AbstractFileSystem(metaclass=_Cached):
 
         The `maxdepth` option is applied on the first `**` found in the path.
 
-        Search path names that contain embedded characters special to this
-        implementation of glob may not produce expected results;
-        e.g., ``foo/bar/*starredfilename*``.
-
         kwargs are passed to ``ls``.
         """
         if maxdepth is not None and maxdepth < 1:
@@ -562,8 +560,12 @@ class AbstractFileSystem(metaclass=_Cached):
 
         import re
 
-        ends = path.endswith("/")
+        seps = (os.path.sep, os.path.altsep) if os.path.altsep else (os.path.sep,)
+        ends_with_sep = path.endswith(seps)  # _strip_protocol strips trailing slash
         path = self._strip_protocol(path)
+        append_slash_to_dirname = ends_with_sep or path.endswith(
+            tuple(sep + "**" for sep in seps)
+        )
         idx_star = path.find("*") if path.find("*") >= 0 else len(path)
         idx_qmark = path.find("?") if path.find("?") >= 0 else len(path)
         idx_brace = path.find("[") if path.find("[") >= 0 else len(path)
@@ -573,11 +575,11 @@ class AbstractFileSystem(metaclass=_Cached):
         detail = kwargs.pop("detail", False)
 
         if not has_magic(path):
-            if self.exists(path):
+            if self.exists(path, **kwargs):
                 if not detail:
                     return [path]
                 else:
-                    return {path: self.info(path)}
+                    return {path: self.info(path, **kwargs)}
             else:
                 if not detail:
                     return []  # glob of non-existent returns empty
@@ -600,46 +602,21 @@ class AbstractFileSystem(metaclass=_Cached):
                 depth = None
 
         allpaths = self.find(root, maxdepth=depth, withdirs=True, detail=True, **kwargs)
-        # Escape characters special to python regex, leaving our supported
-        # special characters in place.
-        # See https://www.gnu.org/software/bash/manual/html_node/Pattern-Matching.html
-        # for shell globbing details.
-        pattern = (
-            "^"
-            + (
-                path.replace("\\", r"\\")
-                .replace(".", r"\.")
-                .replace("+", r"\+")
-                .replace("//", "/")
-                .replace("(", r"\(")
-                .replace(")", r"\)")
-                .replace("|", r"\|")
-                .replace("^", r"\^")
-                .replace("$", r"\$")
-                .replace("{", r"\{")
-                .replace("}", r"\}")
-                .rstrip("/")
-                .replace("?", ".")
-            )
-            + "$"
-        )
-        pattern = re.sub("/[*]{2}", "=SLASH_DOUBLE_STARS=", pattern)
-        pattern = re.sub("[*]{2}/?", "=DOUBLE_STARS=", pattern)
-        pattern = re.sub("[*]", "[^/]*", pattern)
-        pattern = re.sub("=SLASH_DOUBLE_STARS=", "(|/.*)", pattern)
-        pattern = re.sub("=DOUBLE_STARS=", ".*", pattern)
+
+        pattern = glob_translate(path + ("/" if ends_with_sep else ""))
         pattern = re.compile(pattern)
 
         out = {
-            p: allpaths[p]
-            for p in sorted(allpaths)
-            if pattern.match(p.replace("//", "/").rstrip("/"))
+            p: info
+            for p, info in sorted(allpaths.items())
+            if pattern.match(
+                (
+                    p + "/"
+                    if append_slash_to_dirname and info["type"] == "directory"
+                    else p
+                )
+            )
         }
-
-        # Return directories only when the glob end by a slash
-        # This is needed for posix glob compliance
-        if ends:
-            out = {k: v for k, v in out.items() if v["type"] == "directory"}
 
         if detail:
             return out
@@ -828,6 +805,16 @@ class AbstractFileSystem(metaclass=_Cached):
     def cat_ranges(
         self, paths, starts, ends, max_gap=None, on_error="return", **kwargs
     ):
+        """Get the contents of byte ranges from one or more files
+
+        Parameters
+        ----------
+        paths: list
+            A list of of filepaths on this filesystems
+        starts, ends: int or list
+            Bytes limits of the read. If using a single int, the same value will be
+            used to read all the specified files.
+        """
         if max_gap is not None:
             raise NotImplementedError
         if not isinstance(paths, list):
@@ -835,7 +822,7 @@ class AbstractFileSystem(metaclass=_Cached):
         if not isinstance(starts, list):
             starts = [starts] * len(paths)
         if not isinstance(ends, list):
-            ends = [starts] * len(paths)
+            ends = [ends] * len(paths)
         if len(starts) != len(paths) or len(ends) != len(paths):
             raise ValueError
         out = []
@@ -889,9 +876,7 @@ class AbstractFileSystem(metaclass=_Cached):
         else:
             return self.cat_file(paths[0], **kwargs)
 
-    def get_file(
-        self, rpath, lpath, callback=_DEFAULT_CALLBACK, outfile=None, **kwargs
-    ):
+    def get_file(self, rpath, lpath, callback=DEFAULT_CALLBACK, outfile=None, **kwargs):
         """Copy single remote file to local"""
         from .implementations.local import LocalFileSystem
 
@@ -901,7 +886,8 @@ class AbstractFileSystem(metaclass=_Cached):
             os.makedirs(lpath, exist_ok=True)
             return None
 
-        LocalFileSystem(auto_mkdir=True).makedirs(self._parent(lpath), exist_ok=True)
+        fs = LocalFileSystem(auto_mkdir=True)
+        fs.makedirs(fs._parent(lpath), exist_ok=True)
 
         with self.open(rpath, "rb", **kwargs) as f1:
             if outfile is None:
@@ -925,7 +911,7 @@ class AbstractFileSystem(metaclass=_Cached):
         rpath,
         lpath,
         recursive=False,
-        callback=_DEFAULT_CALLBACK,
+        callback=DEFAULT_CALLBACK,
         maxdepth=None,
         **kwargs,
     ):
@@ -979,10 +965,10 @@ class AbstractFileSystem(metaclass=_Cached):
 
         callback.set_size(len(lpaths))
         for lpath, rpath in callback.wrap(zip(lpaths, rpaths)):
-            callback.branch(rpath, lpath, kwargs)
-            self.get_file(rpath, lpath, **kwargs)
+            with callback.branched(rpath, lpath) as child:
+                self.get_file(rpath, lpath, callback=child, **kwargs)
 
-    def put_file(self, lpath, rpath, callback=_DEFAULT_CALLBACK, **kwargs):
+    def put_file(self, lpath, rpath, callback=DEFAULT_CALLBACK, **kwargs):
         """Copy single file to remote"""
         if os.path.isdir(lpath):
             self.makedirs(rpath, exist_ok=True)
@@ -1007,7 +993,7 @@ class AbstractFileSystem(metaclass=_Cached):
         lpath,
         rpath,
         recursive=False,
-        callback=_DEFAULT_CALLBACK,
+        callback=DEFAULT_CALLBACK,
         maxdepth=None,
         **kwargs,
     ):
@@ -1065,8 +1051,8 @@ class AbstractFileSystem(metaclass=_Cached):
 
         callback.set_size(len(rpaths))
         for lpath, rpath in callback.wrap(zip(lpaths, rpaths)):
-            callback.branch(lpath, rpath, kwargs)
-            self.put_file(lpath, rpath, **kwargs)
+            with callback.branched(lpath, rpath) as child:
+                self.put_file(lpath, rpath, callback=child, **kwargs)
 
     def head(self, path, size=1024):
         """Get the first ``size`` bytes from file"""
@@ -1146,7 +1132,7 @@ class AbstractFileSystem(metaclass=_Cached):
         if maxdepth is not None and maxdepth < 1:
             raise ValueError("maxdepth must be at least 1")
 
-        if isinstance(path, str):
+        if isinstance(path, (str, os.PathLike)):
             out = self.expand_path([path], recursive, maxdepth)
         else:
             out = set()
@@ -1412,7 +1398,9 @@ class AbstractFileSystem(metaclass=_Cached):
         )
         return json.dumps(
             dict(
-                **{"cls": cls, "protocol": proto, "args": self.storage_args},
+                cls=cls,
+                protocol=proto,
+                args=self.storage_args,
                 **self.storage_options,
             )
         )
@@ -1703,6 +1691,8 @@ class AbstractBufferedFile(io.IOBase):
 
     def __eq__(self, other):
         """Files are equal if they have the same checksum, only in read mode"""
+        if self is other:
+            return True
         return self.mode == "rb" and other.mode == "rb" and hash(self) == hash(other)
 
     def commit(self):

@@ -336,6 +336,7 @@ class NDFrame(PandasObject, indexing.IndexingMixin):
         # fastpath of passing a manager doesn't check the option/manager class
         return self._constructor_from_mgr(new_mgr, axes=new_mgr.axes).__finalize__(self)
 
+    @final
     @classmethod
     def _from_mgr(cls, mgr: Manager, axes: list[Index]) -> Self:
         """
@@ -2145,7 +2146,9 @@ class NDFrame(PandasObject, indexing.IndexingMixin):
     # GH#23114 Ensure ndarray.__op__(DataFrame) returns NotImplemented
     __array_priority__: int = 1000
 
-    def __array__(self, dtype: npt.DTypeLike | None = None) -> np.ndarray:
+    def __array__(
+        self, dtype: npt.DTypeLike | None = None, copy: bool_t | None = None
+    ) -> np.ndarray:
         values = self._values
         arr = np.asarray(values, dtype=dtype)
         if (

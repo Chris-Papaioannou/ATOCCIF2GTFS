@@ -33,7 +33,7 @@ Classifier: Operating System :: MacOS
 Requires-Python: >=3.7
 Description-Content-Type: text/markdown
 License-File: LICENSE.txt
-Requires-Dist: numpy (>=1.16)
+Requires-Dist: numpy >=1.16
 
 ## ``mkl_random`` -- a NumPy-based Python interface to Intel (R) MKL Random Number Generation functionality
 [![Build Status](https://travis-ci.com/IntelPython/mkl_random.svg?branch=master)](https://travis-ci.com/IntelPython/mkl_random)

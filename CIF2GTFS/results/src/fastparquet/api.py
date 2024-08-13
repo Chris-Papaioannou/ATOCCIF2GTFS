@@ -6,16 +6,15 @@ import struct
 
 import numpy as np
 import fsspec
-from fastparquet.util import join_path
 import pandas as pd
 
-from . import core, schema, converted_types, encoding, dataframe, writer
-from . import parquet_thrift
-from .cencoding import ThriftObject, from_buffer
-from .json import json_decoder
-from .util import (default_open, default_remove, ParquetException, val_to_num,
+from fastparquet import core, schema, converted_types, encoding, dataframe, writer
+from fastparquet import parquet_thrift
+from fastparquet.cencoding import ThriftObject, from_buffer
+from fastparquet.json import json_decoder
+from fastparquet.util import (default_open, default_remove, ParquetException, val_to_num,
                    ops, ensure_bytes, ensure_str, check_column_names, metadata_from_many,
-                   ex_from_sep, _strip_path_tail, get_fs, PANDAS_VERSION)
+                   ex_from_sep, _strip_path_tail, get_fs, PANDAS_VERSION, join_path)
 
 
 # Find in names of partition files the integer matching "**part.*.parquet",
@@ -380,6 +379,9 @@ class ParquetFile(object):
                 size = rg.num_rows
             df, assign = self.pre_allocate(
                     size, columns, categories, index)
+            if "PANDAS_ATTRS" in self.key_value_metadata:
+                import json
+                df.attrs = json.loads(self.key_value_metadata["PANDAS_ATTRS"])
             ret = True
         f = infile or self.open(fn, mode='rb')
 
@@ -765,6 +767,10 @@ selection does not match number of rows in DataFrame.')
             size = sum(rg.num_rows for rg in rgs)
             selected = [None] * len(rgs)  # just to fill zip, below
         df, views = self.pre_allocate(size, columns, categories, index, dtypes=dtypes)
+        if "PANDAS_ATTRS" in self.key_value_metadata:
+            import json
+            df.attrs = json.loads(self.key_value_metadata["PANDAS_ATTRS"])
+
         start = 0
         if self.file_scheme == 'simple':
             infile = self.open(self.fn, 'rb')
@@ -959,10 +965,11 @@ selection does not match number of rows in DataFrame.')
                         dt = md[col]["numpy_type"]
                     if tz is not None and tz.get(col, False):
                         z = dataframe.tz_to_dt_tz(tz[col])
-                        if PANDAS_VERSION.major >= 2:
-                            dt = pd.Series([], dtype=dt).dt.tz_convert(z).dtype
+                        dt_series = pd.Series([], dtype=dt)
+                        if PANDAS_VERSION.major >= 2 and dt_series.dt.tz is not None:
+                            dt = dt_series.dt.tz_convert(z).dtype
                         else:
-                            dt = pd.Series([], dtype=dt).dt.tz_localize(z).dtype
+                            dt = dt_series.dt.tz_localize(z).dtype
                     dtype[col] = dt
                 elif dt in converted_types.nullable:
                     if self.pandas_metadata:

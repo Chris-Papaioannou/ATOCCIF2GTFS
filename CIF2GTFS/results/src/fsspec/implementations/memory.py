@@ -8,7 +8,7 @@ from typing import Any, ClassVar
 
 from fsspec import AbstractFileSystem
 
-logger = logging.Logger("fsspec.memoryfs")
+logger = logging.getLogger("fsspec.memoryfs")
 
 
 class MemoryFileSystem(AbstractFileSystem):
@@ -138,6 +138,7 @@ class MemoryFileSystem(AbstractFileSystem):
             raise FileNotFoundError(path)
 
     def info(self, path, **kwargs):
+        logger.debug("info: %s", path)
         path = self._strip_protocol(path)
         if path in self.pseudo_dirs or any(
             p.startswith(path + "/") for p in list(self.store) + self.pseudo_dirs
@@ -175,7 +176,7 @@ class MemoryFileSystem(AbstractFileSystem):
             parent = self._parent(parent)
             if self.isfile(parent):
                 raise FileExistsError(parent)
-        if mode in ["rb", "ab", "rb+"]:
+        if mode in ["rb", "ab", "r+b"]:
             if path in self.store:
                 f = self.store[path]
                 if mode == "ab":
@@ -210,6 +211,7 @@ class MemoryFileSystem(AbstractFileSystem):
             raise FileNotFoundError(path1)
 
     def cat_file(self, path, start=None, end=None, **kwargs):
+        logger.debug("cat: %s", path)
         path = self._strip_protocol(path)
         try:
             return bytes(self.store[path].getbuffer()[start:end])

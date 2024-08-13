@@ -33,7 +33,7 @@ Classifier: Operating System :: MacOS
 Requires-Python: >=3.7
 Description-Content-Type: text/markdown
 License-File: LICENSE.txt
-Requires-Dist: numpy (>=1.16)
+Requires-Dist: numpy >=1.16
 Requires-Dist: mkl-service
 
 ## ``mkl_fft`` --  a NumPy-based Python interface to Intel (R) MKL FFT functionality

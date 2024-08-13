@@ -2,8 +2,8 @@ cramjam-2.7.0.dist-info/INSTALLER,sha256=zuuue4knoyJ-UwPPXg8fezS7VCrXJQrAP7zeNuw
 cramjam-2.7.0.dist-info/METADATA,sha256=srM0gq_wZlrDKXCyzOAjmpc5F69boZ4p_9ooRuK5VD4,3994
 cramjam-2.7.0.dist-info/RECORD,,
 cramjam-2.7.0.dist-info/REQUESTED,sha256=47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU,0
-cramjam-2.7.0.dist-info/WHEEL,sha256=GPoikEx9UJPzzwvyvn6gutcC22zDvOrF9d2iCdomep4,94
+cramjam-2.7.0.dist-info/WHEEL,sha256=XsH2vPscYv__Aqy80BSCS0UnBLuefPBkBqWxyYzlkbg,95
 cramjam-2.7.0.dist-info/direct_url.json,sha256=MEuT9t4TjXOnGUaDkjWVX_c0xdljP5Xr06LVtGnFWFE,87
 cramjam/__init__.py,sha256=VjCBHPElEPhUkzw5PBYIbA1ZmQIbYLoCrhyBx8LIaHs,111
-cramjam/__pycache__/__init__.cpython-39.pyc,,
-cramjam/cramjam.cp39-win_amd64.pyd,sha256=8Ps-smp6FKleZ61zDdY5q-rEpGXhogL4P1XihrPSYHY,3351552
+cramjam/__pycache__/__init__.cpython-312.pyc,,
+cramjam/cramjam.cp312-win_amd64.pyd,sha256=4gcgH4MEzhv9JrtbR9LOFfSxIl5A7eQ9e_r--QnTv0I,3351040

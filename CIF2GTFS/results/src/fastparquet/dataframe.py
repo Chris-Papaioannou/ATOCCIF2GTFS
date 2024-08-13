@@ -5,12 +5,13 @@ import numpy as np
 from pandas import (
     Categorical, DataFrame, Series,
     CategoricalIndex, RangeIndex, Index, MultiIndex,
-    DatetimeIndex, CategoricalDtype
+    DatetimeIndex, CategoricalDtype,
+    DatetimeTZDtype
 )
 from pandas.core.arrays.masked import BaseMaskedDtype
 import warnings
 
-from .util import PANDAS_VERSION
+from fastparquet.util import PANDAS_VERSION
 
 
 class Dummy(object):
@@ -106,7 +107,7 @@ def empty(types, size, cats=None, cols=None, index_types=None, index_names=None,
                 # funky pandas not-dtype
                 t = t.base
             if ("M" in str(t) or "time" in str(t)) and "[" not in str(t):
-                t = t + "[ns]"
+                t = str(t) + "[ns]"
             d = np.empty(0, dtype=t)
             if d.dtype.kind == "M" and str(col) in timezones:
                 try:
@@ -191,24 +192,25 @@ def empty(types, size, cats=None, cols=None, index_types=None, index_names=None,
         shape[-1] = size
 
         if isinstance(bvalues, Categorical):
-            code = np.zeros(shape=shape, dtype=bvalues.codes.dtype)
+            code = np.full(fill_value=-1, shape=shape, dtype=bvalues.codes.dtype)
 
             values = Categorical.from_codes(codes=code, dtype=bvalues.dtype)
 
-        elif getattr(bvalues.dtype, 'tz', None):
-            values = np.zeros(shape=shape, dtype='M8[ns]')
-            values = type(bvalues)(values, dtype=bvalues.dtype)
+        elif isinstance(bvalues.dtype, DatetimeTZDtype):
+            dt = "M8[ns]" if PANDAS_VERSION.major < 2 else f'M8[{bvalues.dtype.unit}]'
+            values = np.zeros(shape=shape, dtype=dt)
+            values = type(bvalues)._from_sequence(values.view("int64"), copy=False, dtype=bvalues.dtype)
         else:
             if not isinstance(bvalues, np.ndarray):
                 # e.g. DatetimeLikeBlock backed by DatetimeArray/TimedeltaArray
                 if bvalues.dtype.kind == "m":
                     dt = "m8[ns]" if PANDAS_VERSION.major < 2 else bvalues.dtype
                     values = np.zeros(shape=shape, dtype=dt)
-                    values = type(bvalues)._from_sequence(values, copy=False)
+                    values = type(bvalues)._from_sequence(values.view("int64"), copy=False, dtype=bvalues.dtype)
                 elif bvalues.dtype.kind == "M":
                     dt = "M8[ns]" if PANDAS_VERSION.major < 2 else bvalues.dtype
                     values = np.zeros(shape=shape, dtype=dt)
-                    values = type(bvalues)._from_sequence(values, copy=False)
+                    values = type(bvalues)._from_sequence(values.view("int64"), copy=False, dtype=bvalues.dtype)
                 elif str(bvalues.dtype)[0] in {"I", "U"} or str(bvalues.dtype) == "boolean":
                     arr_type = bvalues.dtype.construct_array_type()
                     values = arr_type(

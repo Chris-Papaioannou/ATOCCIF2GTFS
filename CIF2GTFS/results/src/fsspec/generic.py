@@ -8,7 +8,7 @@ import uuid
 from typing import Optional
 
 from .asyn import AsyncFileSystem, _run_coros_in_chunks, sync_wrapper
-from .callbacks import _DEFAULT_CALLBACK
+from .callbacks import DEFAULT_CALLBACK
 from .core import filesystem, get_filesystem_class, split_protocol, url_to_fs
 
 _generic_fs = {}
@@ -87,6 +87,10 @@ def rsync(
     fs: GenericFileSystem|None
         Instance to use if explicitly given. The instance defines how to
         to make downstream file system instances from paths.
+
+    Returns
+    -------
+    dict of the copy operations that were performed, {source: destination}
     """
     fs = fs or GenericFileSystem(**(inst_kwargs or {}))
     source = fs._strip_protocol(source)
@@ -137,6 +141,7 @@ def rsync(
     logger.debug(f"{len(to_delete)} files to delete")
     if delete_missing:
         fs.rm(to_delete)
+    return allfiles
 
 
 class GenericFileSystem(AsyncFileSystem):
@@ -170,6 +175,10 @@ class GenericFileSystem(AsyncFileSystem):
         """
         self.method = default_method
         super().__init__(**kwargs)
+
+    def _parent(self, path):
+        fs = _resolve_fs(path, self.method)
+        return fs.unstrip_protocol(fs._parent(path))
 
     def _strip_protocol(self, path):
         # normalization only
@@ -246,9 +255,12 @@ class GenericFileSystem(AsyncFileSystem):
             return fs.pipe_file(path, value, **kwargs)
 
     async def _rm(self, url, **kwargs):
-        fs = _resolve_fs(url, self.method)
+        urls = url
+        if isinstance(urls, str):
+            urls = [urls]
+        fs = _resolve_fs(urls[0], self.method)
         if fs.async_impl:
-            await fs._rm(url, **kwargs)
+            await fs._rm(urls, **kwargs)
         else:
             fs.rm(url, **kwargs)
 
@@ -272,7 +284,7 @@ class GenericFileSystem(AsyncFileSystem):
         url,
         url2,
         blocksize=2**20,
-        callback=_DEFAULT_CALLBACK,
+        callback=DEFAULT_CALLBACK,
         **kwargs,
     ):
         fs = _resolve_fs(url, self.method)

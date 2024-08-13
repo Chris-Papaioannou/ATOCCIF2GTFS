@@ -49,9 +49,14 @@ class ZipFileSystem(AbstractArchiveFileSystem):
             raise ValueError(f"mode '{mode}' no understood")
         self.mode = mode
         if isinstance(fo, str):
+            if mode == "a":
+                m = "r+b"
+            else:
+                m = mode + "b"
             fo = fsspec.open(
-                fo, mode=mode + "b", protocol=target_protocol, **(target_options or {})
+                fo, mode=m, protocol=target_protocol, **(target_options or {})
             )
+        self.force_zip_64 = allowZip64
         self.of = fo
         self.fo = fo.__enter__()  # the whole instance is a context
         self.zip = zipfile.ZipFile(
@@ -83,14 +88,18 @@ class ZipFileSystem(AbstractArchiveFileSystem):
             # not read from the file.
             files = self.zip.infolist()
             self.dir_cache = {
-                dirname + "/": {"name": dirname + "/", "size": 0, "type": "directory"}
+                dirname.rstrip("/"): {
+                    "name": dirname.rstrip("/"),
+                    "size": 0,
+                    "type": "directory",
+                }
                 for dirname in self._all_dirnames(self.zip.namelist())
             }
             for z in files:
                 f = {s: getattr(z, s, None) for s in zipfile.ZipInfo.__slots__}
                 f.update(
                     {
-                        "name": z.filename,
+                        "name": z.filename.rstrip("/"),
                         "size": z.file_size,
                         "type": ("directory" if z.is_dir() else "file"),
                     }
@@ -117,7 +126,7 @@ class ZipFileSystem(AbstractArchiveFileSystem):
             raise FileNotFoundError(path)
         if "r" in self.mode and "w" in mode:
             raise OSError("ZipFS can only be open for reading or writing, not both")
-        out = self.zip.open(path, mode.strip("b"))
+        out = self.zip.open(path, mode.strip("b"), force_zip64=self.force_zip_64)
         if "r" in mode:
             info = self.info(path)
             out.size = info["size"]

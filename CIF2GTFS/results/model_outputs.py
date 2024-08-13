@@ -17,8 +17,8 @@ import sqlite3
 #* Name of the compression to use. Use None for no compression. Supported options: ‘snappy’, ‘gzip’, ‘brotli’, ‘lz4’, ‘zstd’.
 parquetCompression = 'snappy'
 
-pathLegCols = {"PATH\PUTRELATION\ODPAIR\FROMZONE\CODE":str,
-               "PATH\PUTRELATION\ODPAIR\TOZONE\CODE":str,
+pathLegCols = {"PATH\ORIGCONNECTOR\ZONE\CODE":str,
+               "PATH\DESTCONNECTOR\ZONE\CODE":str,
                "PATHINDEX":int,
                "PATHLEGINDEX":int,
                "PATH\COUNT:PUTPATHLEGSWITHWALK":int,
@@ -64,12 +64,12 @@ def getPathLegs(cols, tempPath, flowBundle, quitVisum):
     if quitVisum:
         Visum = None
 
-    SQL_Query = 'SELECT PATHINDEX, PATHLEGINDEX, "PATH\PUTRELATION\ODPAIR\FROMZONE\CODE", "PATH\PUTRELATION\ODPAIR\TOZONE\CODE", "PATH\COUNT:PUTPATHLEGSWITHWALK", ODTRIPS, FROMSTOPPOINTNO, TOSTOPPOINTNO, TIMEPROFILEKEYSTRING, TIME, WAITTIME, "STARTVEHJOURNEYITEM\VEHJOURNEY\ATOC", "STARTVEHJOURNEYITEM\VEHJOURNEY\TRAINUID", "STARTVEHJOURNEYITEM\VEHJOURNEY\TRAINSERVICECODE", DEPTIME FROM PathLegs WHERE TIMEPROFILEKEYSTRING NOT IN ("Origin connector", "Destination connector") AND PATHLEGINDEX != 0'
+    SQL_Query = 'SELECT PATHINDEX, PATHLEGINDEX, "PATH\ORIGCONNECTOR\ZONE\CODE", "PATH\DESTCONNECTOR\ZONE\CODE", "PATH\COUNT:PUTPATHLEGSWITHWALK", ODTRIPS, FROMSTOPPOINTNO, TOSTOPPOINTNO, TIMEPROFILEKEYSTRING, TIME, WAITTIME, "STARTVEHJOURNEYITEM\VEHJOURNEY\ATOC", "STARTVEHJOURNEYITEM\VEHJOURNEY\TRAINUID", "STARTVEHJOURNEYITEM\VEHJOURNEY\TRAINSERVICECODE", DEPTIME FROM PathLegs WHERE TIMEPROFILEKEYSTRING NOT IN ("Origin connector", "Destination connector") AND PATHLEGINDEX != 0'
 
     con = sqlite3.connect(f"{tempPath}\\PuTPathLegs_{timecode}.sqlite3") 
     dfPathLegs = pd.read_sql_query(SQL_Query, con, dtype=cols)# , chunksize=10000
 
-    dfPathLegs.rename({"PATH\PUTRELATION\ODPAIR\FROMZONE\CODE":'OrigCRS', 'PATH\PUTRELATION\ODPAIR\TOZONE\CODE':'DestCRS', 'STARTVEHJOURNEYITEM\VEHJOURNEY\ATOC':'ATOC', 'STARTVEHJOURNEYITEM\VEHJOURNEY\TRAINUID':'TrainUID', 'STARTVEHJOURNEYITEM\VEHJOURNEY\TRAINSERVICECODE':'TrainServiceCode', "PATH\COUNT:PUTPATHLEGSWITHWALK":"NumLegs" }, axis=1, inplace=True, errors='ignore')
+    dfPathLegs.rename({"PATH\ORIGCONNECTOR\ZONE\CODE":'OrigCRS', 'PATH\DESTCONNECTOR\ZONE\CODE':'DestCRS', 'STARTVEHJOURNEYITEM\VEHJOURNEY\ATOC':'ATOC', 'STARTVEHJOURNEYITEM\VEHJOURNEY\TRAINUID':'TrainUID', 'STARTVEHJOURNEYITEM\VEHJOURNEY\TRAINSERVICECODE':'TrainServiceCode', "PATH\COUNT:PUTPATHLEGSWITHWALK":"NumLegs" }, axis=1, inplace=True, errors='ignore')
 
     for col in ['FROMSTOPPOINTNO', 'TOSTOPPOINTNO']:
         dfPathLegs[col].fillna(-1, inplace=True)
@@ -293,6 +293,7 @@ def create_O04(runID):
 def create_O05(tempPath, runID):
 
     Visum.Filters.VolumeAttributeValueFilter().FilterByActiveODPairsAndPuTPaths = False
+    Visum.Filters.ODPairFilter.Init()
     cond = Visum.Filters.ODPairFilter().AddCondition("OP_NONE", False, "TOTAL_DEMAND", 3, 0)
     Visum.Filters.ODPairFilter().UseFilter = True
 

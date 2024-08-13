@@ -76,13 +76,13 @@ CONFIG = _cleanup(
                 "found": bool("True".lower().replace("false", "")),
                 "version": "2023.1",
                 "detection method": "pkgconfig",
-                "include directory": r"C:/Users/david.aspital/Anaconda3/envs/parquet/Library/include",
-                "lib directory": r"C:/Users/david.aspital/Anaconda3/envs/parquet/Library/lib",
+                "include directory": r"C:/Users/david.aspital/.conda/envs/Python312/Library/include",
+                "lib directory": r"C:/Users/david.aspital/.conda/envs/Python312/Library/lib",
                 "openblas configuration": r"unknown",
                 "pc file directory": r"C:\b\abs_c1ywpu18ar\croot\numpy_and_numpy_base_1708638681471\_h_env\Library\lib\pkgconfig",
             },
             "lapack": {
-                "name": "dep2252572576928",
+                "name": "dep1583119523984",
                 "found": bool("True".lower().replace("false", "")),
                 "version": "1.26.4",
                 "detection method": "internal",
@@ -94,7 +94,7 @@ CONFIG = _cleanup(
         },
         "Python Information": {
             "path": r"C:\b\abs_c1ywpu18ar\croot\numpy_and_numpy_base_1708638681471\_h_env\python.exe",
-            "version": "3.9",
+            "version": "3.12",
         },
         "SIMD Extensions": {
             "baseline": __cpu_baseline__,

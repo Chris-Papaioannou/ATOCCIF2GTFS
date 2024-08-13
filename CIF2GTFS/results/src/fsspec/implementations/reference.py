@@ -17,7 +17,7 @@ except ImportError:
         import json
 
 from ..asyn import AsyncFileSystem
-from ..callbacks import _DEFAULT_CALLBACK
+from ..callbacks import DEFAULT_CALLBACK
 from ..core import filesystem, open, split_protocol
 from ..utils import isfilelike, merge_offset_ranges, other_paths
 
@@ -106,6 +106,12 @@ class LazyReferenceMapper(collections.abc.MutableMapping):
         self, root, fs=None, out_root=None, cache_size=128, categorical_threshold=10
     ):
         """
+
+        This instance will be writable, storing changes in memory until full partitions
+        are accumulated or .flush() is called.
+
+        To create an empty lazy store, use .create()
+
         Parameters
         ----------
         root : str
@@ -119,26 +125,35 @@ class LazyReferenceMapper(collections.abc.MutableMapping):
             Encode urls as pandas.Categorical to reduce memory footprint if the ratio
             of the number of unique urls to total number of refs for each variable
             is greater than or equal to this number. (default 10)
-
-
         """
         self.root = root
         self.chunk_sizes = {}
-        self._items = {}
+        self.out_root = out_root or self.root
+        self.cat_thresh = categorical_threshold
+        self.cache_size = cache_size
         self.dirs = None
+        self.url = self.root + "/{field}/refs.{record}.parq"
+        # TODO: derive fs from `root`
         self.fs = fsspec.filesystem("file") if fs is None else fs
+
+    def __getattr__(self, item):
+        if item in ("_items", "record_size", "zmetadata"):
+            self.setup()
+            # avoid possible recursion if setup fails somehow
+            return self.__dict__[item]
+        raise AttributeError(item)
+
+    def setup(self):
+        self._items = {}
         self._items[".zmetadata"] = self.fs.cat_file(
             "/".join([self.root, ".zmetadata"])
         )
         met = json.loads(self._items[".zmetadata"])
         self.record_size = met["record_size"]
         self.zmetadata = met["metadata"]
-        self.url = self.root + "/{field}/refs.{record}.parq"
-        self.out_root = out_root or self.root
-        self.cat_thresh = categorical_threshold
 
         # Define function to open and decompress refs
-        @lru_cache(maxsize=cache_size)
+        @lru_cache(maxsize=self.cache_size)
         def open_refs(field, record):
             """cached parquet file loader"""
             path = self.url.format(field=field, record=record)
@@ -150,13 +165,39 @@ class LazyReferenceMapper(collections.abc.MutableMapping):
         self.open_refs = open_refs
 
     @staticmethod
-    def create(record_size, root, fs, **kwargs):
+    def create(root, storage_options=None, fs=None, record_size=10000, **kwargs):
+        """Make empty parquet reference set
+
+        First deletes the contents of the given directory, if it exists.
+
+        Parameters
+        ----------
+        root: str
+            Directory to contain the output; will be created
+        storage_options: dict | None
+            For making the filesystem to use for writing is fs is None
+        fs: FileSystem | None
+            Filesystem for writing
+        record_size: int
+            Number of references per parquet file
+        kwargs: passed to __init__
+
+        Returns
+        -------
+        LazyReferenceMapper instance
+        """
         met = {"metadata": {}, "record_size": record_size}
+        if fs is None:
+            fs, root = fsspec.core.url_to_fs(root, **(storage_options or {}))
+        if fs.exists(root):
+            fs.rm(root, recursive=True)
+        fs.makedirs(root, exist_ok=True)
         fs.pipe("/".join([root, ".zmetadata"]), json.dumps(met).encode())
         return LazyReferenceMapper(root, fs, **kwargs)
 
     def listdir(self, basename=True):
         """List top-level directories"""
+        # cache me?
         if self.dirs is None:
             dirs = [p.split("/", 1)[0] for p in self.zmetadata]
             self.dirs = {p for p in dirs if p and not p.startswith(".")}
@@ -236,20 +277,19 @@ class LazyReferenceMapper(collections.abc.MutableMapping):
             return json.dumps(self.zmetadata[key]).encode()
         elif "/" not in key or self._is_meta(key):
             raise KeyError(key)
-        field, sub_key = key.split("/")
-        record, _, _ = self._key_to_record(key)
-        maybe = self._items.get((field, key), {}).get(sub_key, False)
+        field, _ = key.rsplit("/", 1)
+        record, ri, chunk_size = self._key_to_record(key)
+        maybe = self._items.get((field, record), {}).get(ri, False)
         if maybe is None:
             # explicitly deleted
             raise KeyError
         elif maybe:
             return maybe
+        elif chunk_size == 0:
+            return b""
 
         # Chunk keys can be loaded from row group and cached in LRU cache
         try:
-            record, ri, chunk_size = self._key_to_record(key)
-            if chunk_size == 0:
-                return b""
             refs = self.open_refs(field, record)
         except (ValueError, TypeError, FileNotFoundError):
             raise KeyError(key)
@@ -259,7 +299,7 @@ class LazyReferenceMapper(collections.abc.MutableMapping):
         if raw is not None:
             return raw
         if selection[0] is None:
-            raise KeyError("This reference has been deleted")
+            raise KeyError("This reference does not exist or has been deleted")
         if selection[1:3] == [0, 0]:
             # URL only
             return selection[:1]
@@ -269,7 +309,7 @@ class LazyReferenceMapper(collections.abc.MutableMapping):
     @lru_cache(4096)
     def _key_to_record(self, key):
         """Details needed to construct a reference for one key"""
-        field, chunk = key.split("/")
+        field, chunk = key.rsplit("/", 1)
         chunk_sizes = self._get_chunk_sizes(field)
         if len(chunk_sizes) == 0:
             return 0, 0, 0
@@ -286,13 +326,13 @@ class LazyReferenceMapper(collections.abc.MutableMapping):
             size_ratio = [
                 math.ceil(s / c) for s, c in zip(zarray["shape"], zarray["chunks"])
             ]
-            self.chunk_sizes[field] = size_ratio
+            self.chunk_sizes[field] = size_ratio or [1]
         return self.chunk_sizes[field]
 
     def _generate_record(self, field, record):
         """The references for a given parquet file of a given field"""
         refs = self.open_refs(field, record)
-        it = iter(zip(refs.values()))
+        it = iter(zip(*refs.values()))
         if len(refs) == 3:
             # All urls
             return (list(t) for t in it)
@@ -321,13 +361,12 @@ class LazyReferenceMapper(collections.abc.MutableMapping):
     def __hash__(self):
         return id(self)
 
-    @lru_cache(20)
     def __getitem__(self, key):
         return self._load_one_key(key)
 
     def __setitem__(self, key, value):
         if "/" in key and not self._is_meta(key):
-            field, chunk = key.split("/")
+            field, chunk = key.rsplit("/", 1)
             record, i, _ = self._key_to_record(key)
             subdict = self._items.setdefault((field, record), {})
             subdict[i] = value
@@ -336,9 +375,10 @@ class LazyReferenceMapper(collections.abc.MutableMapping):
         else:
             # metadata or top-level
             self._items[key] = value
-            self.zmetadata[key] = json.loads(
+            new_value = json.loads(
                 value.decode() if isinstance(value, bytes) else value
             )
+            self.zmetadata[key] = {**self.zmetadata.get(key, {}), **new_value}
 
     @staticmethod
     def _is_meta(key):
@@ -351,10 +391,10 @@ class LazyReferenceMapper(collections.abc.MutableMapping):
             del self.zmetadata[key]
         else:
             if "/" in key and not self._is_meta(key):
-                field, chunk = key.split("/")
-                record, _, _ = self._key_to_record(key)
+                field, _ = key.rsplit("/", 1)
+                record, i, _ = self._key_to_record(key)
                 subdict = self._items.setdefault((field, record), {})
-                subdict[chunk] = None
+                subdict[i] = None
                 if len(subdict) == self.record_size:
                     self.write(field, record)
             else:
@@ -367,26 +407,43 @@ class LazyReferenceMapper(collections.abc.MutableMapping):
         import numpy as np
         import pandas as pd
 
-        # TODO: if the dict is incomplete, also load records and merge in
         partition = self._items[(field, record)]
-        fn = f"{base_url or self.out_root}/{field}/refs.{record}.parq"
+        original = False
+        if len(partition) < self.record_size:
+            try:
+                original = self.open_refs(field, record)
+            except IOError:
+                pass
 
-        ####
-        paths = np.full(self.record_size, np.nan, dtype="O")
-        offsets = np.zeros(self.record_size, dtype="int64")
-        sizes = np.zeros(self.record_size, dtype="int64")
-        raws = np.full(self.record_size, np.nan, dtype="O")
-        nraw = 0
-        npath = 0
+        if original:
+            paths = original["path"]
+            offsets = original["offset"]
+            sizes = original["size"]
+            raws = original["raw"]
+        else:
+            paths = np.full(self.record_size, np.nan, dtype="O")
+            offsets = np.zeros(self.record_size, dtype="int64")
+            sizes = np.zeros(self.record_size, dtype="int64")
+            raws = np.full(self.record_size, np.nan, dtype="O")
         for j, data in partition.items():
             if isinstance(data, list):
-                npath += 1
+                if (
+                    str(paths.dtype) == "category"
+                    and data[0] not in paths.dtype.categories
+                ):
+                    paths = paths.add_categories(data[0])
                 paths[j] = data[0]
                 if len(data) > 1:
                     offsets[j] = data[1]
                     sizes[j] = data[2]
+            elif data is None:
+                # delete
+                paths[j] = None
+                offsets[j] = 0
+                sizes[j] = 0
+                raws[j] = None
             else:
-                nraw += 1
+                # this is the only call into kerchunk, could remove
                 raws[j] = kerchunk.df._proc_raw(data)
         # TODO: only save needed columns
         df = pd.DataFrame(
@@ -403,6 +460,7 @@ class LazyReferenceMapper(collections.abc.MutableMapping):
         object_encoding = {"raw": "bytes", "path": "utf8"}
         has_nulls = ["path", "raw"]
 
+        fn = f"{base_url or self.out_root}/{field}/refs.{record}.parq"
         self.fs.mkdirs(f"{base_url or self.out_root}/{field}", exist_ok=True)
         df.to_parquet(
             fn,
@@ -453,29 +511,30 @@ class LazyReferenceMapper(collections.abc.MutableMapping):
         self.open_refs.cache_clear()
 
     def __len__(self):
-        # Caveat: This counts expected references, not actual
+        # Caveat: This counts expected references, not actual - but is fast
         count = 0
         for field in self.listdir():
             if field.startswith("."):
                 count += 1
             else:
-                chunk_sizes = self._get_chunk_sizes(field)
-                nchunks = self.np.product(chunk_sizes)
-                count += nchunks
+                count += math.prod(self._get_chunk_sizes(field))
         count += len(self.zmetadata)  # all metadata keys
-        count += len(self._items)  # the metadata file itself
+        # any other files not in reference partitions
+        count += sum(1 for _ in self._items if not isinstance(_, tuple))
         return count
 
     def __iter__(self):
-        # Caveat: Note that this generates all expected keys, but does not
-        # account for reference keys that are missing.
+        # Caveat: returns only existing keys, so the number of these does not
+        #  match len(self)
         metas = set(self.zmetadata)
         metas.update(self._items)
         for bit in metas:
             if isinstance(bit, str):
                 yield bit
         for field in self.listdir():
-            yield from self._keys_in_field(field)
+            for k in self._keys_in_field(field):
+                if k in self:
+                    yield k
 
     def __contains__(self, item):
         try:
@@ -603,7 +662,7 @@ class ReferenceFileSystem(AsyncFileSystem):
                 **(ref_storage_args or target_options or {}), protocol=target_protocol
             )
             ref_fs, fo2 = fsspec.core.url_to_fs(fo, **dic)
-            if ref_fs.isfile(fo):
+            if ref_fs.isfile(fo2):
                 # text JSON
                 with fsspec.open(fo, "rb", **dic) as f:
                     logger.info("Read reference from URL %s", fo)
@@ -650,6 +709,7 @@ class ReferenceFileSystem(AsyncFileSystem):
                     self.fss[protocol] = fs
         if remote_protocol is None:
             # get single protocol from references
+            # TODO: warning here, since this can be very expensive?
             for ref in self.references.values():
                 if callable(ref):
                     ref = ref()
@@ -740,7 +800,7 @@ class ReferenceFileSystem(AsyncFileSystem):
         with open(lpath, "wb") as f:
             f.write(data)
 
-    def get_file(self, rpath, lpath, callback=_DEFAULT_CALLBACK, **kwargs):
+    def get_file(self, rpath, lpath, callback=DEFAULT_CALLBACK, **kwargs):
         if self.isdir(rpath):
             return os.makedirs(lpath, exist_ok=True)
         data = self.cat_file(rpath, **kwargs)
@@ -772,24 +832,27 @@ class ReferenceFileSystem(AsyncFileSystem):
             raise NotImplementedError
         if isinstance(path, list) and (recursive or any("*" in p for p in path)):
             raise NotImplementedError
+        # TODO: if references is lazy, pre-fetch all paths in batch before access
         proto_dict = _protocol_groups(path, self.references)
         out = {}
         for proto, paths in proto_dict.items():
             fs = self.fss[proto]
-            urls, starts, ends = [], [], []
+            urls, starts, ends, valid_paths = [], [], [], []
             for p in paths:
                 # find references or label not-found. Early exit if any not
                 # found and on_error is "raise"
                 try:
                     u, s, e = self._cat_common(p)
-                    urls.append(u)
-                    starts.append(s)
-                    ends.append(e)
                 except FileNotFoundError as err:
                     if on_error == "raise":
                         raise
                     if on_error != "omit":
                         out[p] = err
+                else:
+                    urls.append(u)
+                    starts.append(s)
+                    ends.append(e)
+                    valid_paths.append(p)
 
             # process references into form for merging
             urls2 = []
@@ -797,7 +860,7 @@ class ReferenceFileSystem(AsyncFileSystem):
             ends2 = []
             paths2 = []
             whole_files = set()
-            for u, s, e, p in zip(urls, starts, ends, paths):
+            for u, s, e, p in zip(urls, starts, ends, valid_paths):
                 if isinstance(u, bytes):
                     # data
                     out[p] = u
@@ -809,7 +872,7 @@ class ReferenceFileSystem(AsyncFileSystem):
                     starts2.append(s)
                     ends2.append(e)
                     paths2.append(p)
-            for u, s, e, p in zip(urls, starts, ends, paths):
+            for u, s, e, p in zip(urls, starts, ends, valid_paths):
                 # second run to account for files that are to be loaded whole
                 if s is not None and u not in whole_files:
                     urls2.append(u)
@@ -829,7 +892,7 @@ class ReferenceFileSystem(AsyncFileSystem):
             bytes_out = fs.cat_ranges(new_paths, new_starts, new_ends)
 
             # unbundle from merged bytes - simple approach
-            for u, s, e, p in zip(urls, starts, ends, paths):
+            for u, s, e, p in zip(urls, starts, ends, valid_paths):
                 if p in out:
                     continue  # was bytes, already handled
                 for np, ns, ne, b in zip(new_paths, new_starts, new_ends, bytes_out):
@@ -963,16 +1026,24 @@ class ReferenceFileSystem(AsyncFileSystem):
             elif len(part) == 1:
                 size = None
             else:
-                _, start, size = part
+                _, _, size = part
             par = path.rsplit("/", 1)[0] if "/" in path else ""
             par0 = par
+            subdirs = [par0]
             while par0 and par0 not in self.dircache:
-                # build parent directories
-                self.dircache[par0] = []
-                self.dircache.setdefault(
-                    par0.rsplit("/", 1)[0] if "/" in par0 else "", []
-                ).append({"name": par0, "type": "directory", "size": 0})
+                # collect parent directories
                 par0 = self._parent(par0)
+                subdirs.append(par0)
+
+            subdirs.reverse()
+            for parent, child in zip(subdirs, subdirs[1:]):
+                # register newly discovered directories
+                assert child not in self.dircache
+                assert parent in self.dircache
+                self.dircache[parent].append(
+                    {"name": child, "type": "directory", "size": 0}
+                )
+                self.dircache[child] = []
 
             self.dircache[par].append({"name": path, "type": "file", "size": size})
 
@@ -1068,7 +1139,7 @@ class ReferenceFileSystem(AsyncFileSystem):
         self.references[path] = data
         self.dircache.clear()  # this is a bit heavy handed
 
-    async def _put_file(self, lpath, rpath):
+    async def _put_file(self, lpath, rpath, **kwargs):
         # puts binary
         with open(lpath, "rb") as f:
             self.references[rpath] = f.read()

@@ -1,8 +1,11 @@
+from __future__ import annotations
+
 import io
 import logging
 import os
 import re
 from glob import has_magic
+from pathlib import Path
 
 # for backwards compat, we export cache things from here too
 from .caching import (  # noqa: F401
@@ -290,7 +293,11 @@ def open_files(
         fs.auto_mkdir = auto_mkdir
     elif "r" not in mode and auto_mkdir:
         parents = {fs._parent(path) for path in paths}
-        [fs.makedirs(parent, exist_ok=True) for parent in parents]
+        for parent in parents:
+            try:
+                fs.makedirs(parent, exist_ok=True)
+            except PermissionError:
+                pass
     return OpenFiles(
         [
             OpenFile(
@@ -336,7 +343,7 @@ def _un_chain(path, kwargs):
             bit = previous_bit
         out.append((bit, protocol, kw))
         previous_bit = bit
-    out = list(reversed(out))
+    out.reverse()
     return out
 
 
@@ -449,6 +456,8 @@ def open(
     - For implementations in separate packages see
       https://filesystem-spec.readthedocs.io/en/latest/api.html#other-known-implementations
     """
+    kw = {"expand": False}
+    kw.update(kwargs)
     out = open_files(
         urlpath=[urlpath],
         mode=mode,
@@ -457,15 +466,18 @@ def open(
         errors=errors,
         protocol=protocol,
         newline=newline,
-        expand=False,
-        **kwargs,
+        **kw,
     )
     if not out:
         raise FileNotFoundError(urlpath)
     return out[0]
 
 
-def open_local(url, mode="rb", **storage_options):
+def open_local(
+    url: str | list[str] | Path | list[Path],
+    mode: str = "rb",
+    **storage_options: dict,
+) -> str | list[str]:
     """Open file(s) which can be resolved to local
 
     For files which either are local, or get downloaded upon open
@@ -489,7 +501,7 @@ def open_local(url, mode="rb", **storage_options):
         )
     with of as files:
         paths = [f.name for f in files]
-    if isinstance(url, str) and not has_magic(url):
+    if (isinstance(url, str) and not has_magic(url)) or isinstance(url, Path):
         return paths[0]
     return paths
 
@@ -510,6 +522,8 @@ def split_protocol(urlpath):
         if len(protocol) > 1:
             # excludes Windows paths
             return protocol, path
+    if urlpath.startswith("data:"):
+        return urlpath.split(":", 1)
     return None, urlpath
 
 
@@ -630,7 +644,10 @@ def get_fs_token_paths(
     else:
         paths = fs._strip_protocol(paths)
     if isinstance(paths, (list, tuple, set)):
-        paths = expand_paths_if_needed(paths, mode, num, fs, name_function)
+        if expand:
+            paths = expand_paths_if_needed(paths, mode, num, fs, name_function)
+        elif not isinstance(paths, list):
+            paths = list(paths)
     else:
         if "w" in mode and expand:
             paths = _expand_paths(paths, name_function, num)
