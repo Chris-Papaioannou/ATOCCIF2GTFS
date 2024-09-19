@@ -47,7 +47,7 @@ def test_format_point():
             ("g", xy2, "POINT (-169.910918 -18.997564)", False),
             ("0.2g", xy2, "POINT (-169.91 -19)", False),
         ]
-    # without precsions test GEOS rounding_precision=-1; different than Python
+    # without precisions test GEOS rounding_precision=-1; different than Python
     test_list += [
         ("f", (1, 2), f"POINT ({1:.16f} {2:.16f})", False),
         ("F", xyz3, "POINT Z ({:.16f} {:.16f} {:.16f})".format(*xyz3), False),
@@ -84,23 +84,28 @@ def test_format_polygon():
     assert format(poly, "X") == poly.wkb_hex
 
     # Use f-strings with extra characters and rounding precision
-    assert f"<{poly:.2f}>" == (
-        "<POLYGON ((10.00 0.00, 7.07 -7.07, 0.00 -10.00, -7.07 -7.07, "
-        "-10.00 -0.00, -7.07 7.07, -0.00 10.00, 7.07 7.07, 10.00 0.00))>"
-    )
+    if geos_version < (3, 13, 0):
+        assert f"<{poly:.2f}>" == (
+            "<POLYGON ((10.00 0.00, 7.07 -7.07, 0.00 -10.00, -7.07 -7.07, "
+            "-10.00 -0.00, -7.07 7.07, -0.00 10.00, 7.07 7.07, 10.00 0.00))>"
+        )
+    else:
+        assert f"<{poly:.2f}>" == (
+            "<POLYGON ((10.00 0.00, 7.07 -7.07, 0.00 -10.00, -7.07 -7.07, "
+            "-10.00 0.00, -7.07 7.07, 0.00 10.00, 7.07 7.07, 10.00 0.00))>"
+        )
 
     # 'g' format varies depending on GEOS version
     if geos_version < (3, 10, 0):
-        expected_2G = (
+        assert f"{poly:.2G}" == (
             "POLYGON ((10 0, 7.1 -7.1, 1.6E-14 -10, -7.1 -7.1, "
             "-10 -3.2E-14, -7.1 7.1, -4.6E-14 10, 7.1 7.1, 10 0))"
         )
     else:
-        expected_2G = (
+        assert f"{poly:.2G}" == (
             "POLYGON ((10 0, 7.07 -7.07, 0 -10, -7.07 -7.07, "
             "-10 0, -7.07 7.07, 0 10, 7.07 7.07, 10 0))"
         )
-    assert f"{poly:.2G}" == expected_2G
 
     # check empty
     empty = Polygon()

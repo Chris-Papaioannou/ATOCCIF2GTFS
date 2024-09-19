@@ -6,10 +6,9 @@ import pytest
 import shapely
 from shapely import LinearRing, LineString, MultiPolygon, Point, Polygon
 from shapely.testing import assert_geometries_equal
-
-from .common import all_types
-from .common import empty as empty_geometry_collection
-from .common import (
+from shapely.tests.common import all_types
+from shapely.tests.common import empty as empty_geometry_collection
+from shapely.tests.common import (
     empty_line_string,
     empty_line_string_z,
     empty_point,
@@ -17,6 +16,7 @@ from .common import (
     empty_polygon,
     geometry_collection,
     geometry_collection_z,
+    ignore_invalid,
     line_string,
     line_string_nan,
     line_string_z,
@@ -245,24 +245,17 @@ def test_set_unique(geom):
     assert len(a) == 1
 
 
-def test_eq_nan():
-    assert line_string_nan != line_string_nan
-
-
-def test_neq_nan():
-    assert not (line_string_nan == line_string_nan)
-
-
 def test_set_nan():
     # As NaN != NaN, you can have multiple "NaN" points in a set
     # set([float("nan"), float("nan")]) also returns a set with 2 elements
-    a = set(shapely.linestrings([[[np.nan, np.nan], [np.nan, np.nan]]] * 10))
+    with ignore_invalid():
+        a = set(shapely.linestrings([[[np.nan, np.nan], [np.nan, np.nan]]] * 10))
     assert len(a) == 10  # different objects: NaN != NaN
 
 
 def test_set_nan_same_objects():
     # You can't put identical objects in a set.
-    # x = float("nan"); set([x, x]) also retuns a set with 1 element
+    # x = float("nan"); set([x, x]) also returns a set with 1 element
     a = set([line_string_nan] * 10)
     assert len(a) == 1
 

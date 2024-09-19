@@ -3,9 +3,9 @@ from enum import IntEnum
 
 import numpy as np
 
-from . import _geometry_helpers, geos_version, lib
-from ._enum import ParamEnum
-from .decorators import multithreading_enabled, requires_geos
+from shapely import _geometry_helpers, geos_version, lib
+from shapely._enum import ParamEnum
+from shapely.decorators import multithreading_enabled, requires_geos
 
 __all__ = [
     "GeometryType",
@@ -69,8 +69,7 @@ def get_type_id(geometry, **kwargs):
     ----------
     geometry : Geometry or array_like
     **kwargs
-        For other keyword-only arguments, see the
-        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+        See :ref:`NumPy ufunc docs <ufuncs.kwargs>` for other keyword arguments.
 
     See also
     --------
@@ -99,8 +98,7 @@ def get_dimensions(geometry, **kwargs):
     ----------
     geometry : Geometry or array_like
     **kwargs
-        For other keyword-only arguments, see the
-        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+        See :ref:`NumPy ufunc docs <ufuncs.kwargs>` for other keyword arguments.
 
     Examples
     --------
@@ -132,8 +130,7 @@ def get_coordinate_dimension(geometry, **kwargs):
     ----------
     geometry : Geometry or array_like
     **kwargs
-        For other keyword-only arguments, see the
-        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+        See :ref:`NumPy ufunc docs <ufuncs.kwargs>` for other keyword arguments.
 
     Examples
     --------
@@ -160,8 +157,7 @@ def get_num_coordinates(geometry, **kwargs):
     ----------
     geometry : Geometry or array_like
     **kwargs
-        For other keyword-only arguments, see the
-        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+        See :ref:`NumPy ufunc docs <ufuncs.kwargs>` for other keyword arguments.
 
     Examples
     --------
@@ -192,8 +188,7 @@ def get_srid(geometry, **kwargs):
     ----------
     geometry : Geometry or array_like
     **kwargs
-        For other keyword-only arguments, see the
-        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+        See :ref:`NumPy ufunc docs <ufuncs.kwargs>` for other keyword arguments.
 
     See also
     --------
@@ -221,8 +216,7 @@ def set_srid(geometry, srid, **kwargs):
     geometry : Geometry or array_like
     srid : int
     **kwargs
-        For other keyword-only arguments, see the
-        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+        See :ref:`NumPy ufunc docs <ufuncs.kwargs>` for other keyword arguments.
 
     See also
     --------
@@ -253,8 +247,7 @@ def get_x(point, **kwargs):
     point : Geometry or array_like
         Non-point geometries will result in NaN being returned.
     **kwargs
-        For other keyword-only arguments, see the
-        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+        See :ref:`NumPy ufunc docs <ufuncs.kwargs>` for other keyword arguments.
 
     See also
     --------
@@ -280,8 +273,7 @@ def get_y(point, **kwargs):
     point : Geometry or array_like
         Non-point geometries will result in NaN being returned.
     **kwargs
-        For other keyword-only arguments, see the
-        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+        See :ref:`NumPy ufunc docs <ufuncs.kwargs>` for other keyword arguments.
 
     See also
     --------
@@ -309,8 +301,7 @@ def get_z(point, **kwargs):
         Non-point geometries or geometries without 3rd dimension will result
         in NaN being returned.
     **kwargs
-        For other keyword-only arguments, see the
-        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+        See :ref:`NumPy ufunc docs <ufuncs.kwargs>` for other keyword arguments.
 
     See also
     --------
@@ -342,8 +333,7 @@ def get_point(geometry, index, **kwargs):
     index : int or array_like
         Negative values count from the end of the linestring backwards.
     **kwargs
-        For other keyword-only arguments, see the
-        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+        See :ref:`NumPy ufunc docs <ufuncs.kwargs>` for other keyword arguments.
 
     See also
     --------
@@ -387,8 +377,7 @@ def get_num_points(geometry, **kwargs):
         The number of points in geometries other than linestring or linearring
         equals zero.
     **kwargs
-        For other keyword-only arguments, see the
-        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+        See :ref:`NumPy ufunc docs <ufuncs.kwargs>` for other keyword arguments.
 
     See also
     --------
@@ -419,8 +408,7 @@ def get_exterior_ring(geometry, **kwargs):
     ----------
     geometry : Geometry or array_like
     **kwargs
-        For other keyword-only arguments, see the
-        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+        See :ref:`NumPy ufunc docs <ufuncs.kwargs>` for other keyword arguments.
 
     See also
     --------
@@ -447,8 +435,7 @@ def get_interior_ring(geometry, index, **kwargs):
     index : int or array_like
         Negative values count from the end of the interior rings backwards.
     **kwargs
-        For other keyword-only arguments, see the
-        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+        See :ref:`NumPy ufunc docs <ufuncs.kwargs>` for other keyword arguments.
 
     See also
     --------
@@ -486,8 +473,7 @@ def get_num_interior_rings(geometry, **kwargs):
     geometry : Geometry or array_like
         The number of interior rings in non-polygons equals zero.
     **kwargs
-        For other keyword-only arguments, see the
-        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+        See :ref:`NumPy ufunc docs <ufuncs.kwargs>` for other keyword arguments.
 
     See also
     --------
@@ -527,8 +513,7 @@ def get_geometry(geometry, index, **kwargs):
     index : int or array_like
         Negative values count from the end of the collection backwards.
     **kwargs
-        For other keyword-only arguments, see the
-        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+        See :ref:`NumPy ufunc docs <ufuncs.kwargs>` for other keyword arguments.
 
     Notes
     -----
@@ -674,8 +659,7 @@ def get_num_geometries(geometry, **kwargs):
         The number of geometries in points, linestrings, linearrings and
         polygons equals one.
     **kwargs
-        For other keyword-only arguments, see the
-        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+        See :ref:`NumPy ufunc docs <ufuncs.kwargs>` for other keyword arguments.
 
     See also
     --------
@@ -710,8 +694,7 @@ def get_precision(geometry, **kwargs):
     ----------
     geometry : Geometry or array_like
     **kwargs
-        For other keyword-only arguments, see the
-        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+        See :ref:`NumPy ufunc docs <ufuncs.kwargs>` for other keyword arguments.
 
     See also
     --------
@@ -745,20 +728,26 @@ def set_precision(geometry, grid_size, mode="valid_output", **kwargs):
 
     By default, geometries use double precision coordinates (grid_size = 0).
 
-    Coordinates will be rounded if a precision grid is less precise than the
-    input geometry. Duplicated vertices will be dropped from lines and
+    Coordinates will be rounded if the precision grid specified is less precise
+    than the input geometry. Duplicated vertices will be dropped from lines and
     polygons for grid sizes greater than 0. Line and polygon geometries may
     collapse to empty geometries if all vertices are closer together than
-    grid_size. Z values, if present, will not be modified.
+    ``grid_size`` or if a polygon becomes significantly narrower than
+    ``grid_size``. Spikes or sections in polygons narrower than ``grid_size``
+    after rounding the vertices will be removed, which can lead to multipolygons
+    or empty geometries. Z values, if present, will not be modified.
 
-    Note: subsequent operations will always be performed in the precision of
-    the geometry with higher precision (smaller "grid_size"). That same
-    precision will be attached to the operation outputs.
+    Notes:
 
-    Also note: input geometries should be geometrically valid; unexpected
-    results may occur if input geometries are not.
-
-    Returns None if geometry is None.
+    * subsequent operations will always be performed in the precision of the
+      geometry with higher precision (smaller "grid_size"). That same precision
+      will be attached to the operation outputs.
+    * input geometries should be geometrically valid; unexpected results may
+      occur if input geometries are not.
+    * the geometry returned will be in
+      :ref:`mild canonical form <canonical-form>`, and the order of vertices can
+      change and should not be relied upon.
+    * returns None if geometry is None.
 
     Parameters
     ----------
@@ -769,24 +758,26 @@ def set_precision(geometry, grid_size, mode="valid_output", **kwargs):
         value is more precise than input geometry, the input geometry will
         not be modified.
     mode :  {'valid_output', 'pointwise', 'keep_collapsed'}, default 'valid_output'
-        This parameter determines how to handle invalid output geometries. There are three modes:
+        This parameter determines the way a precision reduction is applied on
+        the geometry. There are three modes:
 
-        1. `'valid_output'` (default):  The output is always valid. Collapsed geometry elements
-           (including both polygons and lines) are removed. Duplicate vertices are removed.
-        2. `'pointwise'`: Precision reduction is performed pointwise. Output geometry
-           may be invalid due to collapse or self-intersection. Duplicate vertices are not
-           removed. In GEOS this option is called NO_TOPO.
+        1. `'valid_output'` (default):  The output is always valid. Collapsed
+           geometry elements (including both polygons and lines) are removed.
+           Duplicate vertices are removed.
+        2. `'pointwise'`: Precision reduction is performed pointwise. Output
+           geometry may be invalid due to collapse or self-intersection.
+           Duplicate vertices are not removed. In GEOS this option is called
+           NO_TOPO.
 
            .. note::
 
-             'pointwise' mode requires at least GEOS 3.10. It is accepted in earlier versions,
-             but the results may be unexpected.
-        3. `'keep_collapsed'`: Like the default mode, except that collapsed linear geometry
-           elements are preserved. Collapsed polygonal input elements are removed. Duplicate
-           vertices are removed.
+             'pointwise' mode requires at least GEOS 3.10. It is accepted in
+             earlier versions, but the results may be unexpected.
+        3. `'keep_collapsed'`: Like the default mode, except that collapsed
+           linear geometry elements are preserved. Collapsed polygonal input
+           elements are removed. Duplicate vertices are removed.
     **kwargs
-        For other keyword-only arguments, see the
-        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+        See :ref:`NumPy ufunc docs <ufuncs.kwargs>` for other keyword arguments.
 
     See also
     --------
@@ -831,8 +822,7 @@ def force_2d(geometry, **kwargs):
     ----------
     geometry : Geometry or array_like
     **kwargs
-        For other keyword-only arguments, see the
-        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+        See :ref:`NumPy ufunc docs <ufuncs.kwargs>` for other keyword arguments.
 
     Examples
     --------
@@ -866,8 +856,7 @@ def force_3d(geometry, z=0.0, **kwargs):
     geometry : Geometry or array_like
     z : float or array_like, default 0.0
     **kwargs
-        For other keyword-only arguments, see the
-        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+        See :ref:`NumPy ufunc docs <ufuncs.kwargs>` for other keyword arguments.
 
     Examples
     --------

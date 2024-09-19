@@ -3,8 +3,8 @@ from functools import wraps
 
 import numpy as np
 
-from . import lib
-from .errors import UnsupportedGEOSVersionError
+from shapely import lib
+from shapely.errors import UnsupportedGEOSVersionError
 
 
 class requires_geos:
@@ -39,7 +39,7 @@ class requires_geos:
             # Insert the message at the first double newline
             position = doc.find("\n\n") + 2
             # Figure out the indentation level
-            indent = 2
+            indent = 0
             while True:
                 if doc[position + indent] == " ":
                     indent += 1

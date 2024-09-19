@@ -475,6 +475,12 @@ namespace CIF2GTFS
             Console.WriteLine("Creating version file(s)...");
             ExecProcess("create_ver.py");
 
+            Console.WriteLine("Importing demand...");
+            ExecProcess("create_demand.py");
+
+            Console.WriteLine("Running assignment and outputs...");
+            ExecProcess("assignment.py");
+
             Console.WriteLine("Done");
         }
 
@@ -485,7 +491,7 @@ namespace CIF2GTFS
 
             // 1) Create Process Info
             var psi = new ProcessStartInfo();
-            psi.FileName = @"C:\Program Files\PTV Vision\PTV Visum 2023\Exe\Python\python.exe";
+            psi.FileName = @"C:\Program Files\PTV Vision\PTV Visum 2024\Exe\Python\python.exe";
 
             // 2) Provide script and arguments
             var script = my_script;

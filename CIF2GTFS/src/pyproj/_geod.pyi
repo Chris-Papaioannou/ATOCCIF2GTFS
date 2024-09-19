@@ -1,4 +1,4 @@
-from typing import Any, NamedTuple, Tuple, Type
+from typing import Any, NamedTuple
 
 geodesic_version_str: str
 
@@ -20,7 +20,7 @@ class Geod:
     def __init__(
         self, a: float, f: float, sphere: bool, b: float, es: float
     ) -> None: ...
-    def __reduce__(self) -> Tuple[Type["Geod"], str]: ...
+    def __reduce__(self) -> tuple[type["Geod"], str]: ...
     def __repr__(self) -> str: ...
     def _fwd(
         self,
@@ -39,7 +39,7 @@ class Geod:
         dist: float,
         radians: bool = False,
         return_back_azimuth: bool = True,
-    ) -> Tuple[float, float, float]: ...
+    ) -> tuple[float, float, float]: ...
     def _inv(
         self,
         lons1: Any,
@@ -57,13 +57,13 @@ class Geod:
         lats2: float,
         radians: bool = False,
         return_back_azimuth: bool = False,
-    ) -> Tuple[float, float, float]: ...
+    ) -> tuple[float, float, float]: ...
     def _inv_or_fwd_intermediate(
         self,
         lon1: float,
         lat1: float,
         lon2_or_azi1: float,
-        lat2_or_nan: float,
+        lat2: float,
         npts: int,
         del_s: float,
         radians: bool,
@@ -74,10 +74,11 @@ class Geod:
         out_lats: Any,
         out_azis: Any,
         return_back_azimuth: bool,
+        is_fwd: bool,
     ) -> GeodIntermediateReturn: ...
     def _line_length(self, lons: Any, lats: Any, radians: bool = False) -> float: ...
     def _polygon_area_perimeter(
         self, lons: Any, lats: Any, radians: bool = False
-    ) -> Tuple[float, float]: ...
+    ) -> tuple[float, float]: ...
 
 def reverse_azimuth(azi: Any, radians: bool = False) -> None: ...

@@ -8,11 +8,23 @@ MergeStopsPath,C:\Users\david.aspital\PTV Group\Team Network Model T2BAU - Gener
 TransportSystems,C:\Users\david.aspital\PTV Group\Team Network Model T2BAU - General\07 Model Files\10 Master Timetable Import\ATOCCIF2GTFS\CIF2GTFS\input\TSys_definitions.csv
 TransferLinks,C:\Users\david.aspital\PTV Group\Team Network Model T2BAU - General\07 Model Files\10 Master Timetable Import\ATOCCIF2GTFS\CIF2GTFS\input\transfer_links.csv
 ImportTimetable,TRUE
-TimetablePath,C:\Users\david.aspital\PTV Group\Team Network Model T2BAU - General\07 Model Files\10 Master Timetable Import\ATOCCIF2GTFS\CIF2GTFS\input\May23 Full CIF 230413.CIF
+TimetablePath,C:\Users\david.aspital\PTV Group\Team Network Model T2BAU - General\07 Model Files\10 Master Timetable Import\ATOCCIF2GTFS\CIF2GTFS\input\WO AT GTR GN and TL at FPK.cif
 MergeStops,TRUE
 CreateVers,TRUE
-Ver1,{"Name":"31May23"; "TSysSet":"";"Date":"31.05.2023"}
+Ver1,{"Name":"11Oct24"; "TSysSet":"";"Date":"11.10.2024"}
 Ver2,
 Ver3,
 Ver4,
 Ver5,
+ImportDemand,TRUE
+DemandFile,Ver1
+CRSUpdate,C:\Users\david.aspital\PTV Group\Team Network Model T2BAU - General\07 Model Files\10 Master Timetable Import\ATOCCIF2GTFS\CIF2GTFS\demand\input\CRS_Update.csv
+WeekdayMatrix,C:\Users\david.aspital\PTV Group\Team Network Model T2BAU - General\07 Model Files\10 Master Timetable Import\ATOCCIF2GTFS\CIF2GTFS\demand\input\MOIRA_DailyDemand.att
+MidweekFactors,C:\Users\david.aspital\PTV Group\Team Network Model T2BAU - General\07 Model Files\10 Master Timetable Import\ATOCCIF2GTFS\CIF2GTFS\demand\input\midweekFactors.csv
+GroupedStationSplits,C:\Users\david.aspital\PTV Group\Team Network Model T2BAU - General\07 Model Files\10 Master Timetable Import\ATOCCIF2GTFS\CIF2GTFS\demand\input\GroupedStationSplits.csv
+TravelcardSplits,C:\Users\david.aspital\PTV Group\Team Network Model T2BAU - General\07 Model Files\10 Master Timetable Import\ATOCCIF2GTFS\CIF2GTFS\demand\input\TravelcardAllSplits.csv
+TimeProfiles,C:\Users\david.aspital\PTV Group\Team Network Model T2BAU - General\07 Model Files\10 Master Timetable Import\ATOCCIF2GTFS\CIF2GTFS\demand\input\TimeProfiles.csv
+GlobalFactor,1
+Assignment,TRUE
+RunID,M87
+Outputs,TRUE

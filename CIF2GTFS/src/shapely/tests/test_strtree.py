@@ -10,11 +10,16 @@ import pytest
 from numpy.testing import assert_array_equal
 
 import shapely
-from shapely import box, geos_version, MultiPoint, Point, STRtree
+from shapely import box, geos_version, LineString, MultiPoint, Point, STRtree
 from shapely.errors import UnsupportedGEOSVersionError
 from shapely.testing import assert_geometries_equal
-
-from .common import empty, empty_line_string, empty_point, point
+from shapely.tests.common import (
+    empty,
+    empty_line_string,
+    empty_point,
+    ignore_invalid,
+    point,
+)
 
 # the distance between 2 points spaced at whole numbers along a diagonal
 HALF_UNIT_DIAG = math.sqrt(2) / 2
@@ -363,37 +368,51 @@ def test_query_with_partially_prepared_inputs(tree):
 
 
 @pytest.mark.parametrize(
-    "predicate",
+    "predicate,expected",
     [
-        # intersects is intentionally omitted; it does not raise an exception
+        pytest.param(
+            "intersects",
+            [1],
+            marks=pytest.mark.xfail(geos_version < (3, 13, 0), reason="GEOS < 3.13"),
+        ),
         pytest.param(
             "within",
+            [],
             marks=pytest.mark.xfail(geos_version < (3, 8, 0), reason="GEOS < 3.8"),
         ),
         pytest.param(
             "contains",
+            [],
             marks=pytest.mark.xfail(geos_version < (3, 8, 0), reason="GEOS < 3.8"),
         ),
-        "overlaps",
-        "crosses",
-        "touches",
+        ("overlaps", []),
+        ("crosses", [1]),
+        ("touches", []),
         pytest.param(
             "covers",
+            [],
             marks=pytest.mark.xfail(geos_version < (3, 8, 0), reason="GEOS < 3.8"),
         ),
         pytest.param(
             "covered_by",
+            [],
             marks=pytest.mark.xfail(geos_version < (3, 8, 0), reason="GEOS < 3.8"),
         ),
         pytest.param(
             "contains_properly",
+            [],
             marks=pytest.mark.xfail(geos_version < (3, 8, 0), reason="GEOS < 3.8"),
         ),
     ],
 )
-def test_query_predicate_errors(tree, predicate):
-    with pytest.raises(shapely.GEOSException):
-        tree.query(shapely.linestrings([1, 1], [1, float("nan")]), predicate=predicate)
+def test_query_predicate_errors(tree, predicate, expected):
+    with ignore_invalid():
+        line_nan = shapely.linestrings([1, 1], [1, float("nan")])
+    if geos_version < (3, 13, 0):
+        with pytest.raises(shapely.GEOSException):
+            tree.query(line_nan, predicate=predicate)
+    else:
+        assert_array_equal(tree.query(line_nan, predicate=predicate), expected)
 
 
 ### predicate == 'intersects'
@@ -921,12 +940,12 @@ def test_query_crosses_polygons(poly_tree, geometry, expected):
         # box contains points but touches only those at edges
         (box(3, 3, 6, 6), [3, 6]),
         ([box(3, 3, 6, 6)], [[0, 0], [3, 6]]),
-        # buffer completely contains point in tree
+        # polygon completely contains point in tree
         (shapely.buffer(Point(3, 3), 1), []),
         ([shapely.buffer(Point(3, 3), 1)], [[], []]),
-        # buffer intersects 2 points but touches only one
-        (shapely.buffer(Point(0, 1), 1), [1]),
-        ([shapely.buffer(Point(0, 1), 1)], [[0], [1]]),
+        # linestring intersects 2 points but touches only one
+        (LineString([(-1, -1), (1, 1)]), [1]),
+        ([LineString([(-1, -1), (1, 1)])], [[0], [1]]),
         # multipoints intersect but not valid relation
         (MultiPoint([[5, 5], [7, 7]]), []),
         ([MultiPoint([[5, 5], [7, 7]])], [[], []]),

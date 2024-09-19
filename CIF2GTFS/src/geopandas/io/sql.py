@@ -1,5 +1,6 @@
 import warnings
 from contextlib import contextmanager
+from functools import lru_cache
 
 import pandas as pd
 
@@ -7,8 +8,6 @@ import shapely
 import shapely.wkb
 
 from geopandas import GeoDataFrame
-
-from .. import _compat as compat
 
 
 @contextmanager
@@ -28,10 +27,13 @@ def _get_conn(conn_or_engine):
     -------
     Connection
     """
-    from sqlalchemy.engine.base import Engine, Connection
+    from sqlalchemy.engine.base import Connection, Engine
 
     if isinstance(conn_or_engine, Connection):
-        with conn_or_engine.begin():
+        if not conn_or_engine.in_transaction():
+            with conn_or_engine.begin():
+                yield conn_or_engine
+        else:
             yield conn_or_engine
     elif isinstance(conn_or_engine, Engine):
         with conn_or_engine.begin() as conn:
@@ -40,7 +42,7 @@ def _get_conn(conn_or_engine):
         raise ValueError(f"Unknown Connectable: {conn_or_engine}")
 
 
-def _df_to_geodf(df, geom_col="geom", crs=None):
+def _df_to_geodf(df, geom_col="geom", crs=None, con=None):
     """
     Transforms a pandas DataFrame into a GeoDataFrame.
     The column 'geom_col' must be a geometry column in WKB representation.
@@ -57,6 +59,8 @@ def _df_to_geodf(df, geom_col="geom", crs=None):
         such as an authority string (eg "EPSG:4326") or a WKT string.
         If not set, tries to determine CRS from the SRID associated with the
         first geometry in the database, and assigns that to all geometries.
+    con : sqlalchemy.engine.Connection or sqlalchemy.engine.Engine
+        Active connection to the database to query.
     Returns
     -------
     GeoDataFrame
@@ -65,15 +69,17 @@ def _df_to_geodf(df, geom_col="geom", crs=None):
     if geom_col not in df:
         raise ValueError("Query missing geometry column '{}'".format(geom_col))
 
+    if df.columns.to_list().count(geom_col) > 1:
+        raise ValueError(
+            f"Duplicate geometry column '{geom_col}' detected in SQL query output. Only"
+            "one geometry column is allowed."
+        )
+
     geoms = df[geom_col].dropna()
 
     if not geoms.empty:
         load_geom_bytes = shapely.wkb.loads
         """Load from Python 3 binary."""
-
-        def load_geom_buffer(x):
-            """Load from Python 2 binary."""
-            return shapely.wkb.loads(str(x))
 
         def load_geom_text(x):
             """Load from binary encoded as text."""
@@ -86,13 +92,31 @@ def _df_to_geodf(df, geom_col="geom", crs=None):
 
         df[geom_col] = geoms = geoms.apply(load_geom)
         if crs is None:
-            if compat.SHAPELY_GE_20:
-                srid = shapely.get_srid(geoms.iat[0])
-            else:
-                srid = shapely.geos.lgeos.GEOSGetSRID(geoms.iat[0]._geom)
+            srid = shapely.get_srid(geoms.iat[0])
             # if no defined SRID in geodatabase, returns SRID of 0
             if srid != 0:
-                crs = "epsg:{}".format(srid)
+                try:
+                    spatial_ref_sys_df = _get_spatial_ref_sys_df(con, srid)
+                except pd.errors.DatabaseError:
+                    warning_msg = (
+                        f"Could not find the spatial reference system table "
+                        f"(spatial_ref_sys) in PostGIS."
+                        f"Trying epsg:{srid} as a fallback."
+                    )
+                    warnings.warn(warning_msg, UserWarning, stacklevel=3)
+                    crs = "epsg:{}".format(srid)
+                else:
+                    if not spatial_ref_sys_df.empty:
+                        auth_name = spatial_ref_sys_df["auth_name"].item()
+                        crs = f"{auth_name}:{srid}"
+                    else:
+                        warning_msg = (
+                            f"Could not find srid {srid} in the "
+                            f"spatial_ref_sys table. "
+                            f"Trying epsg:{srid} as a fallback."
+                        )
+                        warnings.warn(warning_msg, UserWarning, stacklevel=3)
+                        crs = "epsg:{}".format(srid)
 
     return GeoDataFrame(df, crs=crs, geometry=geom_col)
 
@@ -111,6 +135,9 @@ def _read_postgis(
     """
     Returns a GeoDataFrame corresponding to the result of the query
     string, which must contain a geometry column in WKB representation.
+
+    It is also possible to use :meth:`~GeoDataFrame.read_file` to read from a database.
+    Especially for file geodatabases like GeoPackage or SpatiaLite this can be easier.
 
     Parameters
     ----------
@@ -149,7 +176,7 @@ def _read_postgis(
 
     SpatiaLite
 
-    >>> sql = "SELECT ST_Binary(geom) AS geom, highway FROM roads"
+    >>> sql = "SELECT ST_AsBinary(geom) AS geom, highway FROM roads"
     >>> df = geopandas.read_postgis(sql, con)  # doctest: +SKIP
     """
 
@@ -164,7 +191,7 @@ def _read_postgis(
             params=params,
             chunksize=chunksize,
         )
-        return _df_to_geodf(df, geom_col=geom_col, crs=crs)
+        return _df_to_geodf(df, geom_col=geom_col, crs=crs, con=con)
 
     else:
         # read data in chunks and return a generator
@@ -177,20 +204,9 @@ def _read_postgis(
             params=params,
             chunksize=chunksize,
         )
-        return (_df_to_geodf(df, geom_col=geom_col, crs=crs) for df in df_generator)
-
-
-def read_postgis(*args, **kwargs):
-    import warnings
-
-    warnings.warn(
-        "geopandas.io.sql.read_postgis() is intended for internal "
-        "use only, and will be deprecated. Use geopandas.read_postgis() instead.",
-        FutureWarning,
-        stacklevel=2,
-    )
-
-    return _read_postgis(*args, **kwargs)
+        return (
+            _df_to_geodf(df, geom_col=geom_col, crs=crs, con=con) for df in df_generator
+        )
 
 
 def _get_geometry_type(gdf):
@@ -241,7 +257,7 @@ def _get_geometry_type(gdf):
 
 def _get_srid_from_crs(gdf):
     """
-    Get EPSG code from CRS if available. If not, return -1.
+    Get EPSG code from CRS if available. If not, return 0.
     """
 
     # Use geoalchemy2 default for srid
@@ -267,7 +283,7 @@ def _get_srid_from_crs(gdf):
             warnings.warn(warning_msg, UserWarning, stacklevel=2)
 
     if srid is None:
-        srid = -1
+        srid = 0
         warnings.warn(warning_msg, UserWarning, stacklevel=2)
 
     return srid
@@ -276,8 +292,8 @@ def _get_srid_from_crs(gdf):
 def _convert_linearring_to_linestring(gdf, geom_name):
     from shapely.geometry import LineString
 
-    # Todo: Use Pygeos function once it's implemented:
-    #  https://github.com/pygeos/pygeos/issues/76
+    # Todo: Use shapely function once it's implemented:
+    # https://github.com/shapely/shapely/issues/1617
 
     mask = gdf.geom_type == "LinearRing"
     gdf.loc[mask, geom_name] = gdf.loc[mask, geom_name].apply(
@@ -288,24 +304,11 @@ def _convert_linearring_to_linestring(gdf, geom_name):
 
 def _convert_to_ewkb(gdf, geom_name, srid):
     """Convert geometries to ewkb."""
-    if compat.USE_SHAPELY_20:
-        geoms = shapely.to_wkb(
-            shapely.set_srid(gdf[geom_name].values.data, srid=srid),
-            hex=True,
-            include_srid=True,
-        )
-
-    elif compat.USE_PYGEOS:
-        from pygeos import set_srid, to_wkb
-
-        geoms = to_wkb(
-            set_srid(gdf[geom_name].values.data, srid=srid), hex=True, include_srid=True
-        )
-
-    else:
-        from shapely.wkb import dumps
-
-        geoms = [dumps(geom, srid=srid, hex=True) for geom in gdf[geom_name]]
+    geoms = shapely.to_wkb(
+        shapely.set_srid(gdf[geom_name].values._data, srid=srid),
+        hex=True,
+        include_srid=True,
+    )
 
     # The gdf will warn that the geometry column doesn't hold in-memory geometries
     # now that they are EWKB, so convert back to a regular dataframe to avoid warning
@@ -316,8 +319,8 @@ def _convert_to_ewkb(gdf, geom_name, srid):
 
 
 def _psql_insert_copy(tbl, conn, keys, data_iter):
-    import io
     import csv
+    import io
 
     s_buf = io.StringIO()
     writer = csv.writer(s_buf)
@@ -327,11 +330,16 @@ def _psql_insert_copy(tbl, conn, keys, data_iter):
     columns = ", ".join('"{}"'.format(k) for k in keys)
 
     dbapi_conn = conn.connection
+    sql = 'COPY "{}"."{}" ({}) FROM STDIN WITH CSV'.format(
+        tbl.table.schema, tbl.table.name, columns
+    )
     with dbapi_conn.cursor() as cur:
-        sql = 'COPY "{}"."{}" ({}) FROM STDIN WITH CSV'.format(
-            tbl.table.schema, tbl.table.name, columns
-        )
-        cur.copy_expert(sql=sql, file=s_buf)
+        # Use psycopg method if it's available
+        if hasattr(cur, "copy") and callable(cur.copy):
+            with cur.copy(sql) as copy:
+                copy.write(s_buf.read())
+        else:  # otherwise use psycopg2 method
+            cur.copy_expert(sql, s_buf)
 
 
 def _write_postgis(
@@ -390,6 +398,7 @@ def _write_postgis(
     """
     try:
         from geoalchemy2 import Geometry
+        from sqlalchemy import text
     except ImportError:
         raise ImportError("'to_postgis()' requires geoalchemy2 package.")
 
@@ -426,8 +435,10 @@ def _write_postgis(
             # Only check SRID if table exists
             if connection.dialect.has_table(connection, name, schema):
                 target_srid = connection.execute(
-                    "SELECT Find_SRID('{schema}', '{table}', '{geom_col}');".format(
-                        schema=schema_name, table=name, geom_col=geom_name
+                    text(
+                        "SELECT Find_SRID('{schema}', '{table}', '{geom_col}');".format(
+                            schema=schema_name, table=name, geom_col=geom_name
+                        )
                     )
                 ).fetchone()[0]
 
@@ -441,7 +452,6 @@ def _write_postgis(
                     raise ValueError(msg)
 
     with _get_conn(con) as connection:
-
         gdf.to_sql(
             name,
             connection,
@@ -454,4 +464,10 @@ def _write_postgis(
             method=_psql_insert_copy,
         )
 
-    return
+
+@lru_cache
+def _get_spatial_ref_sys_df(con, srid):
+    spatial_ref_sys_sql = (
+        f"SELECT srid, auth_name FROM spatial_ref_sys WHERE srid = {srid}"
+    )
+    return pd.read_sql(spatial_ref_sys_sql, con)

@@ -10,8 +10,7 @@ import shapely
 from shapely import GeometryCollection, LineString, Point, Polygon
 from shapely.errors import UnsupportedGEOSVersionError
 from shapely.testing import assert_geometries_equal
-
-from .common import all_types, empty_point, empty_point_z, point, point_z
+from shapely.tests.common import all_types, empty_point, empty_point_z, point, point_z
 
 # fmt: off
 POINT11_WKB = b"\x01\x01\x00\x00\x00" + struct.pack("<2d", 1.0, 1.0)
@@ -288,6 +287,15 @@ def test_to_wkt_none():
     assert shapely.to_wkt(None) is None
 
 
+def test_to_wkt_array_with_empty_z():
+    # See GH-2004
+    empty_wkt = ["POINT Z EMPTY", None, "POLYGON Z EMPTY"]
+    empty_geoms = shapely.from_wkt(empty_wkt)
+    if shapely.geos_version < (3, 9, 0):
+        empty_wkt = ["POINT EMPTY", None, "POLYGON EMPTY"]
+    assert list(shapely.to_wkt(empty_geoms)) == empty_wkt
+
+
 def test_to_wkt_exceptions():
     with pytest.raises(TypeError):
         shapely.to_wkt(1)
@@ -326,11 +334,16 @@ def test_to_wkt_geometrycollection_with_point_empty():
 
 @pytest.mark.skipif(
     shapely.geos_version < (3, 9, 0),
-    reason="MULTIPOINT (EMPTY, 2 3) only works for GEOS >= 3.9",
+    reason="MULTIPOINT (EMPTY, (2 3)) only works for GEOS >= 3.9",
 )
 def test_to_wkt_multipoint_with_point_empty():
     geom = shapely.multipoints([empty_point, point])
-    assert shapely.to_wkt(geom) == "MULTIPOINT (EMPTY, 2 3)"
+    if shapely.geos_version >= (3, 12, 0):
+        expected = "MULTIPOINT (EMPTY, (2 3))"
+    else:
+        # invalid WKT form
+        expected = "MULTIPOINT (EMPTY, 2 3)"
+    assert shapely.to_wkt(geom) == expected
 
 
 @pytest.mark.skipif(

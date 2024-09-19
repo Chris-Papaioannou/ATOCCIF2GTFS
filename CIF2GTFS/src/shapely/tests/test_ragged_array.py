@@ -5,8 +5,7 @@ from numpy.testing import assert_allclose
 import shapely
 from shapely import MultiLineString, MultiPoint, MultiPolygon
 from shapely.testing import assert_geometries_equal
-
-from .common import (
+from shapely.tests.common import (
     empty_line_string,
     empty_line_string_z,
     geometry_collection,
@@ -86,6 +85,17 @@ def test_include_z_default():
     assert coords.shape[1] == 2
 
 
+@pytest.mark.parametrize("geom", all_types)
+def test_read_only_arrays(geom):
+    # https://github.com/shapely/shapely/pull/1744
+    typ, coords, offsets = shapely.to_ragged_array([geom, geom])
+    coords.flags.writeable = False
+    for arr in offsets:
+        arr.flags.writeable = False
+    result = shapely.from_ragged_array(typ, coords, offsets)
+    assert_geometries_equal(result, [geom, geom])
+
+
 @pytest.mark.parametrize("geom", all_types_not_supported)
 def test_raise_geometry_type(geom):
     with pytest.raises(ValueError):
@@ -100,18 +110,30 @@ def test_points():
             "POINT EMPTY",
             "POINT EMPTY",
             "POINT (4 4)",
+            None,
             "POINT EMPTY",
         ]
     )
     typ, result, offsets = shapely.to_ragged_array(arr)
     expected = np.array(
-        [[0, 0], [1, 1], [np.nan, np.nan], [np.nan, np.nan], [4, 4], [np.nan, np.nan]]
+        [
+            [0, 0],
+            [1, 1],
+            [np.nan, np.nan],
+            [np.nan, np.nan],
+            [4, 4],
+            [np.nan, np.nan],
+            [np.nan, np.nan],
+        ]
     )
     assert typ == shapely.GeometryType.POINT
+    assert len(result) == len(arr)
     assert_allclose(result, expected)
     assert len(offsets) == 0
 
     geoms = shapely.from_ragged_array(typ, result)
+    # in a roundtrip, missing geometries come back as empty
+    arr[-2] = shapely.from_wkt("POINT EMPTY")
     assert_geometries_equal(geoms, arr)
 
 
@@ -123,6 +145,7 @@ def test_linestrings():
             "LINESTRING EMPTY",
             "LINESTRING EMPTY",
             "LINESTRING (10 10, 20 20, 10 40)",
+            None,
             "LINESTRING EMPTY",
         ]
     )
@@ -141,13 +164,15 @@ def test_linestrings():
             [10.0, 40.0],
         ]
     )
-    expected_offsets = np.array([0, 3, 7, 7, 7, 10, 10])
+    expected_offsets = np.array([0, 3, 7, 7, 7, 10, 10, 10])
     assert typ == shapely.GeometryType.LINESTRING
     assert_allclose(coords, expected)
     assert len(offsets) == 1
     assert_allclose(offsets[0], expected_offsets)
 
     result = shapely.from_ragged_array(typ, coords, offsets)
+    # in a roundtrip, missing geometries come back as empty
+    arr[-2] = shapely.from_wkt("LINESTRING EMPTY")
     assert_geometries_equal(result, arr)
 
 
@@ -159,6 +184,7 @@ def test_polygons():
             "POLYGON EMPTY",
             "POLYGON EMPTY",
             "POLYGON ((30 10, 40 40, 20 40, 10 20, 30 10))",
+            None,
             "POLYGON EMPTY",
         ]
     )
@@ -187,7 +213,7 @@ def test_polygons():
         ]
     )
     expected_offsets1 = np.array([0, 5, 10, 14, 19])
-    expected_offsets2 = np.array([0, 1, 3, 3, 3, 4, 4])
+    expected_offsets2 = np.array([0, 1, 3, 3, 3, 4, 4, 4])
 
     assert typ == shapely.GeometryType.POLYGON
     assert_allclose(coords, expected)
@@ -196,6 +222,8 @@ def test_polygons():
     assert_allclose(offsets[1], expected_offsets2)
 
     result = shapely.from_ragged_array(typ, coords, offsets)
+    # in a roundtrip, missing geometries come back as empty
+    arr[-2] = shapely.from_wkt("POLYGON EMPTY")
     assert_geometries_equal(result, arr)
 
 
@@ -207,6 +235,7 @@ def test_multipoints():
             "MULTIPOINT EMPTY",
             "MULTIPOINT EMPTY",
             "MULTIPOINT (30 10, 10 30, 40 40)",
+            None,
             "MULTIPOINT EMPTY",
         ]
     )
@@ -223,7 +252,7 @@ def test_multipoints():
             [40.0, 40.0],
         ]
     )
-    expected_offsets = np.array([0, 4, 5, 5, 5, 8, 8])
+    expected_offsets = np.array([0, 4, 5, 5, 5, 8, 8, 8])
 
     assert typ == shapely.GeometryType.MULTIPOINT
     assert_allclose(coords, expected)
@@ -231,6 +260,8 @@ def test_multipoints():
     assert_allclose(offsets[0], expected_offsets)
 
     result = shapely.from_ragged_array(typ, coords, offsets)
+    # in a roundtrip, missing geometries come back as empty
+    arr[-2] = shapely.from_wkt("MULTIPOINT EMPTY")
     assert_geometries_equal(result, arr)
 
 
@@ -242,6 +273,7 @@ def test_multilinestrings():
             "MULTILINESTRING EMPTY",
             "MULTILINESTRING EMPTY",
             "MULTILINESTRING ((35 10, 45 45), (15 40, 10 20), (30 10, 10 30, 40 40))",
+            None,
             "MULTILINESTRING EMPTY",
         ]
     )
@@ -268,7 +300,7 @@ def test_multilinestrings():
         ]
     )
     expected_offsets1 = np.array([0, 3, 6, 10, 12, 14, 17])
-    expected_offsets2 = np.array([0, 1, 3, 3, 3, 6, 6])
+    expected_offsets2 = np.array([0, 1, 3, 3, 3, 6, 6, 6])
 
     assert typ == shapely.GeometryType.MULTILINESTRING
     assert_allclose(coords, expected)
@@ -277,6 +309,8 @@ def test_multilinestrings():
     assert_allclose(offsets[1], expected_offsets2)
 
     result = shapely.from_ragged_array(typ, coords, offsets)
+    # in a roundtrip, missing geometries come back as empty
+    arr[-2] = shapely.from_wkt("MULTILINESTRING EMPTY")
     assert_geometries_equal(result, arr)
 
 
@@ -288,6 +322,7 @@ def test_multipolygons():
             "MULTIPOLYGON EMPTY",
             "MULTIPOLYGON EMPTY",
             "MULTIPOLYGON (((40 40, 20 45, 45 30, 40 40)))",
+            None,
             "MULTIPOLYGON EMPTY",
         ]
     )
@@ -325,7 +360,7 @@ def test_multipolygons():
     )
     expected_offsets1 = np.array([0, 5, 9, 13, 19, 23, 27])
     expected_offsets2 = np.array([0, 2, 3, 5, 6])
-    expected_offsets3 = np.array([0, 1, 3, 3, 3, 4, 4])
+    expected_offsets3 = np.array([0, 1, 3, 3, 3, 4, 4, 4])
 
     assert typ == shapely.GeometryType.MULTIPOLYGON
     assert_allclose(coords, expected)
@@ -335,6 +370,8 @@ def test_multipolygons():
     assert_allclose(offsets[2], expected_offsets3)
 
     result = shapely.from_ragged_array(typ, coords, offsets)
+    # in a roundtrip, missing geometries come back as empty
+    arr[-2] = shapely.from_wkt("MULTIPOLYGON EMPTY")
     assert_geometries_equal(result, arr)
 
 

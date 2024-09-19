@@ -254,6 +254,8 @@ def createO02(dfPathLegs, runID):
 
     dfStations = dfStations.groupby(['FromCRS', 'FromPlatform', 'ToCRS', 'ToPlatform', 'Hour'], as_index=False).ODTRIPS.sum()
 
+    dfStations['RunID'] = runID
+
     dfStations.to_parquet(f'{runID}_O02_StationMovements.parquet', index=False, compression=parquetCompression)
 
     del dfStations
@@ -272,6 +274,7 @@ def create_O03(dfPathLegs, runID):
     dfDemand.CRS_Chain = dfDemand.CRS_Chain + "," + dfDemand.DestCRS
 
     dfHighLevel = dfDemand.groupby(['OrigCRS', 'DestCRS', 'StartHour', 'EndHour', 'CRS_Chain', 'ATOC_Chain'], as_index=False).agg(Demand=('Demand', np.sum), InVehicleTime=('Time', np.mean), WaitTime=('WaitTime', np.mean))
+    dfHighLevel['RunID'] = runID
     dfHighLevel.to_parquet(f'{runID}_O03_ODHourlyRoutes.parquet', index=False, compression=parquetCompression)
 
 
@@ -286,6 +289,7 @@ def create_O04(runID):
     VJI_list.SetObjects(False, VJs)
 
     dfVJIs = pd.DataFrame(VJI_list.SaveToArray(), columns=["VehicleJourneyNo", "Index", "TrainUID", "ATOC", "TrainServiceCode", "CRS", "Stop", "Platform", "Arrival", "Departure", "AlightAllowed", "BoardAllowed", "OriginCRS", "DestinationCRS", "Board", "Alight", "Through"])
+    dfVJIs['RunID'] = runID
     dfVJIs.to_parquet(f"{runID}_O04_StopsAndPasses.parquet", index=False, compression=parquetCompression)
 
 
@@ -316,6 +320,7 @@ def create_O05(tempPath, runID):
 
     dfODs.rename({"FROMZONE\CODE":'FromCRS', 'TOZONE\CODE':'ToCRS', 'MATVALUE(8)':'Demand_7-8', 'MATVALUE(9)':'Demand_8-9', 'MATVALUE(10)':'Demand_9-10', 'MATVALUE(17)':'Demand_16-17', 'MATVALUE(18)':'Demand_17-18', 'MATVALUE(19)':'Demand_18-19', 'MATVALUE(25)':'JRT_24hr', 'MATVALUE(50)':'PJT_24hr', 'MATVALUE(33)':'JRT_7-8', 'MATVALUE(34)':'JRT_8-9', 'MATVALUE(35)':'JRT_9-10', 'MATVALUE(42)':'JRT_16-17', 'MATVALUE(43)':'JRT_17-18', 'MATVALUE(44)':'JRT_18-19', 'MATVALUE(58)':'PJT_7-8', 'MATVALUE(59)':'PJT_8-9', 'MATVALUE(60)':'PJT_9-10', 'MATVALUE(67)':'PJT_16-17', 'MATVALUE(68)':'PJT_17-18', 'MATVALUE(69)':'PJT_18-19'})
 
+    dfODs['RunID'] = runID
     dfODs.to_parquet(f"{runID}_O05_DemandAndSkims.parquet", index=False, compression=parquetCompression)
 
     Path.unlink(Path(f"{tempPath}\\OD_Pairs_{timecode}.sqlite3"))    
@@ -340,6 +345,7 @@ def create_O06(tempPath, runID):
 
     dfODs.rename({"FROMZONE\CODE":'FromCRS', 'TOZONE\CODE':'ToCRS', "MATVALUE(26)":'JRT_0-1', "MATVALUE(27)":'JRT_1-2', "MATVALUE(28)":'JRT_2-3', "MATVALUE(29)":'JRT_3-4', "MATVALUE(30)":'JRT_4-5', "MATVALUE(31)":'JRT_5-6', "MATVALUE(32)":'JRT_6-7', "MATVALUE(33)":'JRT_7-8', "MATVALUE(34)":'JRT_8-9', "MATVALUE(35)":'JRT_9-10', "MATVALUE(36)":'JRT_10-11', "MATVALUE(37)":'JRT_11-12', "MATVALUE(38)":'JRT_12-13', "MATVALUE(39)":'JRT_13-14', "MATVALUE(40)":'JRT_14-15', "MATVALUE(41)":'JRT_15-16', "MATVALUE(42)":'JRT_16-17', "MATVALUE(43)":'JRT_17-18', "MATVALUE(44)":'JRT_18-19', "MATVALUE(45)":'JRT_19-20', "MATVALUE(46)":'JRT_20-21', "MATVALUE(47)":'JRT_21-22', "MATVALUE(48)":'JRT_22-23', "MATVALUE(49)":'JRT_23-24'})
 
+    dfODs['RunID'] = runID
     dfODs.to_parquet(f"{runID}_O06_JRTSkims.parquet", index=False, compression=parquetCompression)
 
     Path.unlink(Path(f"{tempPath}\\OD_Pairs_{timecode}.sqlite3"))  
@@ -434,7 +440,7 @@ def main():
                             'TrainServiceCode', 
                             'ATOC'
                             ]]
-
+    dfPathLegs['RunID'] = runID
     dfPathLegs.to_parquet(f"{runID}_O01_PathLegs.parquet", index=False, compression=parquetCompression)
 
     create_O03(dfPathLegs, runID)

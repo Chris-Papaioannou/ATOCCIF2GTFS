@@ -20,13 +20,14 @@ def create_O00():
 
     for i, date in enumerate(dateRange):
         dfVJs[f'{date}'] = dfVJs.DayVector.str[i].astype(int)
+        dfVJs = dfVJs.copy()
     
     dfVJs.drop(['DayVector'], axis=1, inplace=True)
 
     dfVJsLong = dfVJs.melt(['No', 'ATOC'], var_name='Date', value_name='Services')
     dfVJsSummary = dfVJsLong.groupby(['ATOC', 'Date'], as_index=False).Services.sum()
 
-    dfVJsSummary.to_parquet("O00_DailyServicesByTOC.parquet", index=False, compression=parquetCompression)
+    dfVJsSummary.to_parquet("results\\O00_DailyServicesByTOC.parquet", index=False, compression=parquetCompression)
 
     del dfVJs
     del dfVJsLong

@@ -1,4 +1,5 @@
 import pandas as pd
+import json
 
 
 def readNetworkInputs(input_path):
@@ -63,7 +64,37 @@ def readVerInputs(input_path):
 
     return createVers
 
+def readDemandInputs(input_path):
+    df = pd.read_csv(input_path, header=None, names=['variable', 'value'])
+    df.set_index('variable', inplace=True)
 
+    demandBool = df.at['ImportDemand', 'value']
+    demandFilename = json.loads(df.at[df.at['DemandFile', 'value'],'value'].replace(";",","))['Name']
+
+    CRSUpdate = df.at['CRSUpdate', 'value']
+    WeekdayMatrix = df.at['WeekdayMatrix', 'value']
+    MidweekFactors = df.at['MidweekFactors', 'value']
+    GroupedStationSplits = df.at['GroupedStationSplits', 'value']
+    TravelcardSplits = df.at['TravelcardSplits', 'value']
+    TimeProfiles = df.at['TimeProfiles', 'value']
+    GlobalFactor = df.at['GlobalFactor', 'value']
+
+    importDemand = [demandBool, demandFilename, CRSUpdate, WeekdayMatrix, MidweekFactors, GroupedStationSplits, TravelcardSplits, TimeProfiles, GlobalFactor]
+
+    return importDemand
+
+def readAssignmentInputs(input_path):
+    df = pd.read_csv(input_path, header=None, names=['variable', 'value'])
+    df.set_index('variable', inplace=True)
+
+    assignmentBool = df.at['Assignment', 'value']
+    runID = df.at['RunID', 'value']
+    demandFilename = json.loads(df.at[df.at['DemandFile', 'value'],'value'].replace(";",","))['Name']
+    outputsBool = df.at['Outputs', 'value']
+
+    runAssignment = [assignmentBool, runID, demandFilename, outputsBool]
+
+    return runAssignment
 
 def read_inputs(input_path):
     df = pd.read_csv(input_path, header=None, names=['variable', 'value'])

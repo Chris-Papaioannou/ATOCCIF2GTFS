@@ -5,8 +5,7 @@ import pytest
 
 import shapely
 from shapely import LinearRing, LineString, Point
-
-from .common import (
+from shapely.tests.common import (
     all_types,
     empty,
     geometry_collection,
@@ -299,7 +298,7 @@ def test_is_ccw(geom, expected):
 
 
 def _prepare_with_copy(geometry):
-    """Prepare without modifying inplace"""
+    """Prepare without modifying in-place"""
     geometry = shapely.transform(geometry, lambda x: x)  # makes a copy
     shapely.prepare(geometry)
     return geometry

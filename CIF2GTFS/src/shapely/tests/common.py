@@ -42,7 +42,6 @@ empty_line_string = shapely.from_wkt("LINESTRING EMPTY")
 empty_line_string_z = shapely.from_wkt("LINESTRING Z EMPTY")
 empty_polygon = shapely.from_wkt("POLYGON EMPTY")
 empty = shapely.from_wkt("GEOMETRYCOLLECTION EMPTY")
-line_string_nan = shapely.LineString([(np.nan, np.nan), (np.nan, np.nan)])
 multi_point_z = shapely.MultiPoint([(0, 0, 4), (1, 2, 4)])
 multi_line_string_z = shapely.MultiLineString([[(0, 0, 4), (1, 2, 4)]])
 multi_polygon_z = shapely.multipolygons(
@@ -68,6 +67,19 @@ all_types = (
     empty,
 )
 
+all_types_z = (
+    point_z,
+    line_string_z,
+    polygon_z,
+    multi_point_z,
+    multi_line_string_z,
+    multi_polygon_z,
+    polygon_with_hole_z,
+    geometry_collection_z,
+    empty_point_z,
+    empty_line_string_z,
+)
+
 
 @contextmanager
 def ignore_invalid(condition=True):
@@ -76,3 +88,38 @@ def ignore_invalid(condition=True):
             yield
     else:
         yield
+
+
+with ignore_invalid():
+    line_string_nan = shapely.LineString([(np.nan, np.nan), (np.nan, np.nan)])
+
+
+class ArrayLike:
+    """
+    Simple numpy Array like class that implements the
+    ufunc protocol.
+    """
+
+    def __init__(self, array):
+        self._array = np.asarray(array)
+
+    def __len__(self):
+        return len(self._array)
+
+    def __getitem(self, key):
+        return self._array[key]
+
+    def __iter__(self):
+        return self._array.__iter__()
+
+    def __array__(self):
+        return np.asarray(self._array)
+
+    def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
+        if method == "__call__":
+            inputs = [
+                arg._array if isinstance(arg, self.__class__) else arg for arg in inputs
+            ]
+            return self.__class__(ufunc(*inputs, **kwargs))
+        else:
+            return NotImplemented

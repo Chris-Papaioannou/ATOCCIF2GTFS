@@ -5,8 +5,7 @@ import shapely
 from shapely import GeometryCollection, LinearRing, LineString, MultiLineString, Point
 from shapely.errors import UnsupportedGEOSVersionError
 from shapely.testing import assert_geometries_equal
-
-from .common import (
+from shapely.tests.common import (
     empty_line_string,
     empty_point,
     line_string,
@@ -179,7 +178,7 @@ def test_shared_paths_non_linestring():
 
 
 def _prepare_input(geometry, prepare):
-    """Prepare without modifying inplace"""
+    """Prepare without modifying in-place"""
     if prepare:
         geometry = shapely.transform(geometry, lambda x: x)  # makes a copy
         shapely.prepare(geometry)
