@@ -131,6 +131,7 @@ def getPathLegs(cols, tempPath, flowBundle, quitVisum):
 
     dfPathLegs.drop(['PATHLEGINDEX'], axis=1, inplace=True)
 
+    con.close()
     con = None
     
     return dfPathLegs, timecode
@@ -297,7 +298,7 @@ def create_O04(runID):
 def create_O05(tempPath, runID):
 
     Visum.Filters.VolumeAttributeValueFilter().FilterByActiveODPairsAndPuTPaths = False
-    Visum.Filters.ODPairFilter.Init()
+    Visum.Filters.ODPairFilter().Init()
     cond = Visum.Filters.ODPairFilter().AddCondition("OP_NONE", False, "TOTAL_DEMAND", 3, 0)
     Visum.Filters.ODPairFilter().UseFilter = True
 
@@ -315,6 +316,7 @@ def create_O05(tempPath, runID):
 
     con = sqlite3.connect(f"{tempPath}\\OD_Pairs_{timecode}.sqlite3") 
     dfODs = pd.read_sql_query(SQL_Query, con)# , chunksize=10000
+    con.close()
 
     con = None
 
@@ -340,7 +342,7 @@ def create_O06(tempPath, runID):
 
     con = sqlite3.connect(f"{tempPath}\\OD_Pairs_{timecode}.sqlite3") 
     dfODs = pd.read_sql_query(SQL_Query, con)# , chunksize=10000
-
+    con.close()
     con = None
 
     dfODs.rename({"FROMZONE\CODE":'FromCRS', 'TOZONE\CODE':'ToCRS', "MATVALUE(26)":'JRT_0-1', "MATVALUE(27)":'JRT_1-2', "MATVALUE(28)":'JRT_2-3', "MATVALUE(29)":'JRT_3-4', "MATVALUE(30)":'JRT_4-5', "MATVALUE(31)":'JRT_5-6', "MATVALUE(32)":'JRT_6-7', "MATVALUE(33)":'JRT_7-8', "MATVALUE(34)":'JRT_8-9', "MATVALUE(35)":'JRT_9-10', "MATVALUE(36)":'JRT_10-11', "MATVALUE(37)":'JRT_11-12', "MATVALUE(38)":'JRT_12-13', "MATVALUE(39)":'JRT_13-14', "MATVALUE(40)":'JRT_14-15', "MATVALUE(41)":'JRT_15-16', "MATVALUE(42)":'JRT_16-17', "MATVALUE(43)":'JRT_17-18', "MATVALUE(44)":'JRT_18-19', "MATVALUE(45)":'JRT_19-20', "MATVALUE(46)":'JRT_20-21', "MATVALUE(47)":'JRT_21-22', "MATVALUE(48)":'JRT_22-23', "MATVALUE(49)":'JRT_23-24'})
