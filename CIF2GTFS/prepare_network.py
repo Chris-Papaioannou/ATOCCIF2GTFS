@@ -246,37 +246,29 @@ def process_platformWays(myPlatformWays, crs, desc, x, y):
 
 def get_OSM_platform_data(path, TIPLOC, desc, x, y, bound):
     
-    #Check if OSM data has been saved as pickle already for this station, and if so, read from pickle file, otherwise query them from OSM
-    myPickle = os.path.join(path, f'cached_data\\OSM\\pickles\\{TIPLOC}.p')
-    if os.path.exists(myPickle):
-        with open(myPickle, 'rb') as f:
-            dfPlatforms, = pickle.load(f)
-    else:
-        min = OSGB36toWGS84(x - bound, y - bound)
-        max = OSGB36toWGS84(x + bound, y + bound)
-        platformWays = overpass_query(f'way({min[0]},{min[1]},{max[0]},{max[1]})["railway"~"platform"];(._;>;);out body;').ways
-        platformRelations = overpass_query(f'relation({min[0]},{min[1]},{max[0]},{max[1]})["railway"~"platform"];(._;>;);out body;').relations
-        platformWays = platformWays + platformRelations
+    min = OSGB36toWGS84(x - bound, y - bound)
+    max = OSGB36toWGS84(x + bound, y + bound)
+    platformWays = overpass_query(f'way({min[0]},{min[1]},{max[0]},{max[1]})["railway"~"platform"];(._;>;);out body;').ways
+    platformRelations = overpass_query(f'relation({min[0]},{min[1]},{max[0]},{max[1]})["railway"~"platform"];(._;>;);out body;').relations
+    platformWays = platformWays + platformRelations
+
+    #Process the OSM platform way data and save the resultant figure as a png file
+    platformWays, myFig = process_platformWays(platformWays, TIPLOC, desc, x, y)
+    myFig.savefig(os.path.join(path, f'cached_data\\OSM\\images\\{TIPLOC}.png'))
     
-        #Process the OSM platform way data and save the resultant figure as a png file
-        platformWays, myFig = process_platformWays(platformWays, TIPLOC, desc, x, y)
-        myFig.savefig(os.path.join(path, f'cached_data\\OSM\\images\\{TIPLOC}.png'))
-        
-        #Convert the processed OSM platform way data into a pandas DataFrame and return alongside OSM station node location
-        c1 = [way.tags['ref'] for way in platformWays]
-        c2 = [way.bng for way in platformWays]
-        c3 = [way.dist for way in platformWays]
-        c4 = [way.shape for way in platformWays]
-        myCols = {'Platform': c1, 'Location': c2, 'Dist': c3,  'Shape': c4}
-        myTypes = {'Platform': str}
-        dfPlatforms = pd.DataFrame.from_dict(myCols).astype(myTypes)
-        dfPlatforms = dfPlatforms.explode('Platform').reset_index(drop = True)
-        dfPlatforms = dfPlatforms.join(dfPlatforms.pop('Platform').str.split(';', expand = True))
-        dfPlatforms = dfPlatforms.melt(dfPlatforms.columns[:len(myCols)-1], dfPlatforms.columns[len(myCols)-1:])
-        dfPlatforms = dfPlatforms.rename(columns = {'value': 'Platform'}).drop('variable', axis = 1).sort_values('Dist').reset_index(drop = True)
-        with open(myPickle, 'wb') as f:
-            pickle.dump([dfPlatforms], f)
-    
+    #Convert the processed OSM platform way data into a pandas DataFrame and return alongside OSM station node location
+    c1 = [way.tags['ref'] for way in platformWays]
+    c2 = [way.bng for way in platformWays]
+    c3 = [way.dist for way in platformWays]
+    c4 = [way.shape for way in platformWays]
+    myCols = {'Platform': c1, 'Location': c2, 'Dist': c3,  'Shape': c4}
+    myTypes = {'Platform': str}
+    dfPlatforms = pd.DataFrame.from_dict(myCols).astype(myTypes)
+    dfPlatforms = dfPlatforms.explode('Platform').reset_index(drop = True)
+    dfPlatforms = dfPlatforms.join(dfPlatforms.pop('Platform').str.split(';', expand = True))
+    dfPlatforms = dfPlatforms.melt(dfPlatforms.columns[:len(myCols)-1], dfPlatforms.columns[len(myCols)-1:])
+    dfPlatforms = dfPlatforms.rename(columns = {'value': 'Platform'}).drop('variable', axis = 1).sort_values('Dist').reset_index(drop = True)
+
     return dfPlatforms
 
 def addStopPoint(Visum, i, row, bound, TPEsUnique):
@@ -812,7 +804,7 @@ if __name__ == "__main__":
     input_path = os.path.join(path, "input\\inputs.csv")
 
     buildNetwork = gi.readNetworkInputs(input_path)
-    if buildNetwork[0] == "TRUE":
+    if bool(buildNetwork[0]):
         myShp = buildNetwork[1]
         tiploc_path = buildNetwork[2]
         BPLAN_path =  buildNetwork[3]
@@ -821,13 +813,4 @@ if __name__ == "__main__":
         tsys_path = buildNetwork[6]
         xfer_link_path = buildNetwork[7]
 
-        '''
-        myShp = os.path.join(path, 'input\\Shp\\NR_Full_Network.shp')
-        tiploc_path= os.path.join(path, 'input\\TiplocPublicExport_2022-12-24_10-37.json')
-        BPLAN_path=  os.path.join(path, 'input\\Geography_20221210_to_20230520_from_20221211.txt')
-        ELR_path= os.path.join(path, 'input\\Reverse_ELR_Direction.txt')
-        merge_path = os.path.join(path, 'input\\StopsToMerge+CRSOverride.csv')
-        tsys_path = os.path.join(path, 'input\\TSys_definitions.csv')
-        xfer_link_path = os.path.join(path, 'input\\transfer_links.csv')
-        '''
         main(path, myShp, tiploc_path, BPLAN_path, ELR_path, merge_path, tsys_path, xfer_link_path)

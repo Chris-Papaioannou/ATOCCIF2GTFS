@@ -162,5 +162,5 @@ if __name__ == "__main__":
 
     importTimetable = gi.readTimetableInputs(input_path)
 
-    if importTimetable[0] == "TRUE":
+    if bool(importTimetable[0]):
         main()

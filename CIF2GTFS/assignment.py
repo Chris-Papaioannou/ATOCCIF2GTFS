@@ -33,7 +33,7 @@ if __name__ == "__main__":
 
     runAssignment = gi.readAssignmentInputs(input_path)
 
-    if runAssignment[0] == "TRUE":
+    if bool(runAssignment[0]):
         runID = runAssignment[1]
         demandVer = runAssignment[2]
         outputs = bool(runAssignment[3])

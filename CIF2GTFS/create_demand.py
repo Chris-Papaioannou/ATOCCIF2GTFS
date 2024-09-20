@@ -240,7 +240,7 @@ if __name__ == "__main__":
     input_path = os.path.join(path, "input\\inputs.csv")
 
     importDemand = gi.readDemandInputs(input_path)
-    if importDemand[0] == "TRUE":
+    if bool(importDemand[0]):
         demandFilename = importDemand[1]
         CRSUpdate = importDemand[2]
         WeekdayMatrix = importDemand[3]

@@ -69,7 +69,11 @@ def readDemandInputs(input_path):
     df.set_index('variable', inplace=True)
 
     demandBool = df.at['ImportDemand', 'value']
-    demandFilename = json.loads(df.at[df.at['DemandFile', 'value'],'value'].replace(";",","))['Name']
+    demandFileInput = df.at['DemandFile', 'value']
+    if demandFileInput[:3] == 'Ver':
+        demandFilename = json.loads(df.at[demandFileInput,'value'].replace(";",","))['Name']
+    else:
+        demandFilename = demandFileInput
 
     CRSUpdate = df.at['CRSUpdate', 'value']
     WeekdayMatrix = df.at['WeekdayMatrix', 'value']

@@ -170,9 +170,8 @@ if __name__ == '__main__':
 
     mergeStops = gi.readMergeInputs(input_path)
 
-    if mergeStops[0] == "TRUE":
+    if bool(mergeStops[0]):
         merge_path = mergeStops[1]
         ver_path = os.path.join(path, "output\\VISUM\\Network+Timetable.ver")
 
-        #merge_path = "CIF2GTFS\\input\\StopsToMerge+CRSOverride.csv"
         main(merge_path, ver_path)

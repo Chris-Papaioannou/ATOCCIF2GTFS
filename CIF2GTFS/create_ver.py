@@ -23,7 +23,7 @@ def main():
     input_path = os.path.join(path, "input\\inputs.csv")
 
     vers = gi.readVerInputs(input_path)
-    if vers[0]:
+    if bool(vers[0]):
 
         #vers=['{"Name":"31May23", "TSysSet":"","Date":"31.05.2023"}']
         for ver in vers[1:]:
