@@ -7,6 +7,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using System.Diagnostics;
+using System.Data;
 
 namespace CIF2GTFS
 {
@@ -14,12 +15,10 @@ namespace CIF2GTFS
     {
         static void Main(string[] args)
         {   
-            Console.WriteLine("Preparing Visum network...");
-            ExecProcess("prepare_network.py");
             
             Console.WriteLine("Loading BPLAN PLTs...");
             List<BPLAN_PLT> PLTs = new List<BPLAN_PLT>();
-            using (TextReader textReader = File.OpenText(@"cached_data/BPLAN/PLTs.csv"))
+            using (TextReader textReader = File.OpenText(@"input/PLTs.csv"))
             {
                 CsvReader csvReader = new CsvReader(textReader, CultureInfo.InvariantCulture);
                 csvReader.Configuration.Delimiter = ",";
@@ -48,7 +47,7 @@ namespace CIF2GTFS
 
             Console.WriteLine("Loading TPEs...");
             List<BPLAN_TPE> TPEs = new List<BPLAN_TPE>();
-            using (TextReader textReader = File.OpenText(@"cached_data/BPLAN/TPEs.csv"))
+            using (TextReader textReader = File.OpenText(@"input/TPEs.csv"))
             {
                 CsvReader csvReader = new CsvReader(textReader, CultureInfo.InvariantCulture);
                 csvReader.Configuration.Delimiter = ",";
@@ -444,16 +443,45 @@ namespace CIF2GTFS
             calendarCSVwriter.Dispose();
 
             Console.WriteLine("Writing stop_times.txt");
-            TextWriter stopTimeTextWriter = File.CreateText(@"cached_data/STOP_TIMES/full.txt");
+            TextWriter stopTimeTextWriter = File.CreateText(@"input\full.txt");
             CsvWriter stopTimeCSVwriter = new CsvWriter(stopTimeTextWriter, CultureInfo.InvariantCulture);
             stopTimeCSVwriter.WriteRecords(stopTimesList);
             stopTimeTextWriter.Dispose();
             stopTimeCSVwriter.Dispose();
 
             Console.WriteLine("Dropping trip IDs with only one matched stop from stop_times.txt");
-            ExecProcess("drop_single_stop_trips.py");
+            DataTable df = ReadCsvToDataTable(@"input\full.txt");
+            
+            // Get unique trip IDs (i.e., single stop trips) only for reporting
+            var uniqueTripIds = df.AsEnumerable()
+                                .GroupBy(row => row.Field<string>("trip_id"))
+                                .Where(g => g.Count() == 1)
+                                .Select(g => g.Key)
+                                .ToList();
+            
+            if (uniqueTripIds.Count > 0)
+            {
+                Console.WriteLine($"WARNING (Prio. = High): {uniqueTripIds.Count} trips were dropped as they only had one stop. The following trip IDs were affected:");
+                foreach (var tripId in uniqueTripIds)
+                {
+                    Console.WriteLine(tripId);
+                }
+            }
+            else
+            {
+                Console.WriteLine("NOTE: No trips were dropped as a result of only having one stop.");
+            }
 
-            TextWriter JourneyDetailsTextWriter = File.CreateText(@"cached_data/JourneyDetails.txt");
+            // Drop unique trip IDs (i.e., single stop trips) and output to the final location
+            var reducedDf = df.AsEnumerable()
+                            .GroupBy(row => row.Field<string>("trip_id"))
+                            .Where(g => g.Count() > 1)
+                            .SelectMany(g => g)
+                            .CopyToDataTable();
+
+            WriteDataTableToCsv(reducedDf, @"output\GTFS\stop_times.txt");
+
+            TextWriter JourneyDetailsTextWriter = File.CreateText(@"input/JourneyDetails.txt");
             CsvWriter JourneyDetailsCSVwriter = new CsvWriter(JourneyDetailsTextWriter, CultureInfo.InvariantCulture);
             JourneyDetailsCSVwriter.WriteRecords(JourneyDetailsForJourneyIDDictionary);
             JourneyDetailsTextWriter.Dispose();
@@ -466,64 +494,49 @@ namespace CIF2GTFS
             }
             ZipFile.CreateFromDirectory(@"output/GTFS", @"output/GTFS.zip", CompressionLevel.Optimal, false, Encoding.UTF8);
 
-            Console.WriteLine("Importing GTFS to Visum...");
-            ExecProcess("import_GTFS.py");
-
-            Console.WriteLine("Merging Stops...");
-            ExecProcess("merge_stops.py");
-
-            Console.WriteLine("Creating version file(s)...");
-            ExecProcess("create_ver.py");
-
-            Console.WriteLine("Importing demand...");
-            ExecProcess("create_demand.py");
-
-            Console.WriteLine("Running assignment and outputs...");
-            ExecProcess("assignment.py");
-
             Console.WriteLine("Done");
         }
+    
 
-        static void ExecProcess(string my_script)
-
-        // This allows you to use C# as a Shell to run a Python Process
+        static DataTable ReadCsvToDataTable(string filePath)
         {
-
-            // 1) Create Process Info
-            var psi = new ProcessStartInfo();
-            psi.FileName = @"C:\Program Files\PTV Vision\PTV Visum 2024\Exe\Python\python.exe";
-
-            // 2) Provide script and arguments
-            var script = my_script;
-            var ver_path = @"C:\Users\PLACEHOLDER";
-            psi.Arguments = $"\"{script}\" \"{ver_path}\"";
-
-            // 3) Process configuration
-            psi.UseShellExecute = false;
-            psi.CreateNoWindow = true;
-            psi.RedirectStandardOutput = true;
-            psi.RedirectStandardError = true;
-
-            // 4) Execute process and get output
-            //var errors = "";
-            //var results = "";
-
-            var process = Process.Start(psi);
-            while (!process.StandardError.EndOfStream)
+            DataTable dt = new DataTable();
+            using (StreamReader sr = new StreamReader(filePath))
             {
-                Console.WriteLine(process.StandardError.ReadLine());
+                string[] headers = sr.ReadLine().Split(',');
+                foreach (string header in headers)
+                {
+                    dt.Columns.Add(header);
+                }
+                while (!sr.EndOfStream)
+                {
+                    string[] rows = sr.ReadLine().Split(',');
+                    DataRow dr = dt.NewRow();
+                    for (int i = 0; i < headers.Length; i++)
+                    {
+                        dr[i] = rows[i];
+                    }
+                    dt.Rows.Add(dr);
+                }
             }
-            //StreamReader readerErrors = process.StandardError;
-            //string errors = readerErrors.ReadToEnd();
-            //Console.WriteLine("ERRORS:");
-            //Console.WriteLine(errors);
-            //StreamReader readerResults = process.StandardOutput;
-            //string results = readerResults.ReadToEnd();
-            //Console.WriteLine("Results:");
-            //Console.WriteLine(results);
-                
-
+            return dt;
         }
+
+        static void WriteDataTableToCsv(DataTable dt, string filePath)
+        {
+            using (StreamWriter sw = new StreamWriter(filePath))
+            {
+                IEnumerable<string> columnNames = dt.Columns.Cast<DataColumn>().Select(column => column.ColumnName);
+                sw.WriteLine(string.Join(",", columnNames));
+
+                foreach (DataRow row in dt.Rows)
+                {
+                    IEnumerable<string> fields = row.ItemArray.Select(field => field.ToString());
+                    sw.WriteLine(string.Join(",", fields));
+                }
+            }
+        }
+
 
         static TimeSpan stringToTimeSpan(string input)
         {
@@ -542,6 +555,7 @@ namespace CIF2GTFS
             }
         }
     }
+    
 
     public class JourneyDetail
     {
@@ -695,4 +709,5 @@ namespace CIF2GTFS
         public string Northing { get; set; }
         public int Quality { get; set; }
     }
+    
 }

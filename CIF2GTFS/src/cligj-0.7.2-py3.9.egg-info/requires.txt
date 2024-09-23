@@ -1,4 +1,0 @@
-click>=4.0
-
-[test]
-pytest-cov
