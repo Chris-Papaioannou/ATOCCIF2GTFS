@@ -2,6 +2,7 @@ import sys
 import os
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "src"))
+sys.path.append(os.path.join(os.path.dirname(os.path.dirname(__file__))))
 
 
 import pandas as pd
@@ -12,6 +13,7 @@ from pathlib import Path
 import sqlite3
 
 from zipfile import ZipFile
+import zipfile
 
 import get_inputs as gi
 
@@ -395,7 +397,7 @@ def main():
         runFlowBundle(CRS)
 
 
-    path = os.path.dirname(__file__)
+    path = os.path.dirname(os.path.dirname(__file__))
     input_path = os.path.join(path, "input\\inputs.csv")
     runID = gi.getRunID(input_path)
 
@@ -465,7 +467,7 @@ def main():
     path = os.path.dirname(__file__)
     files = [f"{runID}_O01_PathLegs.csv", f'{runID}_O02_StationMovements.csv', f'{runID}_O03_ODHourlyRoutes.csv', f"{runID}_O04_StopsAndPasses.csv", f"{runID}_O05_DemandAndSkims.csv", f"{runID}_O06_JRTSkims.csv"]
 
-    with ZipFile(f'{runID}_Results.zip', 'w') as zipObj:
+    with ZipFile(f'{runID}_Results.zip', 'w',  zipfile.ZIP_DEFLATED) as zipObj:
     # Iterate over all the files in directory
 
             for file in files:
