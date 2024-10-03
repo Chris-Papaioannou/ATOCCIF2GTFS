@@ -100,6 +100,14 @@ def readAssignmentInputs(input_path):
 
     return runAssignment
 
+def getRunID(input_path):
+    df = pd.read_csv(input_path, header=None, names=['variable', 'value'])
+    df.set_index('variable', inplace=True)
+
+    runID = df.at['RunID', 'value']
+
+    return runID
+
 def read_inputs(input_path):
     df = pd.read_csv(input_path, header=None, names=['variable', 'value'])
 

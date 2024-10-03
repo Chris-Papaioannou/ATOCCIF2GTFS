@@ -4,6 +4,11 @@ import os
 sys.path.append(os.path.join(os.path.dirname(__file__), "src"))
 import pandas as pd
 
+import get_inputs as gi
+path = os.path.dirname(__file__)
+input_path = os.path.join(path, "input\\inputs.csv")
+runID = gi.getRunID(input_path)
+
 parquetCompression = 'snappy'
 
 def create_O00():
@@ -27,7 +32,7 @@ def create_O00():
     dfVJsLong = dfVJs.melt(['No', 'ATOC'], var_name='Date', value_name='Services')
     dfVJsSummary = dfVJsLong.groupby(['ATOC', 'Date'], as_index=False).Services.sum()
 
-    dfVJsSummary.to_parquet("results\\O00_DailyServicesByTOC.parquet", index=False, compression=parquetCompression)
+    dfVJsSummary.to_parquet(f"results\\{runID}_O00_DailyServicesByTOC.parquet", index=False, compression=parquetCompression)
 
     del dfVJs
     del dfVJsLong
