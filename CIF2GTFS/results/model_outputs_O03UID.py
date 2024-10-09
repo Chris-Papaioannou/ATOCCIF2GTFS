@@ -14,7 +14,12 @@ import sqlite3
 from zipfile import ZipFile
 import zipfile
 
-import get_inputs as gi
+
+try:
+    import get_inputs as gi
+    partOfFullRun = True
+except:
+    partOfFullRun = False
 
 
 #* Set parquet compression type here
@@ -395,10 +400,12 @@ def main():
     if flowBundle:
         runFlowBundle(CRS)
 
-    
-    path = os.path.dirname(os.path.dirname(__file__))
-    input_path = os.path.join(path, "input\\inputs.csv")
-    runID = gi.getRunID(input_path)
+    if partOfFullRun:
+        path = os.path.dirname(os.path.dirname(__file__))
+        input_path = os.path.join(path, "input\\inputs.csv")
+        runID = gi.getRunID(input_path)
+    else:
+        runID = os.path.split(Visum.IO.CurrentVersionFile)[1][:3]
 
     create_O04(runID)
     create_O05(tempPath, runID)
