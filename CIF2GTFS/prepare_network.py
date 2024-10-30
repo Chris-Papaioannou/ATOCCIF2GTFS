@@ -115,6 +115,7 @@ def overpass_query(overpassQLstring):
     #Create API object and boolean switch
     apiPy = overpy.Overpass()
     unsatis = True
+    i=0
     
     #Keep trying to access the API until successful
     while unsatis:
@@ -125,7 +126,12 @@ def overpass_query(overpassQLstring):
         #N.B. This except is generic, so will go into an infinite loop if internet connection is down or if overpassQLstring is invalid format
         except:
             time.sleep(2)
-            pass
+            i+=1
+            if i < 10:
+                print(traceback.format_exc())
+                pass
+            else:
+                exit(0)
     
     #Return the API query result
     return result
