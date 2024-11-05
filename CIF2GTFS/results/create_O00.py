@@ -6,7 +6,7 @@ import pandas as pd
 
 import get_inputs as gi
 path = os.path.dirname(__file__)
-input_path = os.path.join(path, "input\\inputs.csv")
+input_path = os.path.join(os.path.dirname(path), "input\\inputs.csv")
 runID = gi.getRunID(input_path)
 
 parquetCompression = 'snappy'

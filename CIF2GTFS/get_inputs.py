@@ -1,12 +1,16 @@
 import pandas as pd
 import json
 
+def convertToBool(strValue):
+    titleValue = strValue.strip().lower().title()
+    return titleValue == 'True'
+
 
 def readNetworkInputs(input_path):
     df = pd.read_csv(input_path, header=None, names=['variable', 'value'])
     df.set_index('variable', inplace=True)
 
-    buildNetworkBool = df.at['BuildNetwork', 'value']
+    buildNetworkBool = convertToBool(df.at['BuildNetwork', 'value'])
     shapes_path = df.at['NetworkShapes', 'value']
     tiploc_path = df.at['TIPLOCs', 'value']
     BPLAN_path = df.at['BPLAN', 'value']
@@ -24,7 +28,7 @@ def readMergeInputs(input_path):
     df = pd.read_csv(input_path, header=None, names=['variable', 'value'])
     df.set_index('variable', inplace=True)
 
-    mergeStopsBool = df.at['MergeStops', 'value']
+    mergeStopsBool = convertToBool(df.at['MergeStops', 'value'])
     merge_path = df.at['MergeStopsPath', 'value']
 
     mergeStops = [mergeStopsBool, merge_path]
@@ -35,7 +39,7 @@ def readTimetableInputs(input_path):
     df = pd.read_csv(input_path, header=None, names=['variable', 'value'])
     df.set_index('variable', inplace=True)
 
-    importTimetableBool = df.at['ImportTimetable', 'value']
+    importTimetableBool = convertToBool(df.at['ImportTimetable', 'value'])
     timetable_path = df.at['TimetablePath', 'value']
 
     importTimetable = [importTimetableBool, timetable_path]
@@ -47,7 +51,7 @@ def readVerInputs(input_path):
     df = pd.read_csv(input_path, header=None, names=['variable', 'value'])
     df.set_index('variable', inplace=True)
 
-    createVersBool = df.at['CreateVers', 'value']
+    createVersBool = (df.at['CreateVers', 'value'])
     ver1 = str(df.at['Ver1', 'value']).replace(";",",")
     ver2 = str(df.at['Ver2', 'value']).replace(";",",")
     ver3 = str(df.at['Ver3', 'value']).replace(";",",")
@@ -68,7 +72,7 @@ def readDemandInputs(input_path):
     df = pd.read_csv(input_path, header=None, names=['variable', 'value'])
     df.set_index('variable', inplace=True)
 
-    demandBool = df.at['ImportDemand', 'value']
+    demandBool = convertToBool(df.at['ImportDemand', 'value'])
     demandFileInput = df.at['DemandFile', 'value']
     if demandFileInput[:3] == 'Ver':
         demandFilename = json.loads(df.at[demandFileInput,'value'].replace(";",","))['Name']
@@ -91,10 +95,10 @@ def readAssignmentInputs(input_path):
     df = pd.read_csv(input_path, header=None, names=['variable', 'value'])
     df.set_index('variable', inplace=True)
 
-    assignmentBool = df.at['Assignment', 'value']
+    assignmentBool = convertToBool(df.at['Assignment', 'value'])
     runID = df.at['RunID', 'value']
     demandFilename = json.loads(df.at[df.at['DemandFile', 'value'],'value'].replace(";",","))['Name']
-    outputsBool = df.at['Outputs', 'value']
+    outputsBool = convertToBool(df.at['Outputs', 'value'])
 
     runAssignment = [assignmentBool, runID, demandFilename, outputsBool]
 
@@ -108,13 +112,25 @@ def getRunID(input_path):
 
     return runID
 
+def readPlatformUnknowns(input_path):
+    df = pd.read_csv(input_path, header=None, names=['variable', 'value'])
+    df.set_index('variable', inplace=True)
+
+    updateBool = convertToBool(df.at['UpdatePlatformUnknown', 'value'])
+    updatePath = df.at['PlatformUnknownPath', 'value']
+    timetablePath = df.at['TimetablePath', 'value']
+
+    runPlatformUpdate = [updateBool, updatePath, timetablePath]
+
+    return runPlatformUpdate
+
 def read_inputs(input_path):
     df = pd.read_csv(input_path, header=None, names=['variable', 'value'])
 
     df.set_index('variable', inplace=True)
 
     workingPath = df.at['WorkingFolder', 'value']
-    buildNetworkBool = df.at['BuildNetwork', 'value']
+    buildNetworkBool = convertToBool(df.at['BuildNetwork', 'value'])
     shapes_path = df.at['NetworkShapes', 'value']
     tiploc_path = df.at['TIPLOCs', 'value']
     BPLAN_path = df.at['BPLAN', 'value']
@@ -124,16 +140,16 @@ def read_inputs(input_path):
 
     buildNetwork = [buildNetworkBool, shapes_path, tiploc_path, BPLAN_path, ELR_path, merge_path, tsys_path]
 
-    importTimetableBool = df.at['ImportTimetable', 'value']
+    importTimetableBool = convertToBool(df.at['ImportTimetable', 'value'])
     timetable_path = df.at['TimetablePath', 'value']
 
     importTimetable = [importTimetableBool, timetable_path]
 
-    mergeStopsBool = df.at['MergeStops', 'value']
+    mergeStopsBool = convertToBool(df.at['MergeStops', 'value'])
 
     mergeStops = [mergeStopsBool, merge_path]
 
-    createVersBool = df.at['CreateVers', 'value']
+    createVersBool = convertToBool(df.at['CreateVers', 'value'])
     ver1 = df.at['Ver1', 'value']
     ver2 = df.at['Ver2', 'value']
     ver3 = df.at['Ver3', 'value']

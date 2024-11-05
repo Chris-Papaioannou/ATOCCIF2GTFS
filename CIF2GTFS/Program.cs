@@ -16,7 +16,10 @@ namespace CIF2GTFS
         {   
             Console.WriteLine("Preparing Visum network...");
             ExecProcess("prepare_network.py");
-            
+
+            Console.WriteLine("Updating Platform Unknowns...");
+            ExecProcess("update_platforms.py");
+
             Console.WriteLine("Loading BPLAN PLTs...");
             List<BPLAN_PLT> PLTs = new List<BPLAN_PLT>();
             using (TextReader textReader = File.OpenText(@"cached_data/BPLAN/PLTs.csv"))

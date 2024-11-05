@@ -200,7 +200,7 @@ def main(demandFilename, CRSUpdate, WeekdayMatrix, MidweekFactors, GroupedStatio
     Visum = com.Dispatch("Visum.Visum.240")
     Visum.LoadVersion(os.path.join(path, f"output\\VISUM\\{demandFilename}.ver"))
     
-    # Get an index of all OD pairs from Visum, and merge our final hourly MOIRA matrices onto them
+    # Get an index of all OD pairs from Visum, and merge our final hourly matrices onto them
     myIndex = pd.DataFrame(Visum.Net.ODPairs.GetMultipleAttributes(['FROMZONE\CODE', 'TOZONE\CODE']), columns = ['FROMZONE\CODE', 'TOZONE\CODE'])
     myExpandedMatrix = myIndex.merge(hourlyMatrices, 'left', ['FROMZONE\CODE', 'TOZONE\CODE'])
 
