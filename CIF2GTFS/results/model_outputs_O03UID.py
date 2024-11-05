@@ -367,6 +367,15 @@ def create_O06(tempPath, runID):
 
     Path.unlink(Path(f"{tempPath}\\OD_Pairs_{timecode}.sqlite3"))  
 
+def create_O08(df, runID):
+    dict_MovTyp_PJT_Factor = {'FirstRailLeg':1, 'LastRailLeg':1, 'RailTransfer':2, 'IntermediateRailLeg':1, 'ToTubeTransfer':0, 'FromTubeTransfer':2, 'OriginTubeTransfer':2, 'DestinationTubeTransfer':2}
+    df['PJT_Multiplier'] = df.MovementType.replace(dict_MovTyp_PJT_Factor)
+    df['PJT'] = df.TIME*df.PJT_Multiplier + 2*df.WAITTIME
+    df['PJT_Pax'] = df.PJT*df.ODTRIPS
+    df_out = df.groupby(['OrigCRS', 'DestCRS', 'ATOC'], as_index=False).agg(ODTRIPS=('ODTRIPS', np.mean), InVehicleTime=('TIME', np.sum), WaitTime=('WAITTIME', np.sum), PJT=('PJT', np.sum), Hour=('Hour', np.min), Legs=('TrainUID', 'count'), PJT_Pax=('PJT_Pax', np.sum))
+
+    df_out.to_parquet(f"{runID}_O08_TransferRecords.parquet", index=False, compression=parquetCompression)
+    df_out.to_csv(f"{runID}_O08_TransferRecords.csv", index=False)
 
 def main():
 
@@ -466,12 +475,14 @@ def main():
     dfPathLegs.to_csv(f"{runID}_O01_PathLegs.csv", index=False)
 
     create_O03(dfPathLegs, runID)
+
+    create_O08(dfPathLegs, runID)
     
     Path.unlink(Path(f"{tempPath}\\PuTPathLegs_{timecode}.sqlite3"))
     print("Done")
 
     path = os.path.dirname(__file__)
-    files = [f"{runID}_O01_PathLegs.csv", f'{runID}_O02_StationMovements.csv', f'{runID}_O03_ODHourlyRoutes.csv', f"{runID}_O04_StopsAndPasses.csv", f"{runID}_O05_DemandAndSkims.csv", f"{runID}_O06_JRTSkims.csv"]
+    files = [f"{runID}_O01_PathLegs.csv", f'{runID}_O02_StationMovements.csv', f'{runID}_O03_ODHourlyRoutes.csv', f"{runID}_O04_StopsAndPasses.csv", f"{runID}_O05_DemandAndSkims.csv", f"{runID}_O06_JRTSkims.csv", f"{runID}_O08_TransferRecords.csv"]
 
     with ZipFile(f'{runID}_Results.zip', 'w',  zipfile.ZIP_DEFLATED) as zipObj:
     # Iterate over all the files in directory
