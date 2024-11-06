@@ -553,13 +553,13 @@ $VERSION:VERSNR;FILETYPE;LANGUAGE;UNIT
 
         with open(os.path.join(path, 'cached_data\\VISUM\\LOCS.net'), 'w') as f:
             f.write(header)
-            dfNodes.to_csv(f, mode='a', sep=';', index=False, line_terminator='\n')
+            dfNodes.to_csv(f, mode='a', sep=';', index=False, lineterminator='\n')
             f.write('\n')
-            dfStops.to_csv(f, mode='a', sep=';', index=False, line_terminator='\n')
+            dfStops.to_csv(f, mode='a', sep=';', index=False, lineterminator='\n')
             f.write('\n')
-            dfStopAreas.to_csv(f, mode='a', sep=';', index=False, line_terminator='\n')
+            dfStopAreas.to_csv(f, mode='a', sep=';', index=False, lineterminator='\n')
             f.write('\n')
-            dfStopPoints.to_csv(f, mode='a', sep=';', index=False, line_terminator='\n')
+            dfStopPoints.to_csv(f, mode='a', sep=';', index=False, lineterminator='\n')
 
         Visum.IO.SaveVersion(myVer)
         Visum.IO.LoadNet(os.path.join(path,'cached_data\\VISUM\\LOCS.net'), True)
