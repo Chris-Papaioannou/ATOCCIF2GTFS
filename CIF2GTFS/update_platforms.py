@@ -3,10 +3,21 @@ import sys
 import pandas as pd
 import numpy as np
 import shutil
+import logging
 
 sys.path.append(os.path.dirname(__file__))
 
 import get_inputs as gi
+
+logging.basicConfig(
+    filename="ModelBuilder.log",
+    encoding="utf-8",
+    filemode="a",
+    format="{asctime} - {levelname} - {message}",
+    style="{",
+    datefmt="%Y-%m-%d %H:%M",
+    level=logging.INFO # Change to logging.DEBUG for more details
+)
 
 
 def main():
@@ -14,18 +25,26 @@ def main():
     input_path = os.path.join(path, "input\\inputs.csv")
 
     updatePlatforms = gi.readPlatformUnknowns(input_path)
+    logging.info(f"Update Platforms: {updatePlatforms[0]}")
     if bool(updatePlatforms[0]):
         platformFilename = updatePlatforms[1]
         timetablePath = updatePlatforms[2]
+
+        logging.info(f"Platform Updater: {platformFilename}")
+        logging.info(f"Timetable Path: {timetablePath}")
 
         folderpath, filename = os.path.split(timetablePath)
         uneditedTimetablePath = os.path.join(folderpath, "Original_"+filename)
 
         shutil.copyfile(timetablePath, uneditedTimetablePath)
 
+        logging.info(f'Unedited Timetable: {uneditedTimetablePath}')
+
         dfPlatforms = pd.read_csv(platformFilename, dtype={'OrigDep':str,'CurrentArr':str,'CurrentDep':str})
         dfPlatforms['ID'] = list(zip(dfPlatforms.TrainUID, dfPlatforms.CurrentTIPLOC, dfPlatforms.CurrentArr, dfPlatforms.CurrentDep))
         platformsDict = dict(zip(dfPlatforms.ID, dfPlatforms.Platform))
+
+        numChangedRecords = 0
 
         with open(uneditedTimetablePath) as cif: 
             with open(timetablePath, "w") as new_cif:
@@ -46,6 +65,8 @@ def main():
                                     newPlatNum = platformsDict[tuple((TrainUID, OrigTIPLOC, np.nan, OrigDep))]
                                     new_record = record[:19]+str(newPlatNum).ljust(3, " ")+record[22:]
                                     new_cif.write(new_record)
+                                    logging.debug(f'Record updated: {TrainUID},  {OrigTIPLOC}, D{OrigDep}; New platform: {newPlatNum}')
+                                    numChangedRecords += 1
                                 else:
                                     new_cif.write(record)
                             else:
@@ -65,6 +86,8 @@ def main():
                                     newPlatNum = platformsDict[tuple((TrainUID, InterTIPLOC, InterArr, InterDep))]
                                     new_record = record[:33]+str(newPlatNum).ljust(3, " ")+record[36:]
                                     new_cif.write(new_record)
+                                    logging.debug(f'Record updated: {TrainUID},  {InterTIPLOC}, A{InterArr}, D{InterDep}; New platform: {newPlatNum}')
+                                    numChangedRecords += 1
                                 else:
                                     new_cif.write(record)
                             else:
@@ -80,6 +103,8 @@ def main():
                                     newPlatNum = platformsDict[tuple((TrainUID, DestTIPLOC, DestArr, np.nan))]
                                     new_record = record[:19]+str(newPlatNum).ljust(3, " ")+record[22:]
                                     new_cif.write(new_record)
+                                    logging.debug(f'Record updated: {TrainUID},  {DestTIPLOC}, A{DestArr}; New platform: {newPlatNum}')
+                                    numChangedRecords += 1
                                 else:
                                     new_cif.write(record)
                             else:
@@ -87,6 +112,7 @@ def main():
                             
                         case _:
                             new_cif.write(record)
+        logging.info(f'Platforms updated - {numChangedRecords} changed')
 
 if __name__ == "__main__":
     main()

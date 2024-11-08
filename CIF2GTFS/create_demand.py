@@ -1,22 +1,26 @@
 #%%
-
-import glob
-import math
 import os
-import pickle
 import numpy as np
 import pandas as pd
 import win32com.client as com
-from itertools import combinations
-from matplotlib import pyplot as plt
-from scipy.optimize import curve_fit
-from scipy.stats import poisson
-import datetime
 import sys
+import traceback
 
 sys.path.append(os.path.dirname(__file__))
 
 import get_inputs as gi
+
+import logging
+
+logging.basicConfig(
+    filename="ModelBuilder.log",
+    encoding="utf-8",
+    filemode="a",
+    format="{asctime} - {levelname} - {message}",
+    style="{",
+    datefmt="%Y-%m-%d %H:%M",
+    level=logging.INFO # Change to logging.DEBUG for more details
+)
 
 
 def applyMidweekFactors(weekdayMat, midweekFactors, globalFactor):
@@ -150,6 +154,8 @@ def applyTimeProfiles(matrix, timeProfiles):
 
 def main(demandFilename, CRSUpdate, WeekdayMatrix, MidweekFactors, GroupedStationSplits, TravelcardSplits, TimeProfiles, GlobalFactor):
 
+    logging.info('Creating demand...')
+
     #Define file path of scripts
     path = os.path.dirname(__file__)
 
@@ -159,78 +165,85 @@ def main(demandFilename, CRSUpdate, WeekdayMatrix, MidweekFactors, GroupedStatio
     # 4. Split travelcard stations 
     # 5. Apply time profiles
 
-    updateCRS = pd.read_csv(CRSUpdate, keep_default_na=False)
-    dictCRS = dict(zip(updateCRS.OldCRS, updateCRS.NewCRS))
+    try:
+
+        updateCRS = pd.read_csv(CRSUpdate, keep_default_na=False)
+        dictCRS = dict(zip(updateCRS.OldCRS, updateCRS.NewCRS))
 
 
-    weekdayMat = pd.read_csv(WeekdayMatrix, sep = '\t', skiprows= 12, low_memory = False, names=['FromZone', 'ToZone', 'Demand'], header=0, keep_default_na=False)
-    weekdayMat = weekdayMat.loc[weekdayMat.FromZone != weekdayMat.ToZone].copy()
-    weekdayMat.replace({'FromZone':dictCRS, 'ToZone':dictCRS}, inplace=True)
+        weekdayMat = pd.read_csv(WeekdayMatrix, sep = '\t', skiprows= 12, low_memory = False, names=['FromZone', 'ToZone', 'Demand'], header=0, keep_default_na=False)
+        weekdayMat = weekdayMat.loc[weekdayMat.FromZone != weekdayMat.ToZone].copy()
+        weekdayMat.replace({'FromZone':dictCRS, 'ToZone':dictCRS}, inplace=True)
 
-    midweekFactors = pd.read_csv(MidweekFactors, low_memory=False, keep_default_na=False)
-    midweekFactors.replace({'origin_station_code':dictCRS, 'destination_station_code':dictCRS}, inplace=True)
-    midweekMat = applyMidweekFactors(weekdayMat, midweekFactors, GlobalFactor)
+        midweekFactors = pd.read_csv(MidweekFactors, low_memory=False, keep_default_na=False)
+        midweekFactors.replace({'origin_station_code':dictCRS, 'destination_station_code':dictCRS}, inplace=True)
+        midweekMat = applyMidweekFactors(weekdayMat, midweekFactors, GlobalFactor)
 
-    groupSplits = pd.read_csv(GroupedStationSplits, low_memory=False, keep_default_na=False)
-    groupSplits.replace({'FromCRS':dictCRS, 'ToCRS':dictCRS}, inplace=True)
-    groupSplits.Split = np.where(groupSplits.Split=="", 1, groupSplits.Split)
-    groupSplits.Split = groupSplits.Split.astype(float)
-    ungroupedMat = applyGroupSplits(midweekMat, groupSplits)
+        groupSplits = pd.read_csv(GroupedStationSplits, low_memory=False, keep_default_na=False)
+        groupSplits.replace({'FromCRS':dictCRS, 'ToCRS':dictCRS}, inplace=True)
+        groupSplits.Split = np.where(groupSplits.Split=="", 1, groupSplits.Split)
+        groupSplits.Split = groupSplits.Split.astype(float)
+        ungroupedMat = applyGroupSplits(midweekMat, groupSplits)
 
-    travelcardSplits = pd.read_csv(TravelcardSplits, low_memory=False, keep_default_na=False)
-    travelcardSplits.replace({'Orig':dictCRS, 'Dest':dictCRS}, inplace=True)
-    splitMat = applyTravelcardSplits(ungroupedMat, travelcardSplits)
+        travelcardSplits = pd.read_csv(TravelcardSplits, low_memory=False, keep_default_na=False)
+        travelcardSplits.replace({'Orig':dictCRS, 'Dest':dictCRS}, inplace=True)
+        splitMat = applyTravelcardSplits(ungroupedMat, travelcardSplits)
 
-    dailyMatrix = splitMat.groupby(['Orig', 'Dest'], as_index=False).Demand.sum()
+        dailyMatrix = splitMat.groupby(['Orig', 'Dest'], as_index=False).Demand.sum()
 
-    print(dailyMatrix.Demand.sum())
+        logging.info(f'Daily demand total: {dailyMatrix.Demand.sum()}')
+        print(dailyMatrix.Demand.sum())
 
-    timeProfiles = pd.read_csv(TimeProfiles, low_memory=False, keep_default_na=False)
-    timeProfiles.replace({'origin_station_code':dictCRS, 'destination_station_code':dictCRS}, inplace=True)
+        timeProfiles = pd.read_csv(TimeProfiles, low_memory=False, keep_default_na=False)
+        timeProfiles.replace({'origin_station_code':dictCRS, 'destination_station_code':dictCRS}, inplace=True)
 
-    hourlyMatrices = applyTimeProfiles(dailyMatrix, timeProfiles)
-    total=0.0
-    for i in range(24):
-        total += hourlyMatrices[f'Matrix({i+1})'].sum()
-    print(total)
+        hourlyMatrices = applyTimeProfiles(dailyMatrix, timeProfiles)
+        total=0.0
+        for i in range(24):
+            total += hourlyMatrices[f'Matrix({i+1})'].sum()
+        print(total)
 
-    hourlyMatrices.rename({'Orig':'FROMZONE\CODE', 'Dest':'TOZONE\CODE'}, axis=1, inplace=True)
-    hourlyMatrices.to_csv(os.path.join(path, 'demand\\HourlyMatrices.csv'),index=False)
-    
-    Visum = com.Dispatch("Visum.Visum.240")
-    Visum.LoadVersion(os.path.join(path, f"output\\VISUM\\{demandFilename}.ver"))
-    
-    # Get an index of all OD pairs from Visum, and merge our final hourly matrices onto them
-    myIndex = pd.DataFrame(Visum.Net.ODPairs.GetMultipleAttributes(['FROMZONE\CODE', 'TOZONE\CODE']), columns = ['FROMZONE\CODE', 'TOZONE\CODE'])
-    myExpandedMatrix = myIndex.merge(hourlyMatrices, 'left', ['FROMZONE\CODE', 'TOZONE\CODE'])
+        hourlyMatrices.rename({'Orig':'FROMZONE\CODE', 'Dest':'TOZONE\CODE'}, axis=1, inplace=True)
+        hourlyMatrices.to_csv(os.path.join(path, 'demand\\HourlyMatrices.csv'),index=False)
+        
+        Visum = com.Dispatch("Visum.Visum.240")
+        Visum.LoadVersion(os.path.join(path, f"output\\VISUM\\{demandFilename}.ver"))
+        
+        # Get an index of all OD pairs from Visum, and merge our final hourly matrices onto them
+        myIndex = pd.DataFrame(Visum.Net.ODPairs.GetMultipleAttributes(['FROMZONE\CODE', 'TOZONE\CODE']), columns = ['FROMZONE\CODE', 'TOZONE\CODE'])
+        myExpandedMatrix = myIndex.merge(hourlyMatrices, 'left', ['FROMZONE\CODE', 'TOZONE\CODE'])
 
-    
-    #Iterate through the hours, convert dummy matrices to data, set to 0 and read in the values
-    for i in range(24):
-        myVisumMatrix = Visum.Net.Matrices.ItemByKey(i+1)
-        myVisumMatrix.SetAttValue("DATASOURCETYPE", 1)
-        myVisumMatrix.SetValuesToResultOfFormula("0")
-        myHourlyMatrix = myExpandedMatrix[f'Matrix({i+1})'].reset_index()
-        myHourlyMatrix['index'] += 1
-        Visum.Net.ODPairs.SetMultiAttValues(f'MatValue({str(i+1)})', myHourlyMatrix.values)
+        
+        #Iterate through the hours, convert dummy matrices to data, set to 0 and read in the values
+        for i in range(24):
+            myVisumMatrix = Visum.Net.Matrices.ItemByKey(i+1)
+            myVisumMatrix.SetAttValue("DATASOURCETYPE", 1)
+            myVisumMatrix.SetValuesToResultOfFormula("0")
+            myHourlyMatrix = myExpandedMatrix[f'Matrix({i+1})'].reset_index()
+            myHourlyMatrix['index'] += 1
+            Visum.Net.ODPairs.SetMultiAttValues(f'MatValue({str(i+1)})', myHourlyMatrix.values)
+            logging.info(f'Matrix {i+1} imported')
 
 
-    Visum.IO.SaveVersion(os.path.join(path, f"demand\\{demandFilename}_Demand.ver"))
-    
-    myExpandedMatrix['OD'] = myExpandedMatrix['FROMZONE\CODE']+"_"+myExpandedMatrix['TOZONE\CODE']
-    hourlyMatrices['OD'] = hourlyMatrices['FROMZONE\CODE']+"_"+hourlyMatrices['TOZONE\CODE']
+        Visum.IO.SaveVersion(os.path.join(path, f"demand\\{demandFilename}_Demand.ver"))
+        
+        myExpandedMatrix['OD'] = myExpandedMatrix['FROMZONE\CODE']+"_"+myExpandedMatrix['TOZONE\CODE']
+        hourlyMatrices['OD'] = hourlyMatrices['FROMZONE\CODE']+"_"+hourlyMatrices['TOZONE\CODE']
 
-    VisumODs = list(myExpandedMatrix.OD.unique())
-    print(len(VisumODs))
-    inputODs = list(hourlyMatrices.OD.unique())
-    print(len(inputODs))
+        VisumODs = list(myExpandedMatrix.OD.unique())
+        print(len(VisumODs))
+        inputODs = list(hourlyMatrices.OD.unique())
+        print(len(inputODs))
 
-    missingODs = list(set(inputODs)-set(VisumODs))
-    print('Doing loc')
-    missingDemand = hourlyMatrices.loc[hourlyMatrices.OD.isin(missingODs)]
+        missingODs = list(set(inputODs)-set(VisumODs))
+        print('Doing loc')
+        missingDemand = hourlyMatrices.loc[hourlyMatrices.OD.isin(missingODs)]
 
-    missingDemand.to_csv(os.path.join(path, 'demand\\DroppedDemand.csv'), index=False)
-    print('Done')
+        missingDemand.to_csv(os.path.join(path, 'demand\\DroppedDemand.csv'), index=False)
+        logging.warning(f'Total dropped demand: {missingDemand.sum()}')
+        print('Done')
+    except:
+        logging.error(traceback.format_exc())
 
 # %%
 
@@ -240,6 +253,7 @@ if __name__ == "__main__":
     input_path = os.path.join(path, "input\\inputs.csv")
 
     importDemand = gi.readDemandInputs(input_path)
+    logging.info(f'Importing demand: {importDemand[0]}')
     if bool(importDemand[0]):
         demandFilename = importDemand[1]
         CRSUpdate = importDemand[2]
@@ -249,6 +263,15 @@ if __name__ == "__main__":
         TravelcardSplits = importDemand[6]
         TimeProfiles = importDemand[7]
         GlobalFactor = float(importDemand[8])
+
+        logging.info(f'Output version file: {importDemand[1]}')
+        logging.info(f'CRS update file: {importDemand[2]}')
+        logging.info(f'Daily matrix: {importDemand[3]}')
+        logging.info(f'Midweekday factors: {importDemand[4]}')
+        logging.info(f'Grouped station splits: {importDemand[5]}')
+        logging.info(f'Travelcard splits: {importDemand[6]}')
+        logging.info(f'Time profiles: {importDemand[7]}')
+        logging.info(f'Global factor: {importDemand[8]}')
 
         main(demandFilename, CRSUpdate, WeekdayMatrix, MidweekFactors, GroupedStationSplits, TravelcardSplits, TimeProfiles, GlobalFactor)
 

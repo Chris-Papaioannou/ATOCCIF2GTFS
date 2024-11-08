@@ -25,8 +25,24 @@ from shapely.geometry import Point, LineString, Polygon
 from shapely.ops import nearest_points
 from itertools import combinations
 import math
-import datetime
 import traceback
+import logging
+
+logging.basicConfig(
+    filename="ModelBuilder.log",
+    encoding="utf-8",
+    filemode="w",
+    format="{asctime} - {levelname} - {message}",
+    style="{",
+    datefmt="%Y-%m-%d %H:%M",
+    level=logging.INFO # Change to logging.DEBUG for more details
+)
+
+#! Debug flags
+skipBPLAN = False
+skipLOCs = False
+skipPLTs = False
+
 
 sys.path.append(os.path.dirname(__file__))
 
@@ -260,7 +276,7 @@ def get_OSM_platform_data(path, TIPLOC, desc, x, y, bound):
 
     #Process the OSM platform way data and save the resultant figure as a png file
     platformWays, myFig = process_platformWays(platformWays, TIPLOC, desc, x, y)
-    myFig.savefig(os.path.join(path, f'cached_data\\OSM\\images\\{TIPLOC}.png'))
+    #myFig.savefig(os.path.join(path, f'cached_data\\OSM\\images\\{TIPLOC}.png'))
     
     #Convert the processed OSM platform way data into a pandas DataFrame and return alongside OSM station node location
     c1 = [way.tags['ref'] for way in platformWays]
@@ -295,7 +311,7 @@ def addStopPoint(Visum, i, row, bound, TPEsUnique):
     try:
         is_dir = sp_Link.Link.AttValue('ReverseLink\\TypeNo') == 0
     except:
-        Visum.Log(12288, f"No link within {bound}m for {row['index_TIPLOC']}: {aTPE['Tiploc']}: {aTPE['Name']} - Platform {row['PlatformID']}.")
+        logging.warning( f"No link within {bound}m for {row['index_TIPLOC']}: {aTPE['Tiploc']}: {aTPE['Name']} - Platform {row['PlatformID']}.")
 
     #Define the access node depending on the Relative Position calculated
     if sp_Link.RelPos < 0.5:
@@ -463,8 +479,6 @@ def processBPLAN(path, bplan_file, tiploc_file):
 
 def getVisumLOCs(path, TPEsUnique, myVer, myShp, reversedELRs, tsys_path):
     Visum = com.Dispatch('Visum.Visum.240')
-    Visum.SetPath(57, os.path.join(path,f"cached_data"))
-    Visum.SetLogFileName(f"Log_LOCs_{datetime.datetime.now().strftime(r'%d-%m-%Y_%H-%M-%S')}.txt")
     projString = """
                         PROJCS[
                             "British_National_Grid_TOWGS",
@@ -517,21 +531,21 @@ def getVisumLOCs(path, TPEsUnique, myVer, myShp, reversedELRs, tsys_path):
         dfStops.reset_index(inplace=True)
         dfStops.rename({'index':'$STOP:NO', 'Easting':'XCOORD', 'Northing':'YCOORD', 'Tiploc':'Code'}, axis=1, inplace=True)
 
-        dfStopAreasPU = TPEsUnique[['Easting', 'Northing']].copy()
+        dfStopAreasPU = TPEsUnique[['Easting', 'Northing', 'Tiploc']].copy()
         dfStopAreasPU.reset_index(inplace=True)
         dfStopAreasPU['NodeNo'] = dfStopAreasPU['index']
         dfStopAreasPU['$STOPAREA:NO'] = dfStopAreasPU['index']*1000
         dfStopAreasPU['Name'] = 'Platform Unknown'
-        dfStopAreasPU.rename({'index':'StopNo', 'Easting':'XCOORD', 'Northing':'YCOORD'}, axis=1, inplace=True)
-        dfStopAreasPU = dfStopAreasPU[['$STOPAREA:NO', 'NodeNo', 'StopNo', 'XCOORD', 'YCOORD', 'Name']]
+        dfStopAreasPU.rename({'index':'StopNo', 'Easting':'XCOORD', 'Northing':'YCOORD', 'Tiploc':'Code'}, axis=1, inplace=True)
+        dfStopAreasPU = dfStopAreasPU[['$STOPAREA:NO', 'NodeNo', 'StopNo', 'XCOORD', 'YCOORD', 'Name', 'Code']]
 
-        dfStopAreasAE = TPEsUnique[['Easting', 'Northing']].copy()
+        dfStopAreasAE = TPEsUnique[['Easting', 'Northing', 'Tiploc']].copy()
         dfStopAreasAE.reset_index(inplace=True)
         dfStopAreasAE['NodeNo'] = dfStopAreasAE['index']
         dfStopAreasAE['$STOPAREA:NO'] = dfStopAreasAE['index']*1000+999
         dfStopAreasAE['Name'] = 'AccessEgress'
-        dfStopAreasAE.rename({'index':'StopNo', 'Easting':'XCOORD', 'Northing':'YCOORD'}, axis=1, inplace=True)
-        dfStopAreasAE = dfStopAreasAE[['$STOPAREA:NO', 'NodeNo', 'StopNo', 'XCOORD', 'YCOORD', 'Name']]
+        dfStopAreasAE.rename({'index':'StopNo', 'Easting':'XCOORD', 'Northing':'YCOORD', 'Tiploc':'Code'}, axis=1, inplace=True)
+        dfStopAreasAE = dfStopAreasAE[['$STOPAREA:NO', 'NodeNo', 'StopNo', 'XCOORD', 'YCOORD', 'Name', 'Code']]
 
         dfStopAreas = pd.concat([dfStopAreasPU, dfStopAreasAE])
 
@@ -540,8 +554,12 @@ def getVisumLOCs(path, TPEsUnique, myVer, myShp, reversedELRs, tsys_path):
         dfStopPoints['$STOPPOINT:NO'] = dfStopPoints['index']*1000
         dfStopPoints['StopAreaNo'] = dfStopPoints['index']*1000
         dfStopPoints['Name'] = 'Platform Unknown'
+        dfStopPoints['TSysSet'] = railBased
+        dfStopPoints['FROMNODENO'] = ""
+        dfStopPoints['LINKNO'] = ""
+        dfStopPoints['RELPOS'] = 0
         dfStopPoints.rename({'index':'NodeNo', 'Tiploc':'Code'}, axis=1, inplace=True)
-        dfStopPoints = dfStopPoints[['$STOPPOINT:NO', 'StopAreaNo', 'NodeNo', 'Name', 'Code']]
+        dfStopPoints = dfStopPoints[['$STOPPOINT:NO', 'StopAreaNo', 'NodeNo', 'Name', 'Code', 'TSysSet', 'FROMNODENO', 'LINKNO', 'RELPOS']]
         
         # write .net file
         header = '''$VISION
@@ -605,14 +623,12 @@ $VERSION:VERSNR;FILETYPE;LANGUAGE;UNIT
         Visum.Net.Turns.GetFilteredSet('[FromLink\\TypeNo]=2&[ToLink\\TypeNo]=2&[FromLink\\No]!=[ToLink\\No]').SetAllAttValues('TSysSet', '')
         Visum.IO.SaveVersion(myVer)
     except:
-        Visum.Log(12288, traceback.format_exc())
+        logging.warning( traceback.format_exc())
 
 
 
 def getVisumPLTs(PLTsUnique, myPLTsVer, myLOCsVer, TPEsUnique, output):
     Visum = com.Dispatch('Visum.Visum.240')
-    Visum.SetPath(57, os.path.join(path,f"cached_data"))
-    Visum.SetLogFileName(f"Log_PLTs_{datetime.datetime.now().strftime(r'%d-%m-%Y_%H-%M-%S')}.txt")
     try:
         Visum.IO.LoadVersion(myLOCsVer)
         Visum.Net.Links.GetFilteredSet('[TypeNo]=1').SetActive()
@@ -640,7 +656,7 @@ def getVisumPLTs(PLTsUnique, myPLTsVer, myLOCsVer, TPEsUnique, output):
         DF_full.to_csv(output, index = False)
         Visum.IO.SaveVersion(myPLTsVer)
     except:
-        Visum.Log(12288, traceback.format_exc())
+        logging.warning( traceback.format_exc())
 
 def addZonesandConnectors(Visum):
     # Add zones on top of platform unknown locations for stops where a CRS code is defined and add a connector between this zone and the Platform Unknown 
@@ -693,14 +709,14 @@ def addTransferLinks(Visum, xfer_link_path, allStopAreasDF):
                 myFromNode = allStopAreasDF[allStopAreasDF['Stop\\CRS'] == i[0]]['NodeNo'][0]
                 fromFlag = True
             except:
-                Visum.Log(16384, f'No served node found for {i[0]}. No transfer link will be created unless you define the desired CRS-TIPLOC match in the manual override csv.')
+                logging.warning( f'No served node found for {i[0]}. No transfer link will be created unless you define the desired CRS-TIPLOC match in the manual override csv.')
                 fromFlag = False
         
             try:
                 myToNode = allStopAreasDF[allStopAreasDF['Stop\\CRS'] == i[1]]['NodeNo'][0]
                 toFlag = True
             except:
-                Visum.Log(16384, f'No served node found for {i[1]}. No transfer link will be created unless you define the desired CRS-TIPLOC match in the manual override csv.')
+                logging.warning( f'No served node found for {i[1]}. No transfer link will be created unless you define the desired CRS-TIPLOC match in the manual override csv.')
                 toFlag = False
 
             #If both from_CRS and to_CRS are found, create the user defined transfer link and apply the correct times to both directions
@@ -720,7 +736,7 @@ def addTransferLinks(Visum, xfer_link_path, allStopAreasDF):
                     except:
                         myLink.SetAttValue('REVERSELINK\\T_PUTSYS(PuTAux)', 60*myCSV.loc[(i[0], i[1]), 'TravelTime'])
                 else:
-                    Visum.Log(16384, f'Tsys {row.TSys} does not exist in the network. No transfer link between {i[0]} and {i[1]} created.')
+                    logging.warning( f'Tsys {row.TSys} does not exist in the network. No transfer link between {i[0]} and {i[1]} created.')
 
 
     #Create a list of all possible cobinations of served dummy Stop Areas
@@ -735,7 +751,7 @@ def addTransferLinks(Visum, xfer_link_path, allStopAreasDF):
             try:
                 Visum.Net.AddLink(-1, nodeFrom, nodeTo, 4)
             except:
-                Visum.Log(16384, "This link has already been been manually defined. Therefore, no link is created.")
+                logging.warning( "This link has already been been manually defined. Therefore, no link is created.")
     
     #We have now finished iterative slow processes, so we can turn back on drawing in Visum again
     Visum.Graphic.StopDrawing = False
@@ -760,47 +776,55 @@ def update_crs(Visum, crs_path):
 
 def main(path, myShp, tiploc_path, BPLAN_path, ELR_path, merge_path, tsys_path, xfer_link_path):
     
-    # Reprocess BPLAN to obtain new pickle results and save to cache
-    TPEsUnique, PLTsUnique = processBPLAN(path, BPLAN_path, tiploc_path)
+    if not skipBPLAN:
+        # Reprocess BPLAN to obtain new pickle results and save to cache
+        TPEsUnique, PLTsUnique = processBPLAN(path, BPLAN_path, tiploc_path)
 
-    myPickle = os.path.join(path, 'cached_data\\BPLAN\\uniques.p')
-    with open(myPickle, 'wb') as f:
-        pickle.dump([TPEsUnique, PLTsUnique], f)
+        myPickle = os.path.join(path, 'cached_data\\BPLAN\\uniques.p')
+        with open(myPickle, 'wb') as f:
+            pickle.dump([TPEsUnique, PLTsUnique], f)
     
     
     myLOCsVer = os.path.join(path, 'cached_data\\VISUM\\LOCs_Only.ver')
     myPLTsVer = os.path.join(path, 'cached_data\\VISUM\\LOCs_and_PLTs.ver')
     output = os.path.join(path, 'output\\GTFS\\stops.txt')
     
-    # Reprocess BPLAN to obtain new LOCs Version file and save to cache
-    reversedELRsDF = pd.read_csv(ELR_path, low_memory = False)
-    reversedELRs = [reversedELR[0] for reversedELR in reversedELRsDF.values]
-    getVisumLOCs(path, TPEsUnique, myLOCsVer, myShp, reversedELRs, tsys_path)
+    if not skipLOCs:
+        # Reprocess BPLAN to obtain new LOCs Version file and save to cache
+        reversedELRsDF = pd.read_csv(ELR_path, low_memory = False)
+        reversedELRs = [reversedELR[0] for reversedELR in reversedELRsDF.values]
+        getVisumLOCs(path, TPEsUnique, myLOCsVer, myShp, reversedELRs, tsys_path)
 
-
-    # Reprocess BPLAN to obtain new PLTs Version file and save to cache
-    getVisumPLTs(PLTsUnique, myPLTsVer, myLOCsVer, TPEsUnique, output)
-    
+    if not skipPLTs:
+        # Reprocess BPLAN to obtain new PLTs Version file and save to cache
+        getVisumPLTs(PLTsUnique, myPLTsVer, myLOCsVer, TPEsUnique, output)
+        
     
     Visum = com.Dispatch("Visum.Visum.240")
-    Visum.SetPath(57, os.path.join(path,f"cached_data"))
-    Visum.SetLogFileName(f"Log_LOCs_and_PLTs_{datetime.datetime.now().strftime(r'%d-%m-%Y_%H-%M-%S')}.txt")
     try:
         Visum.LoadVersion(myPLTsVer)
+
         # Update CRS codes from override file
+        logging.info(f"Updating CRS codes...")
         update_crs(Visum, merge_path)
+        logging.info(f"Done")
+        
 
         # Create zones and connectors for CRS stops
+        logging.info(f"Adding zones and connectors...")
         allStopAreasDF = addZonesandConnectors(Visum)
+        logging.info(f"Done")
 
         # Add transfer links to the network
+        logging.info(f"Adding transfer links...")
         addTransferLinks(Visum, xfer_link_path, allStopAreasDF)
+        logging.info(f"Done")
 
         Visum.Net.SetAttValue("STRONGLINEROUTELENGTHSADAPTION", 1)
 
         Visum.SaveVersion(os.path.join(path, 'cached_data\\VISUM\\LOCs_and_PLTs_ZonesConnectorsXferLinks.ver'))
     except:
-        Visum.Log(12288, traceback.format_exc())
+        logging.warning(traceback.format_exc())
 
 
 
@@ -810,6 +834,7 @@ if __name__ == "__main__":
     input_path = os.path.join(path, "input\\inputs.csv")
 
     buildNetwork = gi.readNetworkInputs(input_path)
+    logging.info(f"Building network - {buildNetwork[0]}")
     if bool(buildNetwork[0]):
         myShp = buildNetwork[1]
         tiploc_path = buildNetwork[2]
@@ -818,5 +843,14 @@ if __name__ == "__main__":
         merge_path = buildNetwork[5]
         tsys_path = buildNetwork[6]
         xfer_link_path = buildNetwork[7]
+
+        logging.info(f"Network Shapefile: {myShp}")
+        logging.info(f"TIPLOCs: {tiploc_path}")
+        logging.info(f"BPLAN: {BPLAN_path}")
+        logging.info(f"ELR: {ELR_path}")
+        logging.info(f"Merge Stops: {merge_path}")
+        logging.info(f"Transport Systems: {tsys_path}")
+        logging.info(f"Transfer Links: {xfer_link_path}")
+
 
         main(path, myShp, tiploc_path, BPLAN_path, ELR_path, merge_path, tsys_path, xfer_link_path)

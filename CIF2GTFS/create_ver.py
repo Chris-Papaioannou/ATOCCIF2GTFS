@@ -12,6 +12,18 @@ sys.path.append(os.path.dirname(__file__))
 
 import get_inputs as gi
 
+import logging
+
+logging.basicConfig(
+    filename="ModelBuilder.log",
+    encoding="utf-8",
+    filemode="a",
+    format="{asctime} - {levelname} - {message}",
+    style="{",
+    datefmt="%Y-%m-%d %H:%M",
+    level=logging.INFO # Change to logging.DEBUG for more details
+)
+
 # Format of createVer string: {'Name':'xyz', 'TSysSet':'PO,PX,PE','Date':'31/05/2023'}
 # TSysSet can also be blank for all TSys
 
@@ -23,15 +35,17 @@ def main():
     input_path = os.path.join(path, "input\\inputs.csv")
 
     vers = gi.readVerInputs(input_path)
+    logging.info(f'Creating version file(s) - {vers[0]}')
+    i=1
     if bool(vers[0]):
 
         #vers=['{"Name":"31May23", "TSysSet":"","Date":"31.05.2023"}']
         for ver in vers[1:]:
 
+            logging.info(f'Creating version file {i}')
+
             #Launch Visum and load in the final supply network version
             Visum = com.Dispatch('Visum.Visum.240')
-            Visum.SetPath(57, os.path.join(path,f"cached_data"))
-            Visum.SetLogFileName(f"Log_CreateVers_{datetime.datetime.now().strftime(r'%d-%m-%Y_%H-%M-%S')}.txt")
             try:
                 Visum.IO.LoadVersion(os.path.join(path, 'output\\VISUM\\Network+Timetable_MergeStops.ver'))
 
@@ -79,13 +93,15 @@ def main():
 
                 #Finally save the ver file to assign 
                 Visum.IO.SaveVersion(os.path.join(path, f'output\\VISUM\\{verName}.ver'))
+
+                i+=1
             except:
-                Visum.Log(12288, traceback.format_exc())
+                logging.error(traceback.format_exc())
 
 
 # %%
 
 if __name__ == "__main__":
-    myMatrix = main()
+    main()
 
 # %%

@@ -11,6 +11,18 @@ sys.path.append(os.path.dirname(__file__))
 
 import get_inputs as gi
 
+import logging
+
+logging.basicConfig(
+    filename="ModelBuilder.log",
+    encoding="utf-8",
+    filemode="a",
+    format="{asctime} - {levelname} - {message}",
+    style="{",
+    datefmt="%Y-%m-%d %H:%M",
+    level=logging.INFO # Change to logging.DEBUG for more details
+)
+
 
 att_header = '''$VISION
 * {}
@@ -63,10 +75,8 @@ def df2visum(Visum, df, temp_path, filename):
 
 def merge_stops(merge_path, ver_path):
 
+    logging.info('Merging stops...')
     Visum = win32com.client.gencache.EnsureDispatch('Visum.Visum.240')
-    Visum.SetPath(57, os.path.join(path,f"cached_data"))
-    Visum.SetLogFileName(f"Log_MergeStops_{datetime.datetime.now().strftime(r'%d-%m-%Y_%H-%M-%S')}.txt")
-    C = win32com.client.constants
     Visum.LoadVersion(ver_path)
 
     try:
@@ -154,7 +164,7 @@ def merge_stops(merge_path, ver_path):
 
         Visum.SaveVersion(ver_path.replace(".ver", "_MergeStops.ver"))
     except:
-        Visum.Log(12288, traceback.format_exc())
+        logging.error(traceback.format_exc())
 
 def main(merge_path, ver_path):
     merge_stops(merge_path, ver_path)

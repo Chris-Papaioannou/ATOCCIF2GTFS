@@ -1,12 +1,25 @@
 import os
 import pandas as pd
 import win32com.client as com
+import traceback
 
 import sys
 sys.path.append(os.path.dirname(__file__))
 
 import get_inputs as gi
 import results.create_O00 as O00
+
+import logging
+
+logging.basicConfig(
+    filename="ModelBuilder.log",
+    encoding="utf-8",
+    filemode="a",
+    format="{asctime} - {levelname} - {message}",
+    style="{",
+    datefmt="%Y-%m-%d %H:%M",
+    level=logging.INFO # Change to logging.DEBUG for more details
+)
 
 
 def createGTFSPuti(gtfsPath, putiFolder):
@@ -106,50 +119,63 @@ def main():
     createPutSupplyPuti(putSupplyPath, putiPath, tsysPath)
 
     print('Importing GTFS to new Visum Version File...')
+    logging.info('Importing GTFS to new Visum Version File...')
     Visum = com.Dispatch('Visum.Visum.240')
-    Visum.IO.ImportPuTProject(os.path.join(path, 'puti\\import_GTFS_to_Visum_23.puti'))
-    Visum.Net.SetProjection(proj_string, False)
-    Visum.Net.Stops.SetMultipleAttributes(['No'], Visum.Net.Stops.GetMultipleAttributes(['GTFS_stop_id']))
-    Visum.Net.StopAreas.SetMultipleAttributes(['No'], Visum.Net.StopAreas.GetMultipleAttributes(['GTFS_stop_id']))
-    Visum.Net.StopPoints.SetMultipleAttributes(['No'], Visum.Net.StopPoints.GetMultipleAttributes(['StopAreaNo']))
-    Visum.Net.Directions.SetMultipleAttributes(['Code', 'Name'], (('>', 'Direction: up'), ('<', 'Direction: down')))
-    CalendarPeriod_T = Visum.Net.CalendarPeriod.AttValue('Type')
-    CalendarPeriod_VF = Visum.Net.CalendarPeriod.AttValue('ValidFrom')
-    CalendarPeriod_VU = Visum.Net.CalendarPeriod.AttValue('ValidUntil')
-    Visum.IO.SaveVersion(os.path.join(path, 'output\\VISUM\\GTFS_Only.ver'))
+    try:
+        Visum.IO.ImportPuTProject(os.path.join(path, 'puti\\import_GTFS_to_Visum_23.puti'))
+        Visum.Net.SetProjection(proj_string, False)
+        Visum.Net.Stops.SetMultipleAttributes(['No'], Visum.Net.Stops.GetMultipleAttributes(['GTFS_stop_id']))
+        Visum.Net.StopAreas.SetMultipleAttributes(['No'], Visum.Net.StopAreas.GetMultipleAttributes(['GTFS_stop_id']))
+        Visum.Net.StopPoints.SetMultipleAttributes(['No'], Visum.Net.StopPoints.GetMultipleAttributes(['StopAreaNo']))
+        Visum.Net.Directions.SetMultipleAttributes(['Code', 'Name'], (('>', 'Direction: up'), ('<', 'Direction: down')))
+        CalendarPeriod_T = Visum.Net.CalendarPeriod.AttValue('Type')
+        CalendarPeriod_VF = Visum.Net.CalendarPeriod.AttValue('ValidFrom')
+        CalendarPeriod_VU = Visum.Net.CalendarPeriod.AttValue('ValidUntil')
+        Visum.IO.SaveVersion(os.path.join(path, 'output\\VISUM\\GTFS_Only.ver'))
+    except:
+        logging.error(traceback.format_exc())
+    
 
     print('Importing GTFS PT supply into prepared Visum network...')
-    Visum.IO.LoadVersion(os.path.join(path, 'cached_data\\VISUM\\LOCs_and_PLTs_ZonesConnectorsXferLinks.ver'))
-    Visum.Net.CalendarPeriod.SetAttValue('Type', CalendarPeriod_T)
+    logging.info('Importing GTFS PT supply into prepared Visum network...')
     try:
-        Visum.Net.CalendarPeriod.SetAttValue('ValidFrom', CalendarPeriod_VF)
-        Visum.Net.CalendarPeriod.SetAttValue('ValidUntil', CalendarPeriod_VU)
-        print('Note: Your calendar period is in the past.')
+        Visum.IO.LoadVersion(os.path.join(path, 'cached_data\\VISUM\\LOCs_and_PLTs_ZonesConnectorsXferLinks.ver'))
+        Visum.Net.CalendarPeriod.SetAttValue('Type', CalendarPeriod_T)
+        try:
+            Visum.Net.CalendarPeriod.SetAttValue('ValidFrom', CalendarPeriod_VF)
+            Visum.Net.CalendarPeriod.SetAttValue('ValidUntil', CalendarPeriod_VU)
+            print('Note: Your calendar period is in the past.')
+        except:
+            Visum.Net.CalendarPeriod.SetAttValue('ValidUntil', CalendarPeriod_VU)
+            Visum.Net.CalendarPeriod.SetAttValue('ValidFrom', CalendarPeriod_VF)
+            print('Note: Your calendar period is in the future.')
+        Visum.Net.Nodes.SetActive()
+        Visum.Net.Links.SetActive()
+        Visum.Net.StopPoints.SetActive()
+        LinkType = Visum.Net.AddLinkType(99)
+        LinkType.SetAttValue('TSysSet', '')
+        LinkType = None
+        Visum.IO.ImportPuTProject(os.path.join(path, 'puti\\import_PuT_supply_from_Visum_23.puti'))
+        Visum.Net.TimeProfileItems.AddUserDefinedAttribute('Speed', 'Speed', 'Speed', 15, Formula = '3600*[Sum:UsedLineRouteItems\\PostLinkLength]/[PostRunTime]')
+        journeyDetails = pd.read_csv(os.path.join(path, 'cached_data\\JourneyDetails.txt'), low_memory = False)
+        journeyDetails.drop(['Key', 'JourneyID', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday', 'start_date', 'end_date'], axis = 1, inplace = True)
+        VJs = pd.DataFrame(Visum.Net.VehicleJourneys.GetMultiAttValues('Name'), columns = ['No', 'service_id'])
+        VJs['service_id'] = VJs['service_id'].str.replace('_trip', '_service')
+        journeyDetails = VJs.merge(journeyDetails, 'left', 'service_id')
+        journeyDetails.fillna('', inplace = True)
+        journeyDetails.drop(columns = ['No', 'service_id'], inplace = True)
+        for col in journeyDetails.columns.values:
+            Visum.Net.VehicleJourneys.AddUserDefinedAttribute(col, col, col, 5)
+        Visum.Net.VehicleJourneys.SetMultipleAttributes(journeyDetails.columns.values, journeyDetails.values)
     except:
-        Visum.Net.CalendarPeriod.SetAttValue('ValidUntil', CalendarPeriod_VU)
-        Visum.Net.CalendarPeriod.SetAttValue('ValidFrom', CalendarPeriod_VF)
-        print('Note: Your calendar period is in the future.')
-    Visum.Net.Nodes.SetActive()
-    Visum.Net.Links.SetActive()
-    Visum.Net.StopPoints.SetActive()
-    LinkType = Visum.Net.AddLinkType(99)
-    LinkType.SetAttValue('TSysSet', '')
-    LinkType = None
-    Visum.IO.ImportPuTProject(os.path.join(path, 'puti\\import_PuT_supply_from_Visum_23.puti'))
-    Visum.Net.TimeProfileItems.AddUserDefinedAttribute('Speed', 'Speed', 'Speed', 15, Formula = '3600*[Sum:UsedLineRouteItems\\PostLinkLength]/[PostRunTime]')
-    journeyDetails = pd.read_csv(os.path.join(path, 'cached_data\\JourneyDetails.txt'), low_memory = False)
-    journeyDetails.drop(['Key', 'JourneyID', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday', 'start_date', 'end_date'], axis = 1, inplace = True)
-    VJs = pd.DataFrame(Visum.Net.VehicleJourneys.GetMultiAttValues('Name'), columns = ['No', 'service_id'])
-    VJs['service_id'] = VJs['service_id'].str.replace('_trip', '_service')
-    journeyDetails = VJs.merge(journeyDetails, 'left', 'service_id')
-    journeyDetails.fillna('', inplace = True)
-    journeyDetails.drop(columns = ['No', 'service_id'], inplace = True)
-    for col in journeyDetails.columns.values:
-        Visum.Net.VehicleJourneys.AddUserDefinedAttribute(col, col, col, 5)
-    Visum.Net.VehicleJourneys.SetMultipleAttributes(journeyDetails.columns.values, journeyDetails.values)
+        logging.error(traceback.format_exc())
+
+    logging.info('Creating O00...')
 
     O00.Visum = Visum
     O00.create_O00()
+
+    logging.info("Done")
 
     Visum.IO.SaveVersion(os.path.join(path, 'output\\VISUM\\Network+Timetable.ver'))
 

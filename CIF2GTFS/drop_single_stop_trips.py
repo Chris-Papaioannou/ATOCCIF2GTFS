@@ -1,6 +1,19 @@
 import os
 import pandas as pd
 
+import logging
+
+logging.basicConfig(
+    filename="ModelBuilder.log",
+    encoding="utf-8",
+    filemode="a",
+    format="{asctime} - {levelname} - {message}",
+    style="{",
+    datefmt="%Y-%m-%d %H:%M",
+    level=logging.INFO # Change to logging.DEBUG for more details
+)
+
+
 def main():
     
     #Define path and read oringinal stop times gtfs output from C# CIF to GTFS process
@@ -12,8 +25,12 @@ def main():
     if len(report) > 0:
         print(f'WARNING (Prio. = High): {len(report)} trips were dropped as they only had one stop. The following trip IDs were affected:')
         print(report)
+        
+        logging.warning(f'{len(report)} trips were dropped as they only had one stop. The following trip IDs were affected:')
+        logging.warning(report)
     else:
         print('NOTE: No trips were dropped as a result of only having one stop.')
+        logging.info("No trips were dropped as a result of only having one stop")
 
     #Drop unique trip IDs (i.e. single stop trips) and output to the final location, and get a unique list of stop IDs
     reduced_df = df[df.duplicated(subset = ['trip_id'], keep = False)].reset_index(drop = True)
