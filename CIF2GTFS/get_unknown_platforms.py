@@ -51,13 +51,17 @@ def main():
                     TrainUID = record[3:9]
                     if record[2] != 'N':
                         logging.warning(f"This Basic Schedule isn't a new record - TrainUID: {TrainUID}.")
+
+                case 'BX':
+                    ATOC = record[11:13]
+
                 case 'LO':
                     OrigTIPLOC = record[2:10].strip()
                     OrigPlatNum = record[19:22].strip()
                     OrigDep = record[10:15].replace("H", "30").strip()
 
                     if OrigPlatNum == '':
-                        unknownPlatformStops.append([TrainUID,  OrigTIPLOC, OrigDep, OrigTIPLOC, "", OrigDep])
+                        unknownPlatformStops.append([TrainUID, ATOC,  OrigTIPLOC, OrigDep, OrigTIPLOC, "", OrigDep])
 
                 case 'LI':
                     InterTIPLOC = record[2:10].strip()
@@ -69,7 +73,7 @@ def main():
                     stopAct = not set(actCodes).isdisjoint(['T', 'R', 'U', 'D'])
 
                     if InterPlatNum == '' and stopAct:
-                        unknownPlatformStops.append([TrainUID,  OrigTIPLOC, OrigDep, InterTIPLOC, InterArr, InterDep])
+                        unknownPlatformStops.append([TrainUID, ATOC,  OrigTIPLOC, OrigDep, InterTIPLOC, InterArr, InterDep])
 
                 case 'LT':
                     DestTIPLOC = record[2:10].strip()
@@ -77,12 +81,12 @@ def main():
                     DestArr = record[10:15].replace("H","30").strip()
 
                     if DestPlatNum == '':
-                        unknownPlatformStops.append([TrainUID,  OrigTIPLOC, OrigDep, DestTIPLOC, DestArr, ""])
+                        unknownPlatformStops.append([TrainUID, ATOC,  OrigTIPLOC, OrigDep, DestTIPLOC, DestArr, ""])
                     
                 case _:
                     logging.debug("Record ignored - "+record.rstrip('\n'))
     
-    dfPlatUnknowns = pd.DataFrame(unknownPlatformStops, columns=['TrainUID', 'OrigTIPLOC', 'OrigDep', 'CurrentTIPLOC', 'CurrentArr', 'CurrentDep'])
+    dfPlatUnknowns = pd.DataFrame(unknownPlatformStops, columns=['TrainUID', 'ATOC', 'OrigTIPLOC', 'OrigDep', 'CurrentTIPLOC', 'CurrentArr', 'CurrentDep'])
     dfPlatUnknowns['Platform'] = ""
 
     dfPlatUnknowns.to_csv(outputPath, index=False)
