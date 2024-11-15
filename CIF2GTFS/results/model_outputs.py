@@ -4,7 +4,6 @@ import os
 sys.path.append(os.path.join(os.path.dirname(__file__), "src"))
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(__file__))))
 
-
 import pandas as pd
 import numpy as np
 import datetime
@@ -14,6 +13,7 @@ import sqlite3
 
 from zipfile import ZipFile
 import zipfile
+
 
 try:
     import get_inputs as gi
@@ -278,14 +278,14 @@ def create_O03(dfPathLegs, runID):
 
     dfPathLegs.drop(dfPathLegs[dfPathLegs.MovementType=='FromTubeTransfer'].index, inplace=True)
 
-    dfDemand = dfPathLegs.groupby(['OrigCRS', 'DestCRS', 'PATHINDEX'], as_index=False).agg(Demand=('ODTRIPS', np.mean),FromCRS=('FromCRS',",".join), ATOC=('ATOC',','.join), StartHour=('Hour',np.min), EndHour=('Hour',np.max), Time=('TIME', np.sum), WaitTime=('WAITTIME', np.sum))
+    dfDemand = dfPathLegs.groupby(['OrigCRS', 'DestCRS', 'PATHINDEX'], as_index=False).agg(Demand=('ODTRIPS', np.mean),FromCRS=('FromCRS',",".join), ATOC=('ATOC',','.join), TrainUID=('TrainUID', ','.join), StartHour=('Hour',np.min), EndHour=('Hour',np.max), Time=('TIME', np.sum), WaitTime=('WAITTIME', np.sum))
 
     del dfPathLegs
 
-    dfDemand.rename({'FromCRS':'CRS_Chain', 'ATOC':'ATOC_Chain'}, axis=1, inplace=True)
+    dfDemand.rename({'FromCRS':'CRS_Chain', 'ATOC':'ATOC_Chain', 'TrainUID':'TrainUID_Chain'}, axis=1, inplace=True)
     dfDemand.CRS_Chain = dfDemand.CRS_Chain + "," + dfDemand.DestCRS
 
-    dfHighLevel = dfDemand.groupby(['OrigCRS', 'DestCRS', 'StartHour', 'EndHour', 'CRS_Chain', 'ATOC_Chain'], as_index=False).agg(Demand=('Demand', np.sum), InVehicleTime=('Time', np.mean), WaitTime=('WaitTime', np.mean))
+    dfHighLevel = dfDemand.groupby(['OrigCRS', 'DestCRS', 'StartHour', 'EndHour', 'CRS_Chain', 'ATOC_Chain', 'TrainUID_Chain'], as_index=False).agg(Demand=('Demand', np.sum), InVehicleTime=('Time', np.mean), WaitTime=('WaitTime', np.mean))
     dfHighLevel['RunID'] = runID
     dfHighLevel.to_parquet(f'{runID}_O03_ODHourlyRoutes.parquet', index=False, compression=parquetCompression)
     dfHighLevel.to_csv(f'{runID}_O03_ODHourlyRoutes.csv', index=False)
@@ -408,7 +408,6 @@ def main():
 
     if flowBundle:
         runFlowBundle(CRS)
-
 
     if partOfFullRun:
         path = os.path.dirname(os.path.dirname(__file__))
