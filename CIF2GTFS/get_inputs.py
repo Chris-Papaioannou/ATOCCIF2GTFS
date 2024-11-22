@@ -51,7 +51,7 @@ def readVerInputs(input_path):
     df = pd.read_csv(input_path, header=None, names=['variable', 'value'])
     df.set_index('variable', inplace=True)
 
-    createVersBool = (df.at['CreateVers', 'value'])
+    createVersBool = convertToBool(df.at['CreateVers', 'value'])
     ver1 = str(df.at['Ver1', 'value']).replace(";",",")
     ver2 = str(df.at['Ver2', 'value']).replace(";",",")
     ver3 = str(df.at['Ver3', 'value']).replace(";",",")
