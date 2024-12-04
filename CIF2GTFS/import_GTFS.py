@@ -8,6 +8,9 @@ sys.path.append(os.path.dirname(__file__))
 
 import get_inputs as gi
 import results.create_O00 as O00
+import stp
+
+
 
 import logging
 
@@ -87,7 +90,7 @@ def createPutSupplyPuti(putSupplyPath, putiFolder, tsys_path):
         f.write(footer)
 
 
-def main():
+def main(timetablePath):
 
     path = os.path.dirname(__file__)
 
@@ -131,6 +134,11 @@ def main():
         CalendarPeriod_T = Visum.Net.CalendarPeriod.AttValue('Type')
         CalendarPeriod_VF = Visum.Net.CalendarPeriod.AttValue('ValidFrom')
         CalendarPeriod_VU = Visum.Net.CalendarPeriod.AttValue('ValidUntil')
+
+        # process STP services
+        stp.Visum = Visum
+        stp.main(timetablePath)
+
         Visum.IO.SaveVersion(os.path.join(path, 'output\\VISUM\\GTFS_Only.ver'))
     except:
         logging.error(traceback.format_exc())
@@ -189,4 +197,4 @@ if __name__ == "__main__":
     importTimetable = gi.readTimetableInputs(input_path)
 
     if bool(importTimetable[0]):
-        main()
+        main(importTimetable[1])
