@@ -124,6 +124,18 @@ def readPlatformUnknowns(input_path):
 
     return runPlatformUpdate
 
+def readGTFSInputs(input_path):
+    df = pd.read_csv(input_path, header=None, names=['variable', 'value'])
+    df.set_index('variable', inplace=True)
+
+    exportGTFSbool = convertToBool(df.at['ExportGTFS', 'value'])
+    tsysPath = df.at['TransportSystems', 'value']
+
+    exportGTFS = [exportGTFSbool, tsysPath]
+
+    return exportGTFS
+
+
 def read_inputs(input_path):
     df = pd.read_csv(input_path, header=None, names=['variable', 'value'])
 

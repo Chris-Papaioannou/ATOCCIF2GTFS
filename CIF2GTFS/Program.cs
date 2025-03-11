@@ -484,6 +484,9 @@ namespace CIF2GTFS
             Console.WriteLine("Running assignment and outputs...");
             ExecProcess("assignment.py");
 
+            Console.WriteLine("Exporting GTFS file...");
+            ExecProcess("export_GTFS.py");
+
             Console.WriteLine("Done");
         }
 
