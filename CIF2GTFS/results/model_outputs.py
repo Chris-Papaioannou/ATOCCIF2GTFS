@@ -41,6 +41,7 @@ pathLegCols = {"PATH\ORIGCONNECTOR\ZONE\CODE":str,
                "STARTVEHJOURNEYITEM\VEHJOURNEY\ATOC":str,
                "STARTVEHJOURNEYITEM\VEHJOURNEY\TRAINUID":str,
                "STARTVEHJOURNEYITEM\VEHJOURNEY\TRAINSERVICECODE":str,
+               "STARTVEHJOURNEYITEM\VEHJOURNEY\TRAINIDENTITY":str,
                "DEPTIME":str}
 
 stopPointCols = {"NO":int,
@@ -74,12 +75,12 @@ def getPathLegs(cols, tempPath, flowBundle, quitVisum):
     if quitVisum:
         Visum = None
 
-    SQL_Query = 'SELECT PATHINDEX, PATHLEGINDEX, "PATH\ORIGCONNECTOR\ZONE\CODE", "PATH\DESTCONNECTOR\ZONE\CODE", "PATH\COUNT:PUTPATHLEGSWITHWALK", ODTRIPS, FROMSTOPPOINTNO, TOSTOPPOINTNO, TIMEPROFILEKEYSTRING, TIME, WAITTIME, "STARTVEHJOURNEYITEM\VEHJOURNEY\ATOC", "STARTVEHJOURNEYITEM\VEHJOURNEY\TRAINUID", "STARTVEHJOURNEYITEM\VEHJOURNEY\TRAINSERVICECODE", DEPTIME FROM PathLegs WHERE TIMEPROFILEKEYSTRING NOT IN ("Origin connector", "Destination connector") AND PATHLEGINDEX != 0'
+    SQL_Query = 'SELECT PATHINDEX, PATHLEGINDEX, "PATH\ORIGCONNECTOR\ZONE\CODE", "PATH\DESTCONNECTOR\ZONE\CODE", "PATH\COUNT:PUTPATHLEGSWITHWALK", ODTRIPS, FROMSTOPPOINTNO, TOSTOPPOINTNO, TIMEPROFILEKEYSTRING, TIME, WAITTIME, "STARTVEHJOURNEYITEM\VEHJOURNEY\ATOC", "STARTVEHJOURNEYITEM\VEHJOURNEY\TRAINUID", "STARTVEHJOURNEYITEM\VEHJOURNEY\TRAINSERVICECODE", "STARTVEHJOURNEYITEM\VEHJOURNEY\TRAINIDENTITY", DEPTIME FROM PathLegs WHERE TIMEPROFILEKEYSTRING NOT IN ("Origin connector", "Destination connector") AND PATHLEGINDEX != 0'
 
     con = sqlite3.connect(f"{tempPath}\\PuTPathLegs_{timecode}.sqlite3") 
     dfPathLegs = pd.read_sql_query(SQL_Query, con, dtype=cols)# , chunksize=10000
 
-    dfPathLegs.rename({"PATH\ORIGCONNECTOR\ZONE\CODE":'OrigCRS', 'PATH\DESTCONNECTOR\ZONE\CODE':'DestCRS', 'STARTVEHJOURNEYITEM\VEHJOURNEY\ATOC':'ATOC', 'STARTVEHJOURNEYITEM\VEHJOURNEY\TRAINUID':'TrainUID', 'STARTVEHJOURNEYITEM\VEHJOURNEY\TRAINSERVICECODE':'TrainServiceCode', "PATH\COUNT:PUTPATHLEGSWITHWALK":"NumLegs" }, axis=1, inplace=True, errors='ignore')
+    dfPathLegs.rename({"PATH\ORIGCONNECTOR\ZONE\CODE":'OrigCRS', 'PATH\DESTCONNECTOR\ZONE\CODE':'DestCRS', 'STARTVEHJOURNEYITEM\VEHJOURNEY\ATOC':'ATOC', 'STARTVEHJOURNEYITEM\VEHJOURNEY\TRAINUID':'TrainUID', 'STARTVEHJOURNEYITEM\VEHJOURNEY\TRAINSERVICECODE':'TrainServiceCode',"STARTVEHJOURNEYITEM\VEHJOURNEY\TRAINIDENTITY":'Headcode', "PATH\COUNT:PUTPATHLEGSWITHWALK":"NumLegs" }, axis=1, inplace=True, errors='ignore')
 
     for col in ['FROMSTOPPOINTNO', 'TOSTOPPOINTNO']:
         dfPathLegs[col].fillna(-1, inplace=True)
@@ -96,7 +97,7 @@ def getPathLegs(cols, tempPath, flowBundle, quitVisum):
 
     dfPathLegs = dfPathLegs.drop(dfPathLegs[dfPathLegs.TIMEPROFILEKEYSTRING=='PuT Aux PuTAux'].index)
 
-    for col in ['TrainUID', 'TrainServiceCode', 'ATOC']:
+    for col in ['TrainUID', 'TrainServiceCode', 'ATOC', 'Headcode']:
         dfPathLegs[col].fillna("", inplace=True)
 
     for col in ['TIME', 'WAITTIME']:
@@ -278,14 +279,14 @@ def create_O03(dfPathLegs, runID):
 
     dfPathLegs.drop(dfPathLegs[dfPathLegs.MovementType=='FromTubeTransfer'].index, inplace=True)
 
-    dfDemand = dfPathLegs.groupby(['OrigCRS', 'DestCRS', 'PATHINDEX'], as_index=False).agg(Demand=('ODTRIPS', np.mean),FromCRS=('FromCRS',",".join), ATOC=('ATOC',','.join), TrainUID=('TrainUID', ','.join), StartHour=('Hour',np.min), EndHour=('Hour',np.max), Time=('TIME', np.sum), WaitTime=('WAITTIME', np.sum))
+    dfDemand = dfPathLegs.groupby(['OrigCRS', 'DestCRS', 'PATHINDEX'], as_index=False).agg(Demand=('ODTRIPS', np.mean),FromCRS=('FromCRS',",".join), ATOC=('ATOC',','.join), TrainUID=('TrainUID', ','.join), Headcode=('Headcode', ','.join), StartHour=('Hour',np.min), EndHour=('Hour',np.max), Time=('TIME', np.sum), WaitTime=('WAITTIME', np.sum))
 
     del dfPathLegs
 
-    dfDemand.rename({'FromCRS':'CRS_Chain', 'ATOC':'ATOC_Chain', 'TrainUID':'TrainUID_Chain'}, axis=1, inplace=True)
+    dfDemand.rename({'FromCRS':'CRS_Chain', 'ATOC':'ATOC_Chain', 'TrainUID':'TrainUID_Chain', 'Headcode':'Headcode_Chain'}, axis=1, inplace=True)
     dfDemand.CRS_Chain = dfDemand.CRS_Chain + "," + dfDemand.DestCRS
 
-    dfHighLevel = dfDemand.groupby(['OrigCRS', 'DestCRS', 'StartHour', 'EndHour', 'CRS_Chain', 'ATOC_Chain', 'TrainUID_Chain'], as_index=False).agg(Demand=('Demand', np.sum), InVehicleTime=('Time', np.mean), WaitTime=('WaitTime', np.mean))
+    dfHighLevel = dfDemand.groupby(['OrigCRS', 'DestCRS', 'StartHour', 'EndHour', 'CRS_Chain', 'ATOC_Chain', 'TrainUID_Chain', 'Headcode_Chain'], as_index=False).agg(Demand=('Demand', np.sum), InVehicleTime=('Time', np.mean), WaitTime=('WaitTime', np.mean))
     dfHighLevel['RunID'] = runID
     dfHighLevel.to_parquet(f'{runID}_O03_ODHourlyRoutes.parquet', index=False, compression=parquetCompression)
     dfHighLevel.to_csv(f'{runID}_O03_ODHourlyRoutes.csv', index=False)
@@ -294,14 +295,14 @@ def create_O03(dfPathLegs, runID):
 def create_O04(runID):
 
     VJI_list = Visum.Workbench.Lists.CreateVehJourneyItemList
-    for col in ["VEHJOURNEYNO", "INDEX", r"VEHJOURNEY\TRAINUID", r"VEHJOURNEY\ATOC", r"VEHJOURNEY\MeanVolTrip(AP)", r"VEHJOURNEY\TRAINSERVICECODE", r"TIMEPROFILEITEM\LINEROUTEITEM\STOPPOINT\STOPAREA\STOP\CODE" ,r"TIMEPROFILEITEM\LINEROUTEITEM\STOPPOINT\STOPAREA\STOP\CRS", r"TIMEPROFILEITEM\LINEROUTEITEM\STOPPOINT\STOPAREA\STOP\NAME", r"TIMEPROFILEITEM\LINEROUTEITEM\STOPPOINT\NAME", r"EXTARRIVAL", r"EXTDEPARTURE", r"TIMEPROFILEITEM\ALIGHT", r"TIMEPROFILEITEM\BOARD", r"VEHJOURNEY\FROMSTOPPOINT\STOPAREA\STOP\CRS", r"VEHJOURNEY\TOSTOPPOINT\STOPAREA\STOP\CRS", "PASSBOARD(AP)", "PASSALIGHT(AP)", "PASSTHROUGH(AP)"]:
+    for col in ["VEHJOURNEYNO", "INDEX", r"VEHJOURNEY\TRAINUID", r"VEHJOURNEY\ATOC", r"VEHJOURNEY\MeanVolTrip(AP)", r"VEHJOURNEY\TRAINSERVICECODE", r"STARTVEHJOURNEYITEM\VEHJOURNEY\TRAINIDENTITY"r"TIMEPROFILEITEM\LINEROUTEITEM\STOPPOINT\STOPAREA\STOP\CODE" ,r"TIMEPROFILEITEM\LINEROUTEITEM\STOPPOINT\STOPAREA\STOP\CRS", r"TIMEPROFILEITEM\LINEROUTEITEM\STOPPOINT\STOPAREA\STOP\NAME", r"TIMEPROFILEITEM\LINEROUTEITEM\STOPPOINT\NAME", r"EXTARRIVAL", r"EXTDEPARTURE", r"TIMEPROFILEITEM\ALIGHT", r"TIMEPROFILEITEM\BOARD", r"VEHJOURNEY\FROMSTOPPOINT\STOPAREA\STOP\CRS", r"VEHJOURNEY\TOSTOPPOINT\STOPAREA\STOP\CRS", "PASSBOARD(AP)", "PASSALIGHT(AP)", "PASSTHROUGH(AP)"]:
         VJI_list.AddColumn(col)
     
     VJs = [int(x[1]) for x in Visum.Net.VehicleJourneys.GetMultiAttValues("NO", False)]
 
     VJI_list.SetObjects(False, VJs)
 
-    dfVJIs = pd.DataFrame(VJI_list.SaveToArray(), columns=["VehicleJourneyNo", "Index", "TrainUID", "ATOC", "MeanVolTrip(AP)", "TrainServiceCode", "CODE", "CRS", "Stop", "Platform", "Arrival", "Departure", "AlightAllowed", "BoardAllowed", "OriginCRS", "DestinationCRS", "Board", "Alight", "Through"])
+    dfVJIs = pd.DataFrame(VJI_list.SaveToArray(), columns=["VehicleJourneyNo", "Index", "TrainUID", "ATOC", "MeanVolTrip(AP)", "TrainServiceCode", "Headcode", "CODE", "CRS", "Stop", "Platform", "Arrival", "Departure", "AlightAllowed", "BoardAllowed", "OriginCRS", "DestinationCRS", "Board", "Alight", "Through"])
     dfVJIs['RunID'] = runID
     dfVJIs.to_parquet(f"{runID}_O04_StopsAndPasses.parquet", index=False, compression=parquetCompression)
     dfVJIs.to_csv(f"{runID}_O04_StopsAndPasses.csv", index=False)
@@ -467,7 +468,8 @@ def main():
                             'ToPlatform', 
                             'ToCRS', 
                             'TrainUID', 
-                            'TrainServiceCode', 
+                            'TrainServiceCode',
+                            'Headcode',
                             'ATOC'
                             ]]
     dfPathLegs['RunID'] = runID
